@@ -1,4 +1,5 @@
 // Example usage in GlobalAlert.tsx
+"use client"
 import { AlertCircle, Terminal, X } from "lucide-react";
 import { useAlert } from "../app/services/AlertService";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
