@@ -1,8 +1,9 @@
 'use client'
-
 import { DataTable } from '@/components/Table'
 import { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
+import { AlertProvider, useAlert } from '../services/AlertService'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface Todo {
   userId: number
@@ -12,6 +13,27 @@ interface Todo {
 }
 
 const columns: ColumnDef<Todo>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(checked) => {
+          table.toggleAllPageRowsSelected(!!checked)
+        }}
+        aria-label="Select all rows"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(checked) => {
+          row.toggleSelected(!!checked)
+        }}
+        aria-label="Select row"
+      />
+    ),
+  },
   {
     accessorKey: 'id',
     header: 'ID',
@@ -37,6 +59,8 @@ export default function HomePage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [pageCount, setPageCount] = useState(0)
+  const [rowSelection, setRowSelection] = useState({})
+  const { showAlert } = useAlert()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,25 +87,41 @@ export default function HomePage() {
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
   }
-
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize)
     setPage(1) // Reset to first page when page size changes
   }
 
+  useEffect(() => {
+    const selectedIds = Object.keys(rowSelection)
+    if (selectedIds.length > 0) {
+      showAlert(
+        'default',
+        'Row Selection',
+        `Selected row IDs: ${selectedIds.join(', ')}`
+      )
+    }
+  }, [rowSelection])
+
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-4">Todos</h1>
-      <DataTable
-        columns={columns}
-        data={data}
-        page={page}
-        pageCount={pageCount}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        isLoading={isLoading}
-        pageSize={pageSize}
-      />
-    </div>
+    <AlertProvider>
+      <div className="container mx-auto py-10">
+        <h1 className="text-2xl font-bold mb-4">Todos</h1>{' '}
+        <DataTable
+          columns={columns}
+          data={data}
+          page={page}
+          pageCount={pageCount}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          isLoading={isLoading}
+          pageSize={pageSize}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => row.id.toString()}
+          classNameCell='p-2'
+        />
+      </div>
+    </AlertProvider>
   )
 }

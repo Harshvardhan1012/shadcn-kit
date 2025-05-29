@@ -3,6 +3,8 @@ import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
+  OnChangeFn,
+  RowSelectionState,
   useReactTable,
 } from '@tanstack/react-table'
 
@@ -16,6 +18,7 @@ import {
 } from '@/components/ui/table'
 import React from 'react'
 import { DataTablePagination } from './Pagination'
+import { cn } from '@/lib/utils'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -26,7 +29,11 @@ interface DataTableProps<TData, TValue> {
   page: number
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
-  isLoading?: boolean // <-- add isLoading prop
+  isLoading?: boolean
+  rowSelection?: RowSelectionState
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  getRowId?: (originalRow: TData) => string
+  classNameCell?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -38,7 +45,11 @@ export function DataTable<TData, TValue>({
   pageSize = 10,
   onPageChange,
   onPageSizeChange,
-  isLoading = false, // <-- add isLoading prop
+  isLoading = false,
+  rowSelection = {},
+  onRowSelectionChange,
+  getRowId,
+  classNameCell,
 }: DataTableProps<TData, TValue>) {
   const [pagination, setPagination] = React.useState({
     pageIndex,
@@ -54,8 +65,13 @@ export function DataTable<TData, TValue>({
     pageCount,
     state: {
       pagination,
+      rowSelection,
     },
-    onPaginationChange: setPagination,
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    enableSubRowSelection: true,
+    onRowSelectionChange: onRowSelectionChange,
+    getRowId: getRowId,
   })
 
   return (
@@ -87,7 +103,7 @@ export function DataTable<TData, TValue>({
               <TableRow key={`skeleton-row-${idx}`}>
                 {columns.map((_, colIdx) => (
                   <TableCell key={`skeleton-cell-${colIdx}`}>
-                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className={cn(classNameCell)} />
                   </TableCell>
                 ))}
               </TableRow>
@@ -96,11 +112,12 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                className="text-center hover:bg-muted/50 cursor-pointer"
                 data-state={row.getIsSelected() && 'selected'}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
-                    key={cell.id}
-                    className="text-center">
+                    className={cn(classNameCell)}
+                    key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -136,7 +153,7 @@ export function DataTable<TData, TValue>({
             })
             onPageSizeChange(newSize)
           }}
-          isLoading={isLoading} 
+          isLoading={isLoading}
         />
       )}
     </div>

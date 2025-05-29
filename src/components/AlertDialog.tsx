@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface AlertDialogProps {
   title: string;
@@ -17,6 +18,9 @@ interface AlertDialogProps {
   onConfirm: () => void;
   openState: boolean;
   onCancel: () => void;
+  classNameContent?: string;
+  classNameCancel?: string;
+  classNameConfirm?: string;
 }
 
 export function AlertDialogDemo({
@@ -27,17 +31,20 @@ export function AlertDialogDemo({
   onConfirm,
   openState,
   onCancel,
+  classNameContent,
+  classNameCancel,
+  classNameConfirm,
 }: AlertDialogProps) {
   return (
     <AlertDialog open={openState}>
-      <AlertDialogContent>
+      <AlertDialogContent className={cn(classNameContent)}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogCancel className={cn(classNameCancel)} onClick={onCancel}>{cancelText}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} className={cn(classNameConfirm)}>
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

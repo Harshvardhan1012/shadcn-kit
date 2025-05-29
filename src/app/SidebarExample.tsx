@@ -58,6 +58,7 @@ export function SidebarExample({ children }: MainLayoutProps) {
         onClick: handleLogout,
       },
     ],
+    className: 'p-0 m-0',
   }
 
   const sidebarConfig: SidebarConfig = {
@@ -138,13 +139,12 @@ export function SidebarExample({ children }: MainLayoutProps) {
       },
     ],
   }
-
   return (
     <div className="flex h-full w-full rounded-sm">
       <DynamicSidebar config={sidebarConfig} />
-      <SidebarInset className="p-6">
+      <SidebarInset className="p-6 bg-background">
         <SidebarTrigger />
-        <div >{children}</div>
+        <div>{children}</div>
       </SidebarInset>
       {open && (
         <AlertDialogDemo

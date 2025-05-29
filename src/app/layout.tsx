@@ -1,7 +1,7 @@
+import { SidebarExample } from '@/app/SidebarExample'
 import { GlobalAlert } from '@/components/Alert'
 import { ClientAlertProvider } from '@/components/ClientAlertProvider'
 import { ClientSidebarProvider } from '@/components/ClientSidebarProvider'
-import { SidebarExample } from '@/app/SidebarExample'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import './globals.css'
@@ -26,8 +26,10 @@ export default async function RootLayout({
         <ClientAlertProvider>
           <ClientSidebarProvider defaultOpen={defaultOpen}>
             <GlobalAlert />
-            <div className="flex h-screen w-full">
-              <SidebarExample>{children}</SidebarExample>
+            <div className="flex flex-col h-screen w-full">
+              <div className="flex flex-1 w-full">
+                <SidebarExample>{children}</SidebarExample>
+              </div>
             </div>
           </ClientSidebarProvider>
         </ClientAlertProvider>

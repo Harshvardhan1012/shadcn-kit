@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import React, { ReactNode, useState } from 'react'
+import { SearchForm, SearchResult } from './SearchForm'
 
 // Types for the sidebar items
 export interface SidebarSubItem {
@@ -120,7 +121,10 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
 
   return (
     <div
-      className={cn('flex items-center justify-center flex-col', config.className)}>
+      className={cn(
+        'flex items-center justify-center flex-col',
+        config.className
+      )}>
       {config.logo && (
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -145,10 +149,9 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
           </div>
         </div>
       )}
-
       {config.user && (
-        <div className="flex items-center space-x-3 rounded-md border p-3 group-data-[collapsible=icon]:p-1 group-data-[collapsible=icon]:border-0">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full">
+        <div className="flex items-center  rounded-md border p-2 group-data-[collapsible=icon]:p-1 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:justify-center w-full">
+          <div className="relative h-10 w-10 overflow-hidden rounded-full shrink-0">
             {config.user.avatarUrl ? (
               <div className="relative h-full w-full">
                 <Image
@@ -213,10 +216,64 @@ const renderFooterFromConfig = (config: SidebarFooterConfig) => {
   )
 }
 
-export function DynamicSidebar({ config }: { config: SidebarConfig }) {
+interface DynamicSidebarProps {
+  config: SidebarConfig
+  enableSearch?: boolean
+}
+
+export function DynamicSidebar({
+  config,
+  enableSearch = true,
+}: DynamicSidebarProps) {
   const [openItems, setOpenItems] = useState<Record<string | number, boolean>>(
     {}
   )
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+
+  // Function to search through sidebar items
+  const searchSidebarItems = (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const results: SearchResult[] = []
+
+    // Search through all groups and their items
+    config.groups.forEach((group) => {
+      group.items.forEach((item) => {
+        // Check main item
+        if (item.title.toLowerCase().includes(query.toLowerCase())) {
+          results.push({
+            id: item.id,
+            title: item.title,
+            groupLabel: group.label,
+            path: group.label ? [group.label] : [],
+            url: item.url,
+          })
+        }
+
+        // Check sub items
+        if (item.subItems) {
+          item.subItems.forEach((subItem) => {
+            if (subItem.title.toLowerCase().includes(query.toLowerCase())) {
+              results.push({
+                id: subItem.id,
+                title: subItem.title,
+                groupLabel: group.label,
+                path: [...(group.label ? [group.label] : []), item.title],
+                isSubItem: true,
+                url: subItem.url,
+              })
+            }
+          })
+        }
+      })
+    })
+
+    setSearchResults(results)
+  }
 
   const toggleCollapsible = (id: string | number) => {
     setOpenItems((prev) => ({
@@ -247,7 +304,6 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
           open={isCollapsibleOpen(item.id, item.defaultOpen)}
           onOpenChange={() => toggleCollapsible(item.id)}
           className="group/collapsible w-full">
-          {' '}
           <SidebarMenuItem key={item.id}>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
@@ -266,7 +322,6 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
               <SidebarMenuSub>
                 {item.subItems.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.id}>
-                    {' '}
                     <SidebarMenuSubButton
                       asChild={!!subItem.url}
                       onClick={subItem.onClick}>
@@ -302,7 +357,6 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
     }
     return (
       <SidebarMenuItem key={item.id}>
-        {' '}
         <SidebarMenuButton
           asChild={!!item.url}
           onClick={item.onClick}
@@ -328,6 +382,7 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
       </SidebarMenuItem>
     )
   }
+
   return (
     <Sidebar
       variant="inset"
@@ -344,6 +399,16 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
         </SidebarHeader>
       )}
       <SidebarContent>
+        {' '}
+        {enableSearch && (
+          <SearchForm
+            onSearchAction={(query) => {
+              setSearchQuery(query)
+              searchSidebarItems(query)
+            }}
+            results={searchResults}
+          />
+        )}
         {config.groups.map((group) => (
           <SidebarGroup key={group.id}>
             {group.label && (
@@ -354,7 +419,7 @@ export function DynamicSidebar({ config }: { config: SidebarConfig }) {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-      </SidebarContent>{' '}
+      </SidebarContent>
       {/* Render footer */}
       {(config.footer || config.footerConfig) && (
         <SidebarFooter>
