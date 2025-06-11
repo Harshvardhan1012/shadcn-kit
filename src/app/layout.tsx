@@ -2,6 +2,9 @@ import { SidebarExample } from '@/app/SidebarExample'
 import { GlobalAlert } from '@/components/Alert'
 import { ClientAlertProvider } from '@/components/ClientAlertProvider'
 import { ClientSidebarProvider } from '@/components/ClientSidebarProvider'
+import { ModeToggle } from '@/components/mode-toggle'
+import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeSelector } from '@/components/theme-selector'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import './globals.css'
@@ -19,20 +22,29 @@ export default async function RootLayout({
   const cookieStore = await cookies()
 
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true'
-
   return (
     <html lang="en">
       <body>
-        <ClientAlertProvider>
-          <ClientSidebarProvider defaultOpen={defaultOpen}>
-            <GlobalAlert />
-            <div className="flex flex-col h-screen w-full">
-              <div className="flex flex-1 w-full">
-                <SidebarExample>{children}</SidebarExample>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange>
+          <ClientAlertProvider>
+            <ClientSidebarProvider defaultOpen={defaultOpen}>
+              <GlobalAlert />
+              <div className="flex flex-col h-screen w-full">
+                <div className="absolute right-4 top-4 z-50 flex items-center gap-4">
+                  <ThemeSelector />
+                  <ModeToggle />
+                </div>
+                <div className="flex flex-1 w-full">
+                  <SidebarExample>{children}</SidebarExample>
+                </div>
               </div>
-            </div>
-          </ClientSidebarProvider>
-        </ClientAlertProvider>
+            </ClientSidebarProvider>
+          </ClientAlertProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

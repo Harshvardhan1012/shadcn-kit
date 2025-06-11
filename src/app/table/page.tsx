@@ -3,7 +3,6 @@ import { DataTable } from '@/components/Table'
 import { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
 import { AlertProvider, useAlert } from '../services/AlertService'
-import { Checkbox } from '@/components/ui/checkbox'
 
 interface Todo {
   userId: number
@@ -13,27 +12,6 @@ interface Todo {
 }
 
 const columns: ColumnDef<Todo>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected()}
-        onCheckedChange={(checked) => {
-          table.toggleAllPageRowsSelected(!!checked)
-        }}
-        aria-label="Select all rows"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(checked) => {
-          row.toggleSelected(!!checked)
-        }}
-        aria-label="Select row"
-      />
-    ),
-  },
   {
     accessorKey: 'id',
     header: 'ID',
@@ -51,10 +29,12 @@ const columns: ColumnDef<Todo>[] = [
     header: 'Completed',
     cell: ({ row }) => (row.original.completed ? 'Yes' : 'No'),
   },
+  
 ]
 
 export default function HomePage() {
   const [data, setData] = useState<Todo[]>([])
+  const [fullData, setFullData] = useState<Todo[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -73,9 +53,16 @@ export default function HomePage() {
         const totalCount = Number(response.headers.get('x-total-count'))
         setData(result)
         setPageCount(Math.ceil(totalCount / pageSize))
+
+        if (fullData.length === 0) {
+          const fullResponse = await fetch(
+            'https://jsonplaceholder.typicode.com/todos'
+          )
+          const fullResult = await fullResponse.json()
+          setFullData(fullResult)
+        }
       } catch (error) {
         console.error('Failed to fetch data:', error)
-        // Handle error appropriately in a real application
       }
       setIsLoading(false)
       console.log(data, columns, page, pageCount, isLoading)
@@ -105,8 +92,8 @@ export default function HomePage() {
 
   return (
     <AlertProvider>
-      <div className="container mx-auto py-10">
-        <h1 className="text-2xl font-bold mb-4">Todos</h1>{' '}
+      <div >
+        <h1 className="text-2xl font-bold mb-4">Todos</h1>
         <DataTable
           columns={columns}
           data={data}
@@ -118,8 +105,12 @@ export default function HomePage() {
           pageSize={pageSize}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
-          getRowId={(row) => row.id.toString()}
-          classNameCell='p-2'
+          rowId={(row) => (row.id + 1).toString()}
+          classNameCell="p-2"
+          exportData={fullData}
+          fileName="todos"
+          heading="Todos List"
+          errorMessage="Failed to load todos. Please try again later."
         />
       </div>
     </AlertProvider>

@@ -1,7 +1,14 @@
-"use client";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import {
   Form,
   FormControl,
@@ -10,74 +17,85 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { FileTextIcon } from "@/components/ui/icons"; // Assuming you have these icons
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from '@/components/ui/popover'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import Image from "next/image";
-import React, { useState } from "react";
+} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { format } from 'date-fns'
+import { CalendarIcon, Check, FileText } from 'lucide-react'
+import Image from 'next/image'
+import React, { useState } from 'react'
 import {
-  DefaultValues,
-  FieldValues,
-  Path,
-  PathValue,
-  SubmitHandler,
+  type DefaultValues,
+  type FieldValues,
+  type Path,
+  type PathValue,
+  type SubmitHandler,
   useForm,
-} from "react-hook-form";
-import * as z from "zod";
+} from 'react-hook-form'
+import * as z from 'zod'
 
 export interface FormFieldConfig {
-  name: string; // Keep as string for config, will be cast to Path<T>
-  label: string;
-  description?: string;
-  className?: string; // Add className option for custom styling
+  multiselect?: boolean
+  name: string
+  label: string
+  description?: string
+  className?: string
   type:
-    | "text"
-    | "password"
-    | "email"
-    | "number"
-    | "file"
-    | "checkbox"
-    | "date"
-    | "radio"
-    | "select"
-    | "textarea"
-    | "combobox"
-    | "multiselect"
-    | "switch";
-  validation?: z.ZodTypeAny;
-  options?: { value: string; label: string; icon?: React.ElementType }[]; // For radio, select, combobox
-  placeholder?: string;
-  icon?: React.ElementType;
+    | 'text'
+    | 'password'
+    | 'email'
+    | 'number'
+    | 'file'
+    | 'checkbox'
+    | 'date'
+    | 'radio'
+    | 'select'
+    | 'textarea'
+    | 'combobox'
+    | 'multiselect'
+    | 'switch'
+  validation?: z.ZodTypeAny
+  options?: {
+    value: string | boolean | number
+    label: string
+    icon?: React.ElementType
+  }[]
+  placeholder?: string
+  icon?: React.ElementType
   fileConfig?: {
-    accept?: string;
-    multiple?: boolean;
-  };
+    accept?: string
+    multiple?: boolean
+  }
+  readonly?: boolean // default false
+  disabled?: boolean // default false
+  hidden?: boolean // default false
+  showIf?: (formValues: any) => boolean // function to determine visibility
+  dependsOn?: string[] // array of field names this field depends on
 }
 
 interface DynamicFormProps<T extends FieldValues> {
-  formConfig: FormFieldConfig[];
-  onSubmit: SubmitHandler<T>;
-  defaultValues?: DefaultValues<T>; // Use DefaultValues<T>
-  schema: z.ZodObject<any, any, any>;
-  customSubmitButton?: React.ReactNode;
+  formConfig: FormFieldConfig[]
+  onSubmit: SubmitHandler<T>
+  defaultValues?: DefaultValues<T> // Use DefaultValues<T>
+  schema: z.ZodObject<any, any, any>
+  customSubmitButton?: React.ReactNode
+  className?: string // <-- add className prop
 }
 
 const DynamicForm = <T extends FieldValues>({
@@ -86,15 +104,19 @@ const DynamicForm = <T extends FieldValues>({
   defaultValues,
   schema,
   customSubmitButton,
-}: DynamicFormProps<T>) => {
+  loading = false, // Add loading prop
+  className, // <-- accept className
+}: DynamicFormProps<T> & { loading?: boolean }) => {
   const form = useForm<T>({
     resolver: zodResolver(schema) as any, // Using 'as any' for now to bypass complex resolver type
     defaultValues: defaultValues,
-  });
+  })
 
   const [filePreviews, setFilePreviews] = useState<
     Record<string, string | ArrayBuffer | null>
-  >({});
+  >({})
+
+  const formValues = form.watch()
 
   const renderField = (fieldConfig: FormFieldConfig) => {
     const {
@@ -107,14 +129,18 @@ const DynamicForm = <T extends FieldValues>({
       placeholder,
       icon: FieldIcon,
       fileConfig,
-    } = fieldConfig;
-    const fieldName = name as Path<T>; // Cast name to Path<T>
+    } = fieldConfig
+    const fieldName = name as Path<T>
+
+    // Handle hidden/showIf logic
+    if (fieldConfig.hidden) return null
+    if (fieldConfig.showIf && !fieldConfig.showIf(formValues)) return null
 
     switch (type) {
-      case "text":
-      case "password":
-      case "email":
-      case "number":
+      case 'text':
+      case 'password':
+      case 'email':
+      case 'number':
         return (
           <FormField
             key={name}
@@ -133,13 +159,15 @@ const DynamicForm = <T extends FieldValues>({
                       id={name}
                       type={type}
                       placeholder={placeholder}
-                      className={cn(FieldIcon ? "pl-10" : "", className)}
+                      className={cn(FieldIcon ? 'pl-10' : '', className)}
+                      readOnly={fieldConfig.readonly ?? false}
+                      disabled={fieldConfig.disabled ?? false}
                       onChange={(e) => {
                         const val =
-                          type === "number"
+                          type === 'number'
                             ? parseFloat(e.target.value)
-                            : e.target.value;
-                        field.onChange(val as PathValue<T, Path<T>>);
+                            : e.target.value
+                        field.onChange(val as PathValue<T, Path<T>>)
                       }}
                     />
                   </div>
@@ -151,15 +179,15 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "file":
+        )
+      case 'file':
         return (
           <FormField
             key={name}
             control={form.control}
             name={fieldName}
             render={({ field }) => {
-              const currentFile = field.value as File | null | undefined;
+              const currentFile = field.value as File | null | undefined
               return (
                 <FormItem className={className}>
                   <FormLabel>{label}</FormLabel>
@@ -176,7 +204,7 @@ const DynamicForm = <T extends FieldValues>({
                       ) : FieldIcon ? (
                         <FieldIcon className="h-10 w-10 text-gray-400" />
                       ) : (
-                        <FileTextIcon className="h-10 w-10 text-gray-400" />
+                        <FileText className="h-10 w-10 text-gray-400" />
                       )}
                       <Input
                         id={name}
@@ -185,26 +213,28 @@ const DynamicForm = <T extends FieldValues>({
                         multiple={fileConfig?.multiple}
                         ref={field.ref}
                         onBlur={field.onBlur}
-                        className={cn("flex-1", className)}
+                        className={cn('flex-1', className)}
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          field.onChange(file as PathValue<T, Path<T>>); // Pass file to RHF
+                          const file = e.target.files?.[0]
+                          field.onChange(file as PathValue<T, Path<T>>) // Pass file to RHF
                           if (file) {
-                            const reader = new FileReader();
+                            const reader = new FileReader()
                             reader.onloadend = () => {
                               setFilePreviews((prev) => ({
                                 ...prev,
                                 [name]: reader.result,
-                              }));
-                            };
-                            reader.readAsDataURL(file);
+                              }))
+                            }
+                            reader.readAsDataURL(file)
                           } else {
                             setFilePreviews((prev) => ({
                               ...prev,
                               [name]: null,
-                            }));
+                            }))
                           }
                         }}
+                        disabled={fieldConfig.disabled ?? false}
+                        readOnly={fieldConfig.readonly ?? false}
                       />
                     </div>
                   </FormControl>
@@ -218,11 +248,11 @@ const DynamicForm = <T extends FieldValues>({
                   )}
                   <FormMessage />
                 </FormItem>
-              );
+              )
             }}
           />
-        );
-      case "checkbox":
+        )
+      case 'checkbox':
         return (
           <FormField
             key={name}
@@ -231,15 +261,15 @@ const DynamicForm = <T extends FieldValues>({
             render={({ field }) => (
               <FormItem
                 className={cn(
-                  "flex flex-row items-start space-x-3 space-y-0 rounded-md p-4",
+                  'flex flex-row items-start space-x-3 space-y-0 rounded-md p-4',
                   className
-                )}
-              >
+                )}>
                 <FormControl>
                   <Checkbox
                     id={name}
                     checked={field.value as boolean}
                     onCheckedChange={field.onChange}
+                    disabled={fieldConfig.disabled ?? false}
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
@@ -252,8 +282,8 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "date":
+        )
+      case 'date':
         return (
           <FormField
             key={name}
@@ -266,18 +296,17 @@ const DynamicForm = <T extends FieldValues>({
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
-                        variant={"outline"}
+                        variant={'outline'}
                         className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground",
+                          'w-full justify-start text-left font-normal',
+                          !field.value && 'text-muted-foreground',
                           className
-                        )}
-                      >
+                        )}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {field.value ? (
-                          format(new Date(field.value as string), "PPP")
+                          format(new Date(field.value as string), 'PPP')
                         ) : (
-                          <span>{placeholder || "Pick a date"}</span>
+                          <span>{placeholder || 'Pick a date'}</span>
                         )}
                       </Button>
                     </FormControl>
@@ -306,8 +335,8 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "radio":
+        )
+      case 'radio':
         return (
           <FormField
             key={name}
@@ -322,21 +351,19 @@ const DynamicForm = <T extends FieldValues>({
                       field.onChange(value as PathValue<T, Path<T>>)
                     }
                     defaultValue={field.value as string}
-                    className={cn("flex flex-col space-y-1", className)}
-                  >
+                    className={cn('flex flex-col space-y-1', className)}>
                     {options?.map((option) => (
                       <div
-                        key={option.value}
-                        className="flex items-center space-x-2"
-                      >
+                        key={String(option.value)}
+                        className="flex items-center space-x-2">
                         <RadioGroupItem
-                          value={option.value}
+                          value={option.value as string}
                           id={`${name}-${option.value}`}
                         />
                         <FormLabel htmlFor={`${name}-${option.value}`}>
                           {option.icon && (
                             <option.icon className="mr-2 inline-block h-4 w-4" />
-                          )}{" "}
+                          )}
                           {option.label}
                         </FormLabel>
                       </div>
@@ -350,8 +377,8 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "select":
+        )
+      case 'select':
         return (
           <FormField
             key={name}
@@ -365,8 +392,7 @@ const DynamicForm = <T extends FieldValues>({
                     onValueChange={(value) =>
                       field.onChange(value as PathValue<T, Path<T>>)
                     }
-                    defaultValue={field.value as string}
-                  >
+                    defaultValue={field.value as string}>
                     <SelectTrigger className={className}>
                       <SelectValue
                         placeholder={
@@ -376,10 +402,12 @@ const DynamicForm = <T extends FieldValues>({
                     </SelectTrigger>
                     <SelectContent>
                       {options?.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                        <SelectItem
+                          key={String(option.value)}
+                          value={String(option.value)}>
                           {option.icon && (
                             <option.icon className="mr-2 inline-block h-4 w-4" />
-                          )}{" "}
+                          )}
                           {option.label}
                         </SelectItem>
                       ))}
@@ -393,8 +421,8 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "textarea":
+        )
+      case 'textarea':
         return (
           <FormField
             key={name}
@@ -409,6 +437,8 @@ const DynamicForm = <T extends FieldValues>({
                     id={name}
                     placeholder={placeholder}
                     className={cn(className)}
+                    disabled={fieldConfig.disabled ?? false}
+                    readOnly={fieldConfig.readonly ?? false}
                   />
                 </FormControl>
                 {description && (
@@ -418,51 +448,127 @@ const DynamicForm = <T extends FieldValues>({
               </FormItem>
             )}
           />
-        );
-      case "combobox":
+        )
+      case 'combobox':
         return (
           <FormField
             key={name}
             control={form.control}
             name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={(value) =>
-                      field.onChange(value as PathValue<T, Path<T>>)
-                    }
-                    defaultValue={field.value as string}
-                  >
-                    <SelectTrigger className={className}>
-                      <SelectValue
-                        placeholder={
-                          placeholder || `Select ${label.toLowerCase()}`
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {options?.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.icon && (
-                            <option.icon className="mr-2 inline-block h-4 w-4" />
-                          )}{" "}
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const selectedValues = Array.isArray(field.value)
+                ? field.value
+                : field.value
+                ? [field.value]
+                : []
+              const allOptions = options || []
+              return (
+                <FormItem className={className}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            'w-full justify-between',
+                            className,
+                            selectedValues.length === 0 &&
+                              'text-muted-foreground'
+                          )}>
+                          {selectedValues.length === 0
+                            ? placeholder || `Select ${label.toLowerCase()}`
+                            : selectedValues.length <= 5
+                            ? selectedValues
+                                .map(
+                                  (val) =>
+                                    allOptions.find((opt) => opt.value === val)
+                                      ?.label || val
+                                )
+                                .join(', ')
+                            : `${selectedValues
+                                .slice(0, 5)
+                                .map(
+                                  (val) =>
+                                    allOptions.find((opt) => opt.value === val)
+                                      ?.label || val
+                                )
+                                .join(', ')}, +${
+                                selectedValues.length - 5
+                              } more`}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder={`Search ${label.toLowerCase()}...`}
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No option found.</CommandEmpty>
+                            <CommandGroup>
+                              {allOptions.map((option) => (
+                                <CommandItem
+                                  value={option.label}
+                                  key={String(option.value)}
+                                  onSelect={() => {
+                                    let newValues: any[] = []
+                                    if (
+                                      selectedValues
+                                        .map(String)
+                                        .includes(String(option.value))
+                                    ) {
+                                      newValues = selectedValues.filter(
+                                        (v) =>
+                                          String(v) !== String(option.value)
+                                      )
+                                    } else {
+                                      newValues = [
+                                        ...selectedValues,
+                                        option.value,
+                                      ]
+                                    }
+                                    // If only single select, just set one value
+                                    if (!fieldConfig.multiselect) {
+                                      field.onChange(
+                                        option.value as PathValue<T, Path<T>>
+                                      )
+                                    } else {
+                                      field.onChange(
+                                        newValues as PathValue<T, Path<T>>
+                                      )
+                                    }
+                                  }}>
+                                  {option.label}
+                                  <Check
+                                    className={cn(
+                                      'ml-auto',
+                                      selectedValues
+                                        .map(String)
+                                        .includes(String(option.value))
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
-        );
-      case "switch":
+        )
+      case 'switch':
         return (
           <FormField
             key={name}
@@ -471,10 +577,9 @@ const DynamicForm = <T extends FieldValues>({
             render={({ field }) => (
               <FormItem
                 className={cn(
-                  "flex flex-row items-center justify-between rounded-lg border p-4",
+                  'flex flex-row items-center justify-between rounded-lg border p-4',
                   className
-                )}
-              >
+                )}>
                 <div className="space-y-0.5">
                   <FormLabel>{label}</FormLabel>
                   {description && (
@@ -486,22 +591,23 @@ const DynamicForm = <T extends FieldValues>({
                     id={name}
                     checked={field.value as boolean}
                     onCheckedChange={field.onChange}
-                    className={cn("data-[state=checked]:bg-primary", className)}
+                    className={cn('data-[state=checked]:bg-primary', className)}
+                    disabled={fieldConfig.disabled ?? false}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        );
-      case "multiselect":
+        )
+      case 'multiselect':
         return (
           <FormField
             key={name}
             control={form.control}
             name={fieldName}
             render={({ field }) => {
-              const selectedValues = (field.value as string[]) || [];
+              const selectedValues = (field.value as string[]) || []
 
               return (
                 <FormItem className={className}>
@@ -513,12 +619,11 @@ const DynamicForm = <T extends FieldValues>({
                           {selectedValues.map((value) => {
                             const option = options?.find(
                               (opt) => opt.value === value
-                            );
+                            )
                             return option ? (
                               <div
                                 key={value}
-                                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm flex items-center gap-1"
-                              >
+                                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm flex items-center gap-1">
                                 {option.icon && (
                                   <option.icon className="h-3 w-3" />
                                 )}
@@ -531,49 +636,49 @@ const DynamicForm = <T extends FieldValues>({
                                       selectedValues.filter(
                                         (v) => v !== value
                                       ) as PathValue<T, Path<T>>
-                                    );
-                                  }}
-                                >
+                                    )
+                                  }}>
                                   <span className="sr-only">Remove</span>
                                   <span className="h-3 w-3 flex items-center justify-center">
                                     ×
                                   </span>
                                 </button>
                               </div>
-                            ) : null;
+                            ) : null
                           })}
                         </div>
                         <div className="flex flex-col gap-2">
                           {options?.map((option) => (
                             <div
-                              key={option.value}
-                              className="flex items-center space-x-2"
-                            >
+                              key={String(option.value)}
+                              className="flex items-center space-x-2">
                               <Checkbox
                                 id={`${name}-${option.value}`}
-                                checked={selectedValues.includes(option.value)}
+                                checked={selectedValues.includes(
+                                  option.value as string
+                                )}
                                 onCheckedChange={(checked) => {
                                   if (checked) {
                                     field.onChange([
                                       ...selectedValues,
                                       option.value,
-                                    ] as PathValue<T, Path<T>>);
+                                    ] as PathValue<T, Path<T>>)
                                   } else {
                                     field.onChange(
                                       selectedValues.filter(
                                         (v) => v !== option.value
                                       ) as PathValue<T, Path<T>>
-                                    );
+                                    )
                                   }
                                 }}
+                                disabled={fieldConfig.disabled ?? false}
                               />
                               <label
                                 htmlFor={`${name}-${option.value}`}
-                                className="text-sm cursor-pointer flex items-center"
-                              >
+                                className="text-sm cursor-pointer flex items-center">
                                 {option.icon && (
                                   <option.icon className="mr-2 h-4 w-4" />
-                                )}{" "}
+                                )}{' '}
                                 {option.label}
                               </label>
                             </div>
@@ -587,18 +692,39 @@ const DynamicForm = <T extends FieldValues>({
                   )}
                   <FormMessage />
                 </FormItem>
-              );
+              )
             }}
           />
-        );
+        )
       default:
-        return <p key={name}>Unsupported field type: {type}</p>;
+        return <p key={name}>Unsupported field type: {type}</p>
     }
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {formConfig.map((field, idx) => (
+          <div
+            key={field.name || idx}
+            className={field.className || ''}>
+            <div className="mb-2">
+              <Skeleton className="h-4 w-32 rounded" /> {/* label skeleton */}
+            </div>
+            <Skeleton className={cn('h-10 w-full rounded', field.className)} />{' '}
+          </div>
+        ))}
+        <Skeleton className="h-10 w-32 rounded-md" />
+      </div>
+    )
+  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className={cn('space-y-6', className)} // <-- apply className here
+      >
         {formConfig.map(renderField)}
         {customSubmitButton ? (
           customSubmitButton
@@ -607,7 +733,7 @@ const DynamicForm = <T extends FieldValues>({
         )}
       </form>
     </Form>
-  );
-};
+  )
+}
 
-export default DynamicForm;
+export default DynamicForm

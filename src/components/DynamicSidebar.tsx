@@ -21,10 +21,11 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import React, { ReactNode, useState } from 'react'
-import { SearchForm, SearchResult } from './SearchForm'
+import { SearchResult, SearchWrapper } from './SearchWrapper'
 
 // Types for the sidebar items
 export interface SidebarSubItem {
@@ -219,16 +220,40 @@ const renderFooterFromConfig = (config: SidebarFooterConfig) => {
 interface DynamicSidebarProps {
   config: SidebarConfig
   enableSearch?: boolean
+  isLoading?: boolean
 }
+
+// Skeleton components for loading states
+const SidebarItemSkeleton = () => (
+  <div className="flex items-center  px-4 py-2">
+    <Skeleton className="h-4 w-4" /> {/* Icon */}
+    <Skeleton className="h-4 flex-1" /> {/* Title */}
+  </div>
+)
+
+const SidebarGroupSkeleton = () => (
+  <div className="space-y-2 py-2">
+    <div className="px-4">
+      <Skeleton className="h-4 w-24" /> {/* Group Label */}
+    </div>
+    <div className="space-y-1">
+      {Array(2)
+        .fill(0)
+        .map((_, i) => (
+          <SidebarItemSkeleton key={i} />
+        ))}
+    </div>
+  </div>
+)
 
 export function DynamicSidebar({
   config,
   enableSearch = true,
+  isLoading = false,
 }: DynamicSidebarProps) {
   const [openItems, setOpenItems] = useState<Record<string | number, boolean>>(
     {}
   )
-  const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
 
   // Function to search through sidebar items
@@ -251,6 +276,7 @@ export function DynamicSidebar({
             groupLabel: group.label,
             path: group.label ? [group.label] : [],
             url: item.url,
+            icon: item.icon,
           })
         }
 
@@ -265,6 +291,7 @@ export function DynamicSidebar({
                 path: [...(group.label ? [group.label] : []), item.title],
                 isSubItem: true,
                 url: subItem.url,
+                icon: subItem.icon,
               })
             }
           })
@@ -303,7 +330,7 @@ export function DynamicSidebar({
           defaultOpen={item.defaultOpen}
           open={isCollapsibleOpen(item.id, item.defaultOpen)}
           onOpenChange={() => toggleCollapsible(item.id)}
-          className="group/collapsible w-full">
+          className="group/collapsible w-full ">
           <SidebarMenuItem key={item.id}>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
@@ -382,57 +409,100 @@ export function DynamicSidebar({
       </SidebarMenuItem>
     )
   }
+  // Render skeleton loading state
+  if (isLoading) {
+    return (
+      <div className="sidebar-wrapper">
+        <Sidebar
+          variant="inset"
+          collapsible="icon"
+          className="overflow-hidden">
+          <SidebarHeader>
+            <div className="flex items-center justify-center flex-col space-y-4 p-4">
+              <Skeleton className="h-6 w-24" /> {/* Logo */}
+              <div className="w-full space-y-2">
+                <Skeleton className="h-10 w-10 rounded-full mx-auto" />{' '}
+                {/* Avatar */}
+                <Skeleton className="h-4 w-32 mx-auto" /> {/* Name */}
+                <Skeleton className="h-3 w-24 mx-auto" /> {/* Email */}
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            {enableSearch && (
+              <div className="p-4">
+                <Skeleton className="h-9 w-full" /> {/* Search Bar */}
+              </div>
+            )}
+            {Array(3)
+              .fill(0)
+              .map((_, i) => (
+                <SidebarGroupSkeleton key={i} />
+              ))}
+          </SidebarContent>
+          <SidebarFooter>
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+      </div>
+    )
+  }
 
   return (
-    <Sidebar
-      variant="inset"
-      collapsible="icon">
-      {/* Render header */}
-      {(config.header || config.headerConfig) && (
-        <SidebarHeader>
-          {typeof config.header === 'object' &&
-          !React.isValidElement(config.header)
-            ? renderHeaderFromConfig(config.header as SidebarHeaderConfig)
-            : config.headerConfig
-            ? renderHeaderFromConfig(config.headerConfig)
-            : config.header}
-        </SidebarHeader>
-      )}
-      <SidebarContent>
-        {' '}
-        {enableSearch && (
-          <SearchForm
-            onSearchAction={(query) => {
-              setSearchQuery(query)
-              searchSidebarItems(query)
-            }}
-            results={searchResults}
-          />
+    <div className="sidebar-wrapper">
+      <Sidebar
+        variant="inset"
+        collapsible="icon"
+        className="sidebar-fixed-bg">
+        {(config.header || config.headerConfig) && (
+          <SidebarHeader>
+            {typeof config.header === 'object' &&
+            !React.isValidElement(config.header)
+              ? renderHeaderFromConfig(config.header as SidebarHeaderConfig)
+              : config.headerConfig
+              ? renderHeaderFromConfig(config.headerConfig)
+              : config.header}
+          </SidebarHeader>
         )}
-        {config.groups.map((group) => (
-          <SidebarGroup key={group.id}>
-            {group.label && (
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>{group.items.map(renderMenuItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      {/* Render footer */}
-      {(config.footer || config.footerConfig) && (
-        <SidebarFooter>
-          {typeof config.footer === 'object' &&
-          !React.isValidElement(config.footer)
-            ? renderFooterFromConfig(config.footer as SidebarFooterConfig)
-            : config.footerConfig
-            ? renderFooterFromConfig(config.footerConfig)
-            : config.footer}
-        </SidebarFooter>
-      )}
-      {/* Add the rail for resizing */}
-      <SidebarRail />
-    </Sidebar>
+        <SidebarContent>
+          {enableSearch && (
+            <div>
+              <SearchWrapper
+                onSearch={searchSidebarItems}
+                searchResults={searchResults}
+                className="w-full"
+              />
+            </div>
+          )}
+          {config.groups.map((group) => (
+            <SidebarGroup key={group.id}>
+              {group.label && (
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>{group.items.map(renderMenuItem)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+        {/* Render footer */}
+        {(config.footer || config.footerConfig) && (
+          <SidebarFooter>
+            {typeof config.footer === 'object' &&
+            !React.isValidElement(config.footer)
+              ? renderFooterFromConfig(config.footer as SidebarFooterConfig)
+              : config.footerConfig
+              ? renderFooterFromConfig(config.footerConfig)
+              : config.footer}
+          </SidebarFooter>
+        )}
+        {/* Add the rail for resizing */}
+        <SidebarRail />
+      </Sidebar>
+    </div>
   )
 }
