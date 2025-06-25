@@ -51,15 +51,34 @@ function Button({
   }) {
   const Comp = asChild ? Slot : 'button'
 
+  if (asChild) {
+    return (
+      <Slot
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        disabled={loading || props.disabled}
+        {...props}>
+        {loading ? (
+          <span className="inline-flex items-center">
+            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+            {children}
+          </span>
+        ) : (
+          children
+        )}
+      </Slot>
+    )
+  }
+
   return (
-    <Comp
+    <button
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={loading || props.disabled}
       {...props}>
       {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-      {!loading && children}
-    </Comp>
+      {loading ? children : children}
+    </button>
   )
 }
 

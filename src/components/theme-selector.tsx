@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { PaletteIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 
 // Color theme options
 const colorThemes = [
@@ -24,6 +25,21 @@ const colorThemes = [
 
 export function ThemeSelector() {
   const { setTheme, theme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon">
+        <PaletteIcon className="h-5 w-5" />
+        <span className="sr-only">Select color theme</span>
+      </Button>
+    )
+  }
 
   // Extract the color theme part from the theme string
   const currentColorTheme = theme?.includes('-')
@@ -76,9 +92,7 @@ export function ThemeSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon">
+        <Button variant="ghost" size="icon">
           <PaletteIcon className="h-5 w-5" />
           <span className="sr-only">Select color theme</span>
         </Button>

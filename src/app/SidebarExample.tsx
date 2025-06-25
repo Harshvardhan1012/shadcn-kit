@@ -3,8 +3,8 @@
 import { useAlert } from '@/app/services/AlertService'
 import { AlertDialogDemo } from '@/components/AlertDialog'
 import { DynamicSidebar, SidebarConfig } from '@/components/DynamicSidebar'
-import { Input } from '@/components/ui/input'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { UniversalHeader } from '@/components/UniversalHeader'
 import {
   BellRing,
   Calendar,
@@ -179,39 +179,40 @@ export function SidebarExample({ children }: MainLayoutProps) {
   return (
     <div className="flex h-full w-full rounded-sm">
       <DynamicSidebar config={sidebarConfig} />
-      <SidebarInset>
+      <SidebarInset className="flex flex-col">
+        {/* Universal Header with breadcrumb */}
+        <UniversalHeader 
+          showSearch={true}
+          showBreadcrumb={true}
+          breadcrumbContent={
+            <div className="flex items-center min-w-0 flex-1">
+              <SidebarTrigger className="mr-3" />
+              <nav className="flex items-center text-sm text-muted-foreground overflow-x-auto whitespace-nowrap">
+                {breadcrumb.map((b, i) => (
+                  <span key={b.url || b.title} className="flex items-center">
+                    {i > 0 && <span className="mx-2 text-muted-foreground">/</span>}
+                    {b.url && i !== breadcrumb.length - 1 ? (
+                      <Link
+                        href={b.url}
+                        className="hover:text-foreground transition-colors">
+                        {b.title}
+                      </Link>
+                    ) : (
+                      <span className="text-foreground font-medium">{b.title}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            </div>
+          }
+        />
         
-      <nav className='flex  p-3 items-center justify-between'>
-      <SidebarTrigger className="mr-2" />
-          <div className="flex-1 flex items-center min-w-0">
-            <nav className="flex items-center text-sm text-gray-500 overflow-x-auto whitespace-nowrap">
-              {breadcrumb.map((b, i) => (
-                <span
-                  key={b.url || b.title}
-                  className="flex items-center">
-                  {i > 0 && <span className="mx-2">/</span>}
-                  {b.url && i !== breadcrumb.length - 1 ? (
-                    <Link
-                      href={b.url}
-                      className="hover:underline text-gray-700">
-                      {b.title}
-                    </Link>
-                  ) : (
-                    <span className="text-gray-900 font-medium">{b.title}</span>
-                  )}
-                </span>
-              ))}
-            </nav>
+        {/* Main content area */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">
+            {children}
           </div>
-        <div className="ml-auto">
-            <Input
-              type="text"
-              placeholder="Search..."
-              className="border rounded px-3 py-1 text-sm focus:outline-none focus:ring"
-            />
-          </div>
-        </nav>
-        <div>{children}</div>
+        </main>
       </SidebarInset>
       {open && (
         <AlertDialogDemo

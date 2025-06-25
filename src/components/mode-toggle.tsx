@@ -9,9 +9,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LaptopIcon, MoonIcon, SunIcon } from '@/components/ui/icons'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 
 export function ModeToggle() {
   const { setTheme, theme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Helper function to preserve color theme when changing mode
   const setMode = (mode: string) => {
@@ -26,6 +33,15 @@ export function ModeToggle() {
     } else {
       setTheme(`${mode}${colorPart}`)
     }
+  }
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon">
+        <SunIcon className="h-5 w-5" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
   }
 
   // Determine if we're in dark mode for styling icons

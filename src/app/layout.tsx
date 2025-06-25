@@ -2,9 +2,8 @@ import { SidebarExample } from '@/app/SidebarExample'
 import { GlobalAlert } from '@/components/Alert'
 import { ClientAlertProvider } from '@/components/ClientAlertProvider'
 import { ClientSidebarProvider } from '@/components/ClientSidebarProvider'
-import { ModeToggle } from '@/components/mode-toggle'
 import { ThemeProvider } from '@/components/theme-provider'
-import { ThemeSelector } from '@/components/theme-selector'
+import { UniversalHeader } from '@/components/UniversalHeader'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import './globals.css'
@@ -34,10 +33,6 @@ export default async function RootLayout({
             <ClientSidebarProvider defaultOpen={defaultOpen}>
               <GlobalAlert />
               <div className="flex flex-col h-screen w-full">
-                <div className="absolute right-4 top-4 z-50 flex items-center gap-4">
-                  <ThemeSelector />
-                  <ModeToggle />
-                </div>
                 <div className="flex flex-1 w-full">
                   <SidebarExample>{children}</SidebarExample>
                 </div>

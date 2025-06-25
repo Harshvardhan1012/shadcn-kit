@@ -78,7 +78,7 @@ const Large: React.FC<Props> = ({ className, children }) => {
 
 const Muted: React.FC<Props> = ({ className, children }) => {
   return (
-    <p className={`text-sm text-muted-foreground ${className}`}>{children}.</p>
+    <p className={`text-sm text-muted-foreground ${className}`}>{children}</p>
   )
 }
 

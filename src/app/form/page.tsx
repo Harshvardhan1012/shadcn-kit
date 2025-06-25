@@ -226,7 +226,7 @@ const FormPage = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl py-12">
+    <div className="container mx-auto max-w-2xl p-6">
       <H3 className="mb-8">Dynamic Form Example</H3>
       <DynamicForm
         formConfig={exampleFormConfig}

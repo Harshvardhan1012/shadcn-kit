@@ -8,6 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { useSidebar } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -40,6 +41,10 @@ export function SearchWrapper({
   const [localResults, setLocalResults] =
     useState<SearchResult[]>(searchResults)
   const router = useRouter()
+  const { state } = useSidebar()
+  
+  // Check if sidebar is collapsed
+  const isCollapsed = state === 'collapsed'
 
   // Update local results when search results prop changes
   useEffect(() => {
@@ -95,15 +100,25 @@ export function SearchWrapper({
       <div className={cn('w-full px-4 py-2', className)}>
         <Button
           variant="outline"
-          className="w-full flex items-center justify-between text-muted-foreground"
+          size={isCollapsed ? "icon" : "default"}
+          className={cn(
+            "flex items-center text-muted-foreground",
+            isCollapsed ? "w-9 h-9 p-0" : "w-full justify-between"
+          )}
           onClick={openCenteredSearch}>
-          <div className="flex items-center">
-            <Search className="mr-2 h-4 w-4" />
-            <span>Search...</span>
-          </div>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            <span className="text-xs">⌘</span>K
-          </kbd>
+          {isCollapsed ? (
+            <Search className="h-4 w-4" />
+          ) : (
+            <>
+              <div className="flex items-center">
+                <Search className="mr-2 h-4 w-4" />
+                <span>Search...</span>
+              </div>
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </>
+          )}
         </Button>
       </div>
       <CommandDialog
