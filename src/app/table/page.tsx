@@ -15,6 +15,8 @@ const columns: ColumnDef<Todo>[] = [
   {
     accessorKey: 'id',
     header: 'ID',
+    cell: ({ row }) => (row.original.id + 1).toString(), // Adjusting ID to start from 1
+    enableSorting: false, // Disable sorting for ID column
   },
   {
     accessorKey: 'userId',

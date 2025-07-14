@@ -16,6 +16,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import * as React from 'react'
 import {
@@ -57,6 +64,20 @@ const defaultConfig: ChartConfig = {
     },
   },
 }
+
+// Default pie chart colors
+const DEFAULT_PIE_COLORS = [
+  '#8884d8', // Purple
+  '#82ca9d', // Green
+  '#ffc658', // Yellow
+  '#ff7300', // Orange
+  '#00ff00', // Lime
+  '#0088fe', // Blue
+  '#ff0066', // Pink
+  '#8dd1e1', // Light Blue
+  '#d084d0', // Light Purple
+  '#87d068', // Light Green
+]
 
 // Chart types
 export type ChartType = 'area' | 'line' | 'bar' | 'pie'
@@ -112,13 +133,12 @@ export interface DynamicChartProps {
   showLegend?: boolean
   /**
    * Custom tooltip formatter
+   * See recharts Formatter type: (value: ValueType, name: NameType, ...rest) => ReactNode
    */
   tooltipFormatter?: (
     value: unknown,
-    name: string,
-    entry: unknown,
-    index: number,
-    payload: unknown
+    name: string | number,
+    ...rest: any[]
   ) => React.ReactNode
   /**
    * Tooltip label formatter
@@ -214,6 +234,18 @@ export interface DynamicChartProps {
    * Fallback component to display when data is empty
    */
   fallback?: React.ReactNode
+  /**
+   * Whether to show the chart type selector dropdown
+   */
+  showTypeSelector?: boolean
+  /**
+   * Callback when chart type changes
+   */
+  onChartTypeChange?: (type: ChartType) => void
+  /**
+   * Custom colors for pie chart segments
+   */
+  pieColors?: string[]
 }
 
 export function DynamicChart({
@@ -236,9 +268,22 @@ export function DynamicChart({
   width = '100%',
   chartProps = {},
   classNames,
+  showTypeSelector = true,
+  onChartTypeChange,
+  pieColors = DEFAULT_PIE_COLORS,
 }: DynamicChartProps) {
   // Generate a unique ID for the chart
   const chartId = React.useId()
+
+  // State for chart type
+  const [currentChartType, setCurrentChartType] =
+    React.useState<ChartType>(chartType)
+
+  // Handle chart type change
+  const handleChartTypeChange = (newType: ChartType) => {
+    setCurrentChartType(newType)
+    onChartTypeChange?.(newType)
+  }
 
   // Filter out any yAxisKeys that don't exist in the data
   const validYAxisKeys = React.useMemo(() => {
@@ -249,7 +294,7 @@ export function DynamicChart({
 
   // Render the appropriate chart based on chartType
   const renderChart = () => {
-    switch (chartType) {
+    switch (currentChartType) {
       case 'area':
         return (
           <AreaChart
@@ -270,11 +315,11 @@ export function DynamicChart({
             )}
             {showLegend && (
               <ChartLegend
-                content={<ChartLegendContent />}
+                content={<ChartLegendContent payload={undefined} />}
                 verticalAlign={legendPosition}
               />
             )}
-            {validYAxisKeys.map((key, index) => (
+            {validYAxisKeys.map((key) => (
               <Area
                 key={key}
                 type="monotone"
@@ -309,7 +354,7 @@ export function DynamicChart({
             )}
             {showLegend && (
               <ChartLegend
-                content={<ChartLegendContent />}
+                content={<ChartLegendContent payload={undefined} />}
                 verticalAlign={legendPosition}
               />
             )}
@@ -345,7 +390,7 @@ export function DynamicChart({
             )}
             {showLegend && (
               <ChartLegend
-                content={<ChartLegendContent />}
+                content={<ChartLegendContent payload={undefined} />}
                 verticalAlign={legendPosition}
               />
             )}
@@ -364,7 +409,7 @@ export function DynamicChart({
         // For pie charts, we need to transform multi-series data
         // If we have multiple yAxisKeys, create a pie slice for each key
         // Otherwise, use the data directly with the specified dataKey
-        const pieData =
+        { const pieData =
           validYAxisKeys.length > 1
             ? validYAxisKeys.map((key) => {
                 // Calculate the sum of values for this key
@@ -381,7 +426,10 @@ export function DynamicChart({
                   dataKey: key,
                 }
               })
-            : data
+            : data.map((item, index) => ({
+                ...item,
+                fill: pieColors[index % pieColors.length],
+              }))
 
         return (
           <PieChart {...chartProps}>
@@ -392,8 +440,17 @@ export function DynamicChart({
               cx="50%"
               cy="50%"
               outerRadius={80}
-              innerRadius={chartProps.innerRadius || 0}
-              paddingAngle={chartProps.paddingAngle || 0}
+              innerRadius={
+                typeof chartProps.innerRadius === 'string' ||
+                typeof chartProps.innerRadius === 'number'
+                  ? chartProps.innerRadius
+                  : 0
+              }
+              paddingAngle={
+                typeof chartProps.paddingAngle === 'number'
+                  ? chartProps.paddingAngle
+                  : 0
+              }
               labelLine={chartProps.labelLine !== false}
               label={
                 chartProps.label !== false &&
@@ -409,13 +466,17 @@ export function DynamicChart({
                 ? pieData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={`var(--color-${entry.dataKey})`}
+                      fill={pieColors[index % pieColors.length]}
                     />
                   ))
-                : data.map((_, index) => (
+                : data.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={`var(--color-${validYAxisKeys[0]})`}
+                      fill={
+                        typeof entry.fill === 'number'
+                          ? String(entry.fill)
+                          : entry.fill || pieColors[index % pieColors.length]
+                      }
                     />
                   ))}
             </Pie>
@@ -431,12 +492,12 @@ export function DynamicChart({
             )}
             {showLegend && (
               <ChartLegend
-                content={<ChartLegendContent />}
+                content={<ChartLegendContent payload={undefined} />}
                 verticalAlign={legendPosition}
               />
             )}
           </PieChart>
-        )
+        ) }
 
       default:
         return <div>Unsupported chart type</div>
@@ -445,16 +506,37 @@ export function DynamicChart({
 
   return (
     <Card className={cn('w-full', className, classNames?.card)}>
-      {(title || description) && (
-        <CardHeader className={classNames?.cardHeader}>
-          {title && (
-            <CardTitle className={classNames?.cardTitle}>{title}</CardTitle>
-          )}
-          {description && (
-            <CardDescription className={classNames?.cardDescription}>
-              {description}
-            </CardDescription>
-          )}
+      {(title || description || showTypeSelector) && (
+        <CardHeader className={cn('relative', classNames?.cardHeader)}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {title && (
+                <CardTitle className={classNames?.cardTitle}>{title}</CardTitle>
+              )}
+              {description && (
+                <CardDescription className={classNames?.cardDescription}>
+                  {description}
+                </CardDescription>
+              )}
+            </div>
+            {showTypeSelector && (
+              <div className="ml-4">
+                <Select
+                  value={currentChartType}
+                  onValueChange={handleChartTypeChange}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="area">Area</SelectItem>
+                    <SelectItem value="line">Line</SelectItem>
+                    <SelectItem value="bar">Bar</SelectItem>
+                    <SelectItem value="pie">Pie</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
       )}
       <CardContent className={cn('p-6', classNames?.cardContent)}>

@@ -1,16 +1,4 @@
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-} from '@/components/ui/pagination'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -19,6 +7,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react'
 
 interface PaginationProps {
   page: number
@@ -27,6 +21,9 @@ interface PaginationProps {
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
   isLoading?: boolean
+  hasNextPage?: boolean
+  isFetchingNextPage?: boolean
+  onLoadMore?: () => void
 }
 
 export function DataTablePagination({
@@ -36,41 +33,24 @@ export function DataTablePagination({
   onPageChange,
   onPageSizeChange,
   isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: PaginationProps) {
   const startRow = pageSize * (page - 1) + 1
   const endRow = Math.min(page * pageSize, pageCount * pageSize)
   const totalRows = pageCount * pageSize
 
-  // Generate page numbers to show (show 5 pages max)
-  const getPageNumbers = () => {
-    const maxPagesToShow = 3
-    let startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2))
-    const endPage = Math.min(pageCount, startPage + maxPagesToShow - 1)
-
-    // Adjust start page if we're near the end
-    if (endPage - startPage + 1 < maxPagesToShow) {
-      startPage = Math.max(1, endPage - maxPagesToShow + 1)
-    }
-
-    return Array.from(
-      { length: endPage - startPage + 1 },
-      (_, i) => startPage + i
-    )
-  }
-
-  const pageNumbers = getPageNumbers()
-  const showStartEllipsis = pageNumbers[0] > 1
-  const showEndEllipsis = pageNumbers[pageNumbers.length - 1] < pageCount
-
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between px-2 w-full gap-4">
-      <div className="flex items-center space-x-6 lg:space-x-8 w-full">
-        <div className="flex items-center justify-start w-full gap-2">
-          <p className="text-sm font-medium w-fit">Rows per page</p>
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between px-2 w-full gap-2">
+      <div className="flex items-center space-x-6 lg:space-x-8">
+        {/* Rows per page selector */}
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium">Rows per page</p>
           <Select
             value={String(pageSize)}
             onValueChange={(value: string) => onPageSizeChange(Number(value))}>
-            <SelectTrigger className="h-8">
+            <SelectTrigger className="h-8 w-[70px]">
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
@@ -84,8 +64,8 @@ export function DataTablePagination({
             </SelectContent>
           </Select>
         </div>
-
-        <div className="hidden md:flex w-full items-center justify-start text-sm font-medium">
+        {/* Page info */}
+        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
           {isLoading ? (
             <Skeleton className="h-5 w-full" />
           ) : (
@@ -93,91 +73,67 @@ export function DataTablePagination({
           )}
         </div>
       </div>
-
-      <div className="flex items-center justify-center w-full text-sm text-muted-foreground">
+      {/* Total rows info */}
+      <div className="flex items-center text-sm text-muted-foreground">
         {isLoading ? (
           <Skeleton className="h-5 w-32" />
         ) : (
           `Showing ${startRow}-${endRow} of ${totalRows} rows`
         )}
       </div>
+      {/* Pagination controls */}
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          className="hidden h-8 w-8 p-0 lg:flex"
+          onClick={() => onPageChange(1)}
+          disabled={page === 1}>
+          <span className="sr-only">Go to first page</span>
+          <ChevronsLeft />
+        </Button>
+        <Button
+          variant="outline"
+          className="h-8 w-8 p-0"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1}>
+          <span className="sr-only">Go to previous page</span>
+          <ChevronLeft />
+        </Button>
+        <Button
+          variant="outline"
+          className="h-8 w-8 p-0"
+          onClick={() => onPageChange(page + 1)}
+          disabled={!hasNextPage || isFetchingNextPage || page === pageCount}>
+          <span className="sr-only">Go to next page</span>
+          <ChevronRight />
+        </Button>
+        <Button
+          variant="outline"
+          className="hidden h-8 w-8 p-0 lg:flex"
+          onClick={() => onPageChange(pageCount)}
+          disabled={!hasNextPage || isFetchingNextPage || page === pageCount}>
+          <span className="sr-only">Go to last page</span>
+          <ChevronsRight />
+        </Button>
 
-      <Pagination className='justify-start md:justify-end '>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                onPageChange(1)
-              }}
-              className={page === 1 ? 'pointer-events-none opacity-50' : ''}>
-              <ChevronsLeft className="h-4 w-4" />
-            </PaginationLink>
-          </PaginationItem>{' '}
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                if (page > 1) onPageChange(page - 1)
-              }}
-              className={page === 1 ? 'pointer-events-none opacity-50' : ''}>
-              <ChevronLeft className="h-4 w-4" />
-            </PaginationLink>
-          </PaginationItem>
-          {showStartEllipsis && (
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-          )}
-          {pageNumbers.map((num) => (
-            <PaginationItem
-              key={num}>
-              <PaginationLink
-                href="#"
-                isActive={page === num}
-                onClick={(e) => {
-                  e.preventDefault()
-                  onPageChange(num)
-                }}>
-                {num}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-          {showEndEllipsis && (
-            <PaginationItem >
-              <PaginationEllipsis />
-            </PaginationItem>
-          )}{' '}
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                if (page < pageCount) onPageChange(page + 1)
-              }}
-              className={
-                page === pageCount ? 'pointer-events-none opacity-50' : ''
-              }>
-              <ChevronRight className="h-4 w-4" />
-            </PaginationLink>
-          </PaginationItem>{' '}
-          <PaginationItem>
-            <PaginationLink
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                onPageChange(pageCount)
-              }}
-              className={
-                page === pageCount ? 'pointer-events-none opacity-50' : ''
-              }>
-              <ChevronsRight className="h-4 w-4" />
-            </PaginationLink>
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+        {/* Add Load More button if we have a handler and more data */}
+        {onLoadMore && hasNextPage && (
+          <Button
+            variant="outline"
+            className="ml-4 px-4"
+            onClick={onLoadMore}
+            disabled={isFetchingNextPage}>
+            {isFetchingNextPage ? (
+              <span className="flex items-center">
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Loading...
+              </span>
+            ) : (
+              'Load More'
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

@@ -3,16 +3,23 @@ import {
   type ColumnDef,
   flexRender,
   getCoreRowModel,
-  OnChangeFn,
-  RowSelectionState,
+  type OnChangeFn,
+  type RowSelectionState,
   useReactTable,
+  type VisibilityState,
 } from '@tanstack/react-table'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { FileText, FileType } from 'lucide-react'
+import { FileText, FileType, Settings2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +58,10 @@ interface DataTableProps<TData, TValue> {
   heading?: string // Optional heading for the table
   classNameTable?: string
   errorMessage?: string
+  hasNextPage?: boolean // For infinite query support
+  isFetchingNextPage?: boolean // For infinite query loading state
+  onLoadMore?: () => void // Function to load more data for infinite queries
+  havePagination?: boolean // Control pagination display
 }
 
 export function DataTable<TData, TValue>({
@@ -72,11 +83,17 @@ export function DataTable<TData, TValue>({
   heading,
   classNameTable = '',
   errorMessage = 'An error occurred while fetching data',
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+  havePagination = true, // Default to true for backward compatibility
 }: DataTableProps<TData, TValue>) {
   const [pagination, setPagination] = React.useState({
     pageIndex,
     pageSize,
   })
+
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
 
   // Add checkbox column if row selection is enabled
   const columnsWithSelection = React.useMemo(() => {
@@ -86,7 +103,7 @@ export function DataTable<TData, TValue>({
       header: ({ table }) => (
         <Checkbox
           checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(checked) => {
+          onCheckedChange={(checked: boolean) => {
             table.toggleAllPageRowsSelected(!!checked)
           }}
           aria-label="Select all rows"
@@ -95,29 +112,31 @@ export function DataTable<TData, TValue>({
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
-          onCheckedChange={(checked) => {
+          onCheckedChange={(checked: boolean) => {
             row.toggleSelected(!!checked)
           }}
           aria-label="Select row"
         />
       ),
+      enableHiding: false, // Don't allow hiding the selection column
     }
 
     // Return new array with selection column first
     return [selectionColumn, ...columns]
   }, [columns, onRowSelectionChange])
+
   const handleExportExcel = () => {
     if (!exportData) return
 
-    // Exclude selection column for exports
-    const exportColumns = onRowSelectionChange
-      ? columnsWithSelection.filter((col) => col.id !== 'select')
-      : columnsWithSelection
+    // Get visible columns for export (exclude selection column)
+    const visibleColumns = columnsWithSelection.filter(
+      (col) => col.id !== 'select' && (col.id ? columnVisibility[col.id] !== false : true)
+    )
 
-    // Filter out just the data we want to export (exclude selection column)
+    // Filter out just the data we want to export (only visible columns)
     const exportable = exportData.map((row) => {
       const result: Record<string, unknown> = {}
-      exportColumns.forEach((col) => {
+      visibleColumns.forEach((col) => {
         const accessorKey = (col as unknown as { accessorKey?: string })
           .accessorKey
         if (accessorKey) {
@@ -132,19 +151,20 @@ export function DataTable<TData, TValue>({
     XLSX.utils.book_append_sheet(wb, ws, 'Data')
     XLSX.writeFile(wb, `${fileName}.xlsx`)
   }
+
   const handleExportPDF = () => {
     if (!exportData) return
     const doc = new jsPDF()
 
-    // Exclude selection column for exports
-    const exportColumns = onRowSelectionChange
-      ? columnsWithSelection.filter((col) => col.id !== 'select')
-      : columnsWithSelection
+    // Get visible columns for export (exclude selection column)
+    const visibleColumns = columnsWithSelection.filter(
+      (col) => col.id !== 'select' && (col.id ? columnVisibility[col.id] !== false : true)
+    )
 
     // Extend jsPDF instance with autoTable plugin
     autoTable(doc, {
       head: [
-        exportColumns
+        visibleColumns
           .filter(
             (col): col is ColumnDef<TData, TValue> & { accessorKey: string } =>
               typeof (col as unknown as { accessorKey?: string })
@@ -157,7 +177,7 @@ export function DataTable<TData, TValue>({
           ),
       ],
       body: exportData.map((item) =>
-        exportColumns
+        visibleColumns
           .filter(
             (col): col is ColumnDef<TData, TValue> & { accessorKey: string } =>
               typeof (col as unknown as { accessorKey?: string })
@@ -176,6 +196,7 @@ export function DataTable<TData, TValue>({
 
     doc.save(`${fileName}.pdf`)
   }
+
   const table = useReactTable({
     data,
     columns: columnsWithSelection,
@@ -187,11 +208,13 @@ export function DataTable<TData, TValue>({
     state: {
       pagination,
       rowSelection,
+      columnVisibility,
     },
     enableRowSelection: !!onRowSelectionChange,
     enableMultiRowSelection: !!onRowSelectionChange,
     enableSubRowSelection: !!onRowSelectionChange,
     onRowSelectionChange: onRowSelectionChange,
+    onColumnVisibilityChange: setColumnVisibility,
     getRowId: rowId,
   })
 
@@ -241,6 +264,39 @@ export function DataTable<TData, TValue>({
             </TooltipProvider>
           </>
         )}
+        {/* Column visibility dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8">
+              <Settings2 className="h-4 w-4" />
+              <span className="sr-only">Toggle columns</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {table
+              .getAllColumns()
+              .filter(
+                (column) =>
+                  typeof column.accessorFn !== 'undefined' && column.getCanHide()
+              )
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }>
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <Table>
         {table.getRowModel().rows?.length > 0 && (
@@ -289,8 +345,7 @@ export function DataTable<TData, TValue>({
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     className={cn(classNameCell)}
-                    key={cell.id}
-                    >
+                    key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -307,7 +362,7 @@ export function DataTable<TData, TValue>({
           )}
         </TableBody>
       </Table>
-      {pageSize >= 10 && table.getRowModel().rows?.length > 0 && (
+      {havePagination && pageCount > page && table.getRowModel().rows?.length > 0 && (
         <DataTablePagination
           page={page}
           pageSize={pageSize}
@@ -327,6 +382,9 @@ export function DataTable<TData, TValue>({
             onPageSizeChange(newSize)
           }}
           isLoading={isLoading}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={onLoadMore}
         />
       )}
     </div>
