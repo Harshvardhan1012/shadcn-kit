@@ -1,5 +1,5 @@
 'use client'
-import { DataTable } from '@/components/Table'
+import { DataTable } from '@/components/table/Table'
 import { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
 import { AlertProvider, useAlert } from '../services/AlertService'
@@ -31,7 +31,6 @@ const columns: ColumnDef<Todo>[] = [
     header: 'Completed',
     cell: ({ row }) => (row.original.completed ? 'Yes' : 'No'),
   },
-  
 ]
 
 export default function HomePage() {
@@ -94,7 +93,7 @@ export default function HomePage() {
 
   return (
     <AlertProvider>
-      <div >
+      <div>
         <h1 className="text-2xl font-bold mb-4">Todos</h1>
         <DataTable
           columns={columns}

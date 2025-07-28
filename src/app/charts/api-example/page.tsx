@@ -1,6 +1,6 @@
 'use client'
 
-import { DynamicChart } from '@/components/DynamicChart'
+import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
 import {
   Card,

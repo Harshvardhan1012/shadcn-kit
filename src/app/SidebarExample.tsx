@@ -1,8 +1,11 @@
 'use client'
 
 import { useAlert } from '@/app/services/AlertService'
-import { AlertDialogDemo } from '@/components/AlertDialog'
-import { DynamicSidebar, SidebarConfig } from '@/components/DynamicSidebar'
+import { AlertDialogDemo } from '@/components/Alert/AlertDialog'
+import {
+  DynamicSidebar,
+  SidebarConfig,
+} from '@/components/NavSideBar/DynamicSidebar'
 import { Input } from '@/components/ui/input'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -180,9 +183,8 @@ export function SidebarExample({ children }: MainLayoutProps) {
     <div className="flex h-full w-full rounded-sm">
       <DynamicSidebar config={sidebarConfig} />
       <SidebarInset>
-        
-      <nav className='flex  p-3 items-center justify-between'>
-      <SidebarTrigger className="mr-2" />
+        <nav className="flex  p-3 items-center justify-between">
+          <SidebarTrigger className="mr-2" />
           <div className="flex-1 flex items-center min-w-0">
             <nav className="flex items-center text-sm text-gray-500 overflow-x-auto whitespace-nowrap">
               {breadcrumb.map((b, i) => (
@@ -203,7 +205,7 @@ export function SidebarExample({ children }: MainLayoutProps) {
               ))}
             </nav>
           </div>
-        <div className="ml-auto">
+          <div className="ml-auto">
             <Input
               type="text"
               placeholder="Search..."

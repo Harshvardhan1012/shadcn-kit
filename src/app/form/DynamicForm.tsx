@@ -1,3 +1,23 @@
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { format } from 'date-fns'
+import Image from 'next/image'
+import React, { useState } from 'react'
+import {
+  DefaultValues,
+  FieldValues,
+  Path,
+  PathValue,
+  SubmitHandler,
+  useForm,
+} from 'react-hook-form'
+import * as z from 'zod'
+
+// UI Components (assuming these are properly typed)
+import { SingleDatePicker } from '@/components/DatePicker'
+import { DateRangePicker } from '@/components/DateRangePicker'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -33,163 +53,710 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { cn } from '@/lib/utils'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
 import { CalendarIcon, Check, FileText } from 'lucide-react'
-import Image from 'next/image'
-import React, { useState } from 'react'
-import {
-  type DefaultValues,
-  type FieldValues,
-  type Path,
-  type PathValue,
-  type SubmitHandler,
-  useForm,
-} from 'react-hook-form'
-import * as z from 'zod'
+import { DayPicker } from 'react-day-picker'
 
-export interface FormFieldConfig {
-  multiselect?: boolean
-  name: string
-  label: string
-  description?: string
-  className?: string
-  type:
-    | 'text'
-    | 'password'
-    | 'email'
-    | 'number'
-    | 'file'
-    | 'checkbox'
-    | 'date'
-    | 'radio'
-    | 'select'
-    | 'textarea'
-    | 'combobox'
-    | 'multiselect'
-    | 'switch'
-  validation?: z.ZodTypeAny
-  options?: {
-    value: string | boolean | number
-    label: string
-    icon?: React.ElementType
-  }[]
-  placeholder?: string
-  icon?: React.ElementType
-  fileConfig?: {
-    accept?: string
-    multiple?: boolean
-  }
-  readonly?: boolean // default false
-  disabled?: boolean // default false
-  hidden?: boolean // default false
-  showIf?: (formValues: any) => boolean // function to determine visibility
-  dependsOn?: string[] // array of field names this field depends on
+// Form field types enum
+export enum FormFieldType {
+  TEXT = 'text',
+  PASSWORD = 'password',
+  EMAIL = 'email',
+  NUMBER = 'number',
+  FILE = 'file',
+  CHECKBOX = 'checkbox',
+  SWITCH = 'switch',
+  DATE = 'date',
+  DATETIME = 'datetime',
+  RADIO = 'radio',
+  SELECT = 'select',
+  TEXTAREA = 'textarea',
+  COMBOBOX = 'combobox',
+  MULTISELECT = 'multiselect',
 }
 
-interface DynamicFormProps<T extends FieldValues> {
+// Option interface
+export interface FormOption {
+  value: string | boolean | number
+  label: string
+  icon?: React.ElementType
+  disabled?: boolean
+}
+
+// File configuration
+export interface FileConfig {
+  accept?: string
+  multiple?: boolean
+}
+
+// Base form field configuration
+export interface BaseFormFieldConfig<T extends FormFieldType = FormFieldType> {
+  fieldName: string
+  fieldLabel: string
+  description?: string
+  validation?: z.ZodTypeAny
+  options?: FormOption[]
+  icon?: React.ElementType
+  fileConfig?: FileConfig
+  hidden?: boolean
+  showIf?: (formValues: Record<string, unknown>) => boolean
+  dependsOn?: string[]
+  disabled?: boolean
+  placeholder?: string
+
+  // Event callbacks
+  onChangeField?: (value: unknown) => void
+  onBlurField?: (value?: unknown) => void
+  onErrorField?: (error: unknown) => void
+}
+
+// Component-specific configurations
+interface InputFieldConfig
+  extends BaseFormFieldConfig<
+      | FormFieldType.TEXT
+      | FormFieldType.PASSWORD
+      | FormFieldType.EMAIL
+      | FormFieldType.NUMBER
+    >,
+    Omit<React.ComponentProps<typeof Input>, 'ref'> {
+  fieldType:
+    | FormFieldType.TEXT
+    | FormFieldType.PASSWORD
+    | FormFieldType.EMAIL
+    | FormFieldType.NUMBER
+  ref?: React.Ref<HTMLInputElement>
+}
+
+interface TextareaFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.TEXTAREA>,
+    Omit<React.ComponentProps<typeof Textarea>, 'ref'> {
+  fieldType: FormFieldType.TEXTAREA
+  ref?: React.Ref<HTMLTextAreaElement>
+}
+
+interface CheckboxFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.CHECKBOX>,
+    Omit<React.ComponentProps<typeof Checkbox>, 'ref'> {
+  fieldType: FormFieldType.CHECKBOX
+  ref?: React.Ref<HTMLButtonElement>
+}
+
+interface SwitchFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.SWITCH>,
+    Omit<React.ComponentProps<typeof Switch>, 'ref'> {
+  fieldType: FormFieldType.SWITCH
+  ref?: React.Ref<HTMLButtonElement>
+}
+
+type DateFieldConfig = BaseFormFieldConfig<FormFieldType.DATE> &
+  React.ComponentProps<typeof DayPicker> & {
+    fieldType: FormFieldType.DATE
+    mode?: 'single' | 'multiple' | 'range'
+    fromDate?: Date
+    toDate?: Date
+  }
+
+type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
+  React.ComponentProps<typeof DayPicker> & {
+    fieldType: FormFieldType.DATETIME
+    mode?: 'single' | 'multiple' | 'range'
+    timeFormat?: '12' | '24'
+    fromDate?: Date
+    toDate?: Date
+  }
+
+interface RadioFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.RADIO>,
+    Omit<
+      React.ComponentProps<typeof RadioGroup>,
+      'name' | 'onValueChange' | 'defaultValue'
+    > {
+  fieldType: FormFieldType.RADIO
+  orientation?: 'horizontal' | 'vertical'
+}
+
+interface SelectFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.SELECT>,
+    Omit<
+      React.ComponentProps<typeof Select>,
+      'onValueChange' | 'defaultValue' | 'value'
+    > {
+  fieldType: FormFieldType.SELECT
+}
+
+interface ComboboxFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.COMBOBOX>,
+    Omit<React.ComponentProps<typeof Command>, 'children'> {
+  fieldType: FormFieldType.COMBOBOX
+  searchPlaceholder?: string
+  emptyMessage?: string
+  onSearchChange?: (name: string, value: string) => void
+  // Add these new properties
+  value?: string
+  defaultValue?: string
+  placeholder?: string
+}
+
+// Add these to the MultiselectFieldConfig interface
+interface MultiselectFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.MULTISELECT>,
+    Omit<
+      React.ComponentProps<typeof Command>,
+      'children' | 'value' | 'defaultValue'
+    > {
+  fieldType: FormFieldType.MULTISELECT
+  searchPlaceholder?: string
+  emptyMessage?: string
+  maxSelectedDisplay?: number
+  onSearchChange?: (name: string, value: string) => void
+  value?: string[]
+  defaultValue?: string[]
+  placeholder?: string
+}
+
+interface FileFieldConfig
+  extends BaseFormFieldConfig<FormFieldType.FILE>,
+    Omit<
+      React.ComponentProps<typeof Input>,
+      'type' | 'onChange' | 'onBlur' | 'ref'
+    > {
+  fieldType: FormFieldType.FILE
+  buttonText?: string
+  buttonVariant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+  ref?: React.Ref<HTMLInputElement>
+}
+
+// Union type for all field configurations
+export type FormFieldConfig =
+  | InputFieldConfig
+  | TextareaFieldConfig
+  | CheckboxFieldConfig
+  | SwitchFieldConfig
+  | DateFieldConfig
+  | DateTimeFieldConfig
+  | RadioFieldConfig
+  | SelectFieldConfig
+  | ComboboxFieldConfig
+  | MultiselectFieldConfig
+  | FileFieldConfig
+
+// Dynamic form props
+interface DynamicFormProps<T extends FieldValues = FieldValues> {
   formConfig: FormFieldConfig[]
   onSubmit: SubmitHandler<T>
-  defaultValues?: DefaultValues<T> // Use DefaultValues<T>
-  schema: z.ZodObject<any, any, any>
+  defaultValues?: DefaultValues<T>
+  schema: z.ZodObject<z.ZodRawShape, z.UnknownKeysParam, z.ZodTypeAny>
   customSubmitButton?: React.ReactNode
-  className?: string // <-- add className prop
+  className?: string
+  loading?: boolean
 }
 
-const DynamicForm = <T extends FieldValues>({
+const DynamicForm = <T extends FieldValues = FieldValues>({
   formConfig,
   onSubmit,
   defaultValues,
   schema,
   customSubmitButton,
-  loading = false, // Add loading prop
-  className, // <-- accept className
-}: DynamicFormProps<T> & { loading?: boolean }) => {
+  className,
+  loading = false,
+}: DynamicFormProps<T>) => {
   const form = useForm<T>({
-    resolver: zodResolver(schema) as any, // Using 'as any' for now to bypass complex resolver type
-    defaultValues: defaultValues,
+    resolver: zodResolver(schema) as any,
+    defaultValues,
   })
 
-  const [filePreviews, setFilePreviews] = useState<
-    Record<string, string | ArrayBuffer | null>
-  >({})
-
+  const [filePreviews, setFilePreviews] = useState<Record<string, string>>({})
   const formValues = form.watch()
 
+  // Common event handlers
+  const handleValueChange = (fieldConfig: FormFieldConfig, value: unknown) => {
+    try {
+      fieldConfig.onChangeField?.(value)
+    } catch (error) {
+      fieldConfig.onErrorField?.(error)
+    }
+  }
+
+  const handleBlur = (fieldConfig: FormFieldConfig, value?: unknown) => {
+    try {
+      fieldConfig.onBlurField?.(value)
+    } catch (error) {
+      fieldConfig.onErrorField?.(error)
+    }
+  }
+
+  const handleFilePreview = (name: string, file: File | null) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFilePreviews((prev) => ({
+          ...prev,
+          [name]: reader.result as string,
+        }))
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setFilePreviews((prev) => ({
+        ...prev,
+        [name]: '',
+      }))
+    }
+  }
+
+  // Render field based on type
   const renderField = (fieldConfig: FormFieldConfig) => {
     const {
-      name,
-      label,
+      fieldLabel: label,
+      fieldType,
       description,
-      className,
-      type,
+      hidden,
+      showIf,
+      fieldName: name,
       options,
-      placeholder,
-      icon: FieldIcon,
-      fileConfig,
+      ...props
     } = fieldConfig
-    const fieldName = name as Path<T>
 
-    // Handle hidden/showIf logic
-    if (fieldConfig.hidden) return null
-    if (fieldConfig.showIf && !fieldConfig.showIf(formValues)) return null
+    const handleTimeChange = (
+      field: { onChange: (value: any) => void; value: string },
+      fieldConfig: DateTimeFieldConfig,
+      type: 'hour' | 'minute' | 'ampm',
+      value: string
+    ) => {
+      const currentDate = field.value ? new Date(field.value) : new Date()
 
-    switch (type) {
-      case 'text':
-      case 'password':
-      case 'email':
-      case 'number':
+      if (type === 'hour') {
+        const hour = parseInt(value)
+        currentDate.setHours(hour)
+      } else if (type === 'minute') {
+        const minute = parseInt(value)
+        currentDate.setMinutes(minute)
+      } else if (type === 'ampm') {
+        const currentHour = currentDate.getHours()
+        if (value === 'AM' && currentHour >= 12) {
+          currentDate.setHours(currentHour - 12)
+        } else if (value === 'PM' && currentHour < 12) {
+          currentDate.setHours(currentHour + 12)
+        }
+      }
+
+      const year = currentDate.getFullYear()
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+      const day = String(currentDate.getDate()).padStart(2, '0')
+      const hours = String(currentDate.getHours()).padStart(2, '0')
+      const minutes = String(currentDate.getMinutes()).padStart(2, '0')
+      const seconds = String(currentDate.getSeconds()).padStart(2, '0')
+      const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+
+      field.onChange(localDateTimeString)
+      fieldConfig.onChangeField?.(localDateTimeString)
+    }
+
+    // Handle visibility
+    if (hidden || (showIf && !showIf(formValues))) return null
+
+    switch (fieldType) {
+      case FormFieldType.TEXT:
+      case FormFieldType.PASSWORD:
+      case FormFieldType.EMAIL:
+      case FormFieldType.NUMBER:
         return (
           <FormField
             key={name}
             control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <div className="relative flex items-center">
-                    {FieldIcon && (
-                      <FieldIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    )}
-                    <Input
-                      {...field}
-                      id={name}
-                      type={type}
-                      placeholder={placeholder}
-                      className={cn(FieldIcon ? 'pl-10' : '', className)}
-                      readOnly={fieldConfig.readonly ?? false}
-                      disabled={fieldConfig.disabled ?? false}
-                      onChange={(e) => {
-                        const val =
-                          type === 'number'
-                            ? parseFloat(e.target.value)
-                            : e.target.value
-                        field.onChange(val as PathValue<T, Path<T>>)
-                      }}
-                    />
-                  </div>
-                </FormControl>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const inputProps = props as Omit<
+                InputFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+              >
+              return (
+                <FormItem className={cn(className)}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      {inputProps.icon &&
+                        React.createElement(inputProps.icon, {
+                          className:
+                            'absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400',
+                        })}
+                      <Input
+                        {...inputProps}
+                        type={fieldType}
+                        value={field.value as string | number}
+                        onChange={(e) => {
+                          const value =
+                            fieldType === FormFieldType.NUMBER
+                              ? Number(e.target.value)
+                              : e.target.value
+                          field.onChange(value)
+                          handleValueChange(fieldConfig, value)
+                        }}
+                        onBlur={(e) => {
+                          field.onBlur()
+                          const value =
+                            fieldType === FormFieldType.NUMBER
+                              ? Number(e.target.value)
+                              : e.target.value
+                          handleBlur(fieldConfig, value)
+                        }}
+                        className={cn(
+                          inputProps.icon ? 'pl-10' : '',
+                          inputProps.className
+                        )}
+                        ref={field.ref}
+                      />
+                    </div>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
         )
-      case 'file':
+
+      case FormFieldType.TEXTAREA:
         return (
           <FormField
             key={name}
             control={form.control}
-            name={fieldName}
+            name={name as Path<T>}
             render={({ field }) => {
+              const textareaProps = props as Omit<
+                TextareaFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+              >
+              return (
+                <FormItem className={cn(className)}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...textareaProps}
+                      value={field.value as string}
+                      onChange={(e) => {
+                        field.onChange(e.target.value)
+                        handleValueChange(fieldConfig, e.target.value)
+                      }}
+                      onBlur={(e) => {
+                        field.onBlur()
+                        handleBlur(fieldConfig, e.target.value)
+                      }}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
+      case FormFieldType.CHECKBOX:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const checkboxProps = props as Omit<
+                CheckboxFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+              >
+              return (
+                <FormItem
+                  className={cn(
+                    'flex flex-row items-start space-x-3 space-y-0 rounded-md p-4',
+                    className
+                  )}>
+                  <FormControl>
+                    <Checkbox
+                      {...checkboxProps}
+                      checked={field.value as boolean}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked)
+                        handleValueChange(fieldConfig, checked)
+                      }}
+                      onBlur={() => handleBlur(fieldConfig, field.value)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>{label}</FormLabel>
+                    {description && (
+                      <FormDescription>{description}</FormDescription>
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
+      case FormFieldType.SWITCH:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const switchProps = props as Omit<
+                SwitchFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+              >
+              return (
+                <FormItem
+                  className={cn(
+                    'flex flex-row items-center justify-between rounded-lg border p-4',
+                    className
+                  )}>
+                  <div className="space-y-0.5">
+                    <FormLabel>{label}</FormLabel>
+                    {description && (
+                      <FormDescription>{description}</FormDescription>
+                    )}
+                  </div>
+                  <FormControl>
+                    <Switch
+                      {...switchProps}
+                      checked={field.value as boolean}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked)
+                        handleValueChange(fieldConfig, checked)
+                      }}
+                      onBlur={() => handleBlur(fieldConfig, field.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
+      case FormFieldType.DATE:
+        const dateConfig = fieldConfig as DateFieldConfig
+        if (dateConfig.mode === 'range')
+          return (
+            <DateRangePicker
+              key={name}
+              value={form.watch(name as Path<T>)}
+              onChange={(value) => {
+                form.setValue(name as Path<T>, value as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, value)
+              }}
+              label={label}
+              description={description}
+              className={className}
+              disabled={dateConfig.disabled}
+              // Make fromDate and toDate truly optional - only pass if they exist
+              {...(dateConfig.fromDate && { fromDate: dateConfig.fromDate })}
+              {...(dateConfig.toDate && { toDate: dateConfig.toDate })}
+            />
+          )
+        if (dateConfig.mode === 'single')
+          return (
+            <SingleDatePicker
+              key={name}
+              value={form.watch(name as Path<T>)}
+              onChange={(value) => {
+                form.setValue(name as Path<T>, value as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, value)
+              }}
+              label={label}
+              description={description}
+              className={className}
+              disabled={dateConfig.disabled}
+              // Make fromDate and toDate truly optional - only pass if they exist
+              {...(dateConfig.fromDate && { fromDate: dateConfig.fromDate })}
+              {...(dateConfig.toDate && { toDate: dateConfig.toDate })}
+            />
+          )
+
+      case FormFieldType.RADIO:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const radioProps = props as Omit<
+                RadioFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+                | 'orientation'
+              >
+              return (
+                <FormItem className={cn(className)}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      {...radioProps}
+                      onValueChange={(value) => {
+                        field.onChange(value as PathValue<T, Path<T>>)
+                        handleValueChange(fieldConfig, value)
+                      }}
+                      defaultValue={field.value as string}
+                      className={cn('flex-row space-x-4 space-y-0', className)}>
+                      {options?.map((option) => (
+                        <div
+                          key={String(option.value)}
+                          className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value={option.value as string}
+                            id={`${name}-${option.value}`}
+                            disabled={option.disabled}
+                          />
+                          <FormLabel
+                            htmlFor={`${name}-${option.value}`}
+                            className="flex items-center">
+                            {option.icon && (
+                              <option.icon className="mr-2 h-4 w-4" />
+                            )}
+                            {option.label}
+                          </FormLabel>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
+      case FormFieldType.SELECT:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const selectProps = props as Omit<
+                SelectFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+              >
+              return (
+                <FormItem className={cn(className)}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...selectProps}
+                      onValueChange={(value) => {
+                        field.onChange(value as PathValue<T, Path<T>>)
+                        handleValueChange(fieldConfig, value)
+                      }}
+                      defaultValue={field.value as string}
+                      value={field.value as string}>
+                      <SelectTrigger
+                        onBlur={() => handleBlur(fieldConfig, field.value)}>
+                        <SelectValue placeholder={fieldConfig.placeholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options?.map((option) => (
+                          <SelectItem
+                            key={String(option.value)}
+                            value={String(option.value)}
+                            disabled={option.disabled}>
+                            <div className="flex items-center">
+                              {option.icon && (
+                                <option.icon className="mr-2 h-4 w-4" />
+                              )}
+                              {option.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
+      case FormFieldType.FILE:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const fileProps = props as Omit<
+                FileFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+                | 'buttonText'
+                | 'buttonVariant'
+              >
               const currentFile = field.value as File | null | undefined
               return (
-                <FormItem className={className}>
+                <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
                     <div className="flex items-center space-x-2">
@@ -197,48 +764,38 @@ const DynamicForm = <T extends FieldValues>({
                         <Image
                           width={40}
                           height={40}
-                          src={filePreviews[name] as string}
+                          src={filePreviews[name]}
                           alt="Preview"
                           className="h-10 w-10 rounded-md object-cover"
                         />
-                      ) : FieldIcon ? (
-                        <FieldIcon className="h-10 w-10 text-gray-400" />
+                      ) : fieldConfig.icon ? (
+                        React.createElement(fieldConfig.icon, {
+                          className: 'h-10 w-10 text-gray-400',
+                        })
                       ) : (
                         <FileText className="h-10 w-10 text-gray-400" />
                       )}
                       <Input
-                        id={name}
+                        {...fileProps}
                         type="file"
-                        accept={fileConfig?.accept}
-                        multiple={fileConfig?.multiple}
+                        accept={fileProps?.accept}
+                        multiple={fileProps?.multiple}
                         ref={field.ref}
-                        onBlur={field.onBlur}
-                        className={cn('flex-1', className)}
+                        className="flex-1"
                         onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          field.onChange(file as PathValue<T, Path<T>>) // Pass file to RHF
-                          if (file) {
-                            const reader = new FileReader()
-                            reader.onloadend = () => {
-                              setFilePreviews((prev) => ({
-                                ...prev,
-                                [name]: reader.result,
-                              }))
-                            }
-                            reader.readAsDataURL(file)
-                          } else {
-                            setFilePreviews((prev) => ({
-                              ...prev,
-                              [name]: null,
-                            }))
-                          }
+                          const file = e.target.files?.[0] || null
+                          field.onChange(file as PathValue<T, Path<T>>)
+                          handleValueChange(fieldConfig, file)
+                          handleFilePreview(name, file)
                         }}
-                        disabled={fieldConfig.disabled ?? false}
-                        readOnly={fieldConfig.readonly ?? false}
+                        onBlur={(e) => {
+                          field.onBlur()
+                          handleBlur(fieldConfig, e.target.files?.[0])
+                        }}
                       />
                     </div>
                   </FormControl>
-                  {currentFile && !fileConfig?.multiple && currentFile.name && (
+                  {currentFile && !fileProps?.multiple && (
                     <FormDescription>
                       Selected file: {currentFile.name}
                     </FormDescription>
@@ -252,218 +809,33 @@ const DynamicForm = <T extends FieldValues>({
             }}
           />
         )
-      case 'checkbox':
+
+      case FormFieldType.COMBOBOX:
         return (
           <FormField
             key={name}
             control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem
-                className={cn(
-                  'flex flex-row items-start space-x-3 space-y-0 rounded-md p-4',
-                  className
-                )}>
-                <FormControl>
-                  <Checkbox
-                    id={name}
-                    checked={field.value as boolean}
-                    onCheckedChange={field.onChange}
-                    disabled={fieldConfig.disabled ?? false}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>{label}</FormLabel>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
-                </div>
-              </FormItem>
-            )}
-          />
-        )
-      case 'date':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'w-full justify-start text-left font-normal',
-                          !field.value && 'text-muted-foreground',
-                          className
-                        )}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? (
-                          format(new Date(field.value as string), 'PPP')
-                        ) : (
-                          <span>{placeholder || 'Pick a date'}</span>
-                        )}
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={
-                        field.value
-                          ? new Date(field.value as string)
-                          : undefined
-                      }
-                      onSelect={(date) =>
-                        field.onChange(
-                          date?.toISOString() as PathValue<T, Path<T>>
-                        )
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )
-      case 'radio':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={(value) =>
-                      field.onChange(value as PathValue<T, Path<T>>)
-                    }
-                    defaultValue={field.value as string}
-                    className={cn('flex flex-col space-y-1', className)}>
-                    {options?.map((option) => (
-                      <div
-                        key={String(option.value)}
-                        className="flex items-center space-x-2">
-                        <RadioGroupItem
-                          value={option.value as string}
-                          id={`${name}-${option.value}`}
-                        />
-                        <FormLabel htmlFor={`${name}-${option.value}`}>
-                          {option.icon && (
-                            <option.icon className="mr-2 inline-block h-4 w-4" />
-                          )}
-                          {option.label}
-                        </FormLabel>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </FormControl>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )
-      case 'select':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <Select
-                    onValueChange={(value) =>
-                      field.onChange(value as PathValue<T, Path<T>>)
-                    }
-                    defaultValue={field.value as string}>
-                    <SelectTrigger className={className}>
-                      <SelectValue
-                        placeholder={
-                          placeholder || `Select ${label.toLowerCase()}`
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {options?.map((option) => (
-                        <SelectItem
-                          key={String(option.value)}
-                          value={String(option.value)}>
-                          {option.icon && (
-                            <option.icon className="mr-2 inline-block h-4 w-4" />
-                          )}
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )
-      case 'textarea':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem className={className}>
-                <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    id={name}
-                    placeholder={placeholder}
-                    className={cn(className)}
-                    disabled={fieldConfig.disabled ?? false}
-                    readOnly={fieldConfig.readonly ?? false}
-                  />
-                </FormControl>
-                {description && (
-                  <FormDescription>{description}</FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )
-      case 'combobox':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
+            name={name as Path<T>}
             render={({ field }) => {
-              const selectedValues = Array.isArray(field.value)
-                ? field.value
-                : field.value
-                ? [field.value]
-                : []
+              const commandProps = props as Omit<
+                ComboboxFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+                | 'defaultValue'
+              >
+              const selectedValue = field.value
               const allOptions = options || []
+              const selectedOption = allOptions.find(
+                (opt) => opt.value === selectedValue
+              )
               return (
-                <FormItem className={className}>
+                <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
                     <Popover>
@@ -473,80 +845,61 @@ const DynamicForm = <T extends FieldValues>({
                           role="combobox"
                           className={cn(
                             'w-full justify-between',
-                            className,
-                            selectedValues.length === 0 &&
-                              'text-muted-foreground'
-                          )}>
-                          {selectedValues.length === 0
-                            ? placeholder || `Select ${label.toLowerCase()}`
-                            : selectedValues.length <= 5
-                            ? selectedValues
-                                .map(
-                                  (val) =>
-                                    allOptions.find((opt) => opt.value === val)
-                                      ?.label || val
-                                )
-                                .join(', ')
-                            : `${selectedValues
-                                .slice(0, 5)
-                                .map(
-                                  (val) =>
-                                    allOptions.find((opt) => opt.value === val)
-                                      ?.label || val
-                                )
-                                .join(', ')}, +${
-                                selectedValues.length - 5
-                              } more`}
+                            !selectedValue && 'text-muted-foreground'
+                          )}
+                          onBlur={() => handleBlur(fieldConfig, selectedValue)}>
+                          {selectedOption?.label ||
+                            fieldConfig.placeholder ||
+                            `Select ${label.toLowerCase()}`}
+                          <Check
+                            className={cn('ml-2 h-4 w-4 shrink-0 opacity-50')}
+                          />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
-                        <Command>
+                        <Command {...commandProps}>
                           <CommandInput
-                            placeholder={`Search ${label.toLowerCase()}...`}
+                            placeholder={
+                              commandProps.searchPlaceholder ||
+                              `Search ${label.toLowerCase()}...`
+                            }
                             className="h-9"
+                            onValueChange={(value) =>
+                              commandProps.onSearchChange?.(name, value)
+                            }
                           />
                           <CommandList>
-                            <CommandEmpty>No option found.</CommandEmpty>
+                            <CommandEmpty>
+                              {commandProps.emptyMessage || 'No option found.'}
+                            </CommandEmpty>
                             <CommandGroup>
                               {allOptions.map((option) => (
                                 <CommandItem
                                   value={option.label}
                                   key={String(option.value)}
+                                  disabled={option.disabled}
                                   onSelect={() => {
-                                    let newValues: any[] = []
-                                    if (
-                                      selectedValues
-                                        .map(String)
-                                        .includes(String(option.value))
-                                    ) {
-                                      newValues = selectedValues.filter(
-                                        (v) =>
-                                          String(v) !== String(option.value)
-                                      )
-                                    } else {
-                                      newValues = [
-                                        ...selectedValues,
-                                        option.value,
-                                      ]
-                                    }
-                                    // If only single select, just set one value
-                                    if (!fieldConfig.multiselect) {
-                                      field.onChange(
-                                        option.value as PathValue<T, Path<T>>
-                                      )
-                                    } else {
-                                      field.onChange(
-                                        newValues as PathValue<T, Path<T>>
-                                      )
-                                    }
+                                    const newValue =
+                                      String(selectedValue) ===
+                                      String(option.value)
+                                        ? ''
+                                        : option.value
+                                    field.onChange(
+                                      newValue as PathValue<T, Path<T>>
+                                    )
+                                    handleValueChange(fieldConfig, newValue)
                                   }}>
-                                  {option.label}
+                                  <div className="flex items-center">
+                                    {option.icon && (
+                                      <option.icon className="mr-2 h-4 w-4" />
+                                    )}
+                                    {option.label}
+                                  </div>
                                   <Check
                                     className={cn(
-                                      'ml-auto',
-                                      selectedValues
-                                        .map(String)
-                                        .includes(String(option.value))
+                                      'ml-auto h-4 w-4',
+                                      String(selectedValue) ===
+                                        String(option.value)
                                         ? 'opacity-100'
                                         : 'opacity-0'
                                     )}
@@ -568,125 +921,216 @@ const DynamicForm = <T extends FieldValues>({
             }}
           />
         )
-      case 'switch':
+
+      case FormFieldType.DATETIME:
         return (
           <FormField
             key={name}
             control={form.control}
-            name={fieldName}
-            render={({ field }) => (
-              <FormItem
-                className={cn(
-                  'flex flex-row items-center justify-between rounded-lg border p-4',
-                  className
-                )}>
-                <div className="space-y-0.5">
-                  <FormLabel>{label}</FormLabel>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                </div>
-                <FormControl>
-                  <Checkbox
-                    id={name}
-                    checked={field.value as boolean}
-                    onCheckedChange={field.onChange}
-                    className={cn('data-[state=checked]:bg-primary', className)}
-                    disabled={fieldConfig.disabled ?? false}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )
-      case 'multiselect':
-        return (
-          <FormField
-            key={name}
-            control={form.control}
-            name={fieldName}
+            name={name as Path<T>}
             render={({ field }) => {
-              const selectedValues = (field.value as string[]) || []
+              const dateTimeConfig = fieldConfig as DateTimeFieldConfig
+              const selectedDate = field.value
+                ? new Date(field.value)
+                : undefined
+              const is24Hour = dateTimeConfig.timeFormat === '24'
+
+              const handleTimeChange = (
+                type: 'hour' | 'minute' | 'ampm',
+                value: string
+              ) => {
+                if (!selectedDate) return
+
+                const newDate = new Date(selectedDate)
+
+                switch (type) {
+                  case 'hour':
+                    newDate.setHours(parseInt(value))
+                    break
+                  case 'minute':
+                    newDate.setMinutes(parseInt(value))
+                    break
+                  case 'ampm':
+                    const currentHour = newDate.getHours()
+                    if (value === 'AM' && currentHour >= 12) {
+                      newDate.setHours(currentHour - 12)
+                    } else if (value === 'PM' && currentHour < 12) {
+                      newDate.setHours(currentHour + 12)
+                    }
+                    break
+                }
+
+                const isoString = newDate.toISOString()
+                field.onChange(isoString as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, isoString)
+              }
+
+              const handleDateSelect = (date: Date | undefined) => {
+                if (!date) return
+
+                // Preserve existing time if available
+                if (selectedDate) {
+                  date.setHours(
+                    selectedDate.getHours(),
+                    selectedDate.getMinutes(),
+                    selectedDate.getSeconds(),
+                    selectedDate.getMilliseconds()
+                  )
+                } else {
+                  // Default to current time if no time is selected
+                  const now = new Date()
+                  date.setHours(now.getHours(), now.getMinutes(), 0, 0)
+                }
+
+                const isoString = date.toISOString()
+                field.onChange(isoString as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, isoString)
+              }
+
+              const formatDisplay = (date: Date) => {
+                return is24Hour
+                  ? format(date, 'MM/dd/yyyy HH:mm')
+                  : format(date, 'MM/dd/yyyy hh:mm aa')
+              }
 
               return (
-                <FormItem className={className}>
+                <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
-                  <div className="space-y-2">
-                    <FormControl>
-                      <div className="rounded-md border border-input p-2">
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {selectedValues.map((value) => {
-                            const option = options?.find(
-                              (opt) => opt.value === value
-                            )
-                            return option ? (
-                              <div
-                                key={value}
-                                className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm flex items-center gap-1">
-                                {option.icon && (
-                                  <option.icon className="h-3 w-3" />
-                                )}
-                                {option.label}
-                                <button
-                                  type="button"
-                                  className="ml-1 rounded-full hover:bg-destructive/20"
-                                  onClick={() => {
-                                    field.onChange(
-                                      selectedValues.filter(
-                                        (v) => v !== value
-                                      ) as PathValue<T, Path<T>>
-                                    )
-                                  }}>
-                                  <span className="sr-only">Remove</span>
-                                  <span className="h-3 w-3 flex items-center justify-center">
-                                    ×
-                                  </span>
-                                </button>
-                              </div>
-                            ) : null
-                          })}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {options?.map((option) => (
-                            <div
-                              key={String(option.value)}
-                              className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${name}-${option.value}`}
-                                checked={selectedValues.includes(
-                                  option.value as string
-                                )}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([
-                                      ...selectedValues,
-                                      option.value,
-                                    ] as PathValue<T, Path<T>>)
-                                  } else {
-                                    field.onChange(
-                                      selectedValues.filter(
-                                        (v) => v !== option.value
-                                      ) as PathValue<T, Path<T>>
-                                    )
-                                  }
-                                }}
-                                disabled={fieldConfig.disabled ?? false}
-                              />
-                              <label
-                                htmlFor={`${name}-${option.value}`}
-                                className="text-sm cursor-pointer flex items-center">
-                                {option.icon && (
-                                  <option.icon className="mr-2 h-4 w-4" />
-                                )}{' '}
-                                {option.label}
-                              </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !selectedDate && 'text-muted-foreground'
+                          )}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedDate ? (
+                            formatDisplay(selectedDate)
+                          ) : (
+                            <span>
+                              {dateTimeConfig.placeholder ||
+                                (is24Hour
+                                  ? 'MM/DD/YYYY HH:mm'
+                                  : 'MM/DD/YYYY hh:mm aa')}
+                            </span>
+                          )}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0"
+                      align="start">
+                      <div className="flex flex-col sm:flex-row">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={handleDateSelect}
+                          disabled={dateTimeConfig.disabled}
+                          fromDate={dateTimeConfig.fromDate}
+                          toDate={dateTimeConfig.toDate}
+                          initialFocus
+                        />
+
+                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                          {/* Hours Selector */}
+                          <ScrollArea className="w-64 sm:w-auto">
+                            <div className="flex sm:flex-col p-2 gap-1">
+                              {Array.from(
+                                { length: is24Hour ? 24 : 12 },
+                                (_, i) => (is24Hour ? i : i + 1)
+                              ).map((hour) => {
+                                const isSelected = selectedDate
+                                  ? is24Hour
+                                    ? selectedDate.getHours() === hour
+                                    : (selectedDate.getHours() % 12 || 12) ===
+                                      hour
+                                  : false
+
+                                return (
+                                  <Button
+                                    key={hour}
+                                    size="sm"
+                                    variant={isSelected ? 'default' : 'ghost'}
+                                    className="sm:w-full justify-center"
+                                    onClick={() =>
+                                      handleTimeChange('hour', hour.toString())
+                                    }>
+                                    {hour}
+                                  </Button>
+                                )
+                              })}
                             </div>
-                          ))}
+                            <ScrollBar
+                              orientation="horizontal"
+                              className="sm:hidden"
+                            />
+                          </ScrollArea>
+
+                          {/* Minutes Selector */}
+                          <ScrollArea className="w-64 sm:w-auto">
+                            <div className="flex sm:flex-col p-2 gap-1">
+                              {Array.from({ length: 12 }, (_, i) => i * 5).map(
+                                (minute) => {
+                                  const isSelected =
+                                    selectedDate?.getMinutes() === minute
+                                  return (
+                                    <Button
+                                      key={minute}
+                                      size="sm"
+                                      variant={isSelected ? 'default' : 'ghost'}
+                                      className="sm:w-full justify-center"
+                                      onClick={() =>
+                                        handleTimeChange(
+                                          'minute',
+                                          minute.toString()
+                                        )
+                                      }>
+                                      {minute.toString().padStart(2, '0')}
+                                    </Button>
+                                  )
+                                }
+                              )}
+                            </div>
+                            <ScrollBar
+                              orientation="horizontal"
+                              className="sm:hidden"
+                            />
+                          </ScrollArea>
+
+                          {/* AM/PM Selector */}
+                          {!is24Hour && (
+                            <ScrollArea>
+                              <div className="flex sm:flex-col p-2 gap-1">
+                                {['AM', 'PM'].map((ampm) => {
+                                  const isSelected = selectedDate
+                                    ? (ampm === 'AM' &&
+                                        selectedDate.getHours() < 12) ||
+                                      (ampm === 'PM' &&
+                                        selectedDate.getHours() >= 12)
+                                    : false
+
+                                  return (
+                                    <Button
+                                      key={ampm}
+                                      size="sm"
+                                      variant={isSelected ? 'default' : 'ghost'}
+                                      className="sm:w-full justify-center"
+                                      onClick={() =>
+                                        handleTimeChange('ampm', ampm)
+                                      }>
+                                      {ampm}
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                            </ScrollArea>
+                          )}
                         </div>
                       </div>
-                    </FormControl>
-                  </div>
+                    </PopoverContent>
+                  </Popover>
                   {description && (
                     <FormDescription>{description}</FormDescription>
                   )}
@@ -696,8 +1140,163 @@ const DynamicForm = <T extends FieldValues>({
             }}
           />
         )
+
+      case FormFieldType.MULTISELECT:
+        return (
+          <FormField
+            key={name}
+            control={form.control}
+            name={name as Path<T>}
+            render={({ field }) => {
+              const commandProps = props as Omit<
+                MultiselectFieldConfig,
+                | 'fieldName'
+                | 'fieldLabel'
+                | 'fieldType'
+                | 'options'
+                | 'icon'
+                | 'fileConfig'
+                | 'showIf'
+                | 'dependsOn'
+                | 'maxSelectedDisplay'
+                | 'defaultValue'
+                | 'value'
+              >
+              const selectedValues = Array.isArray(field.value)
+                ? field.value
+                : field.value
+                ? [field.value]
+                : []
+              const allOptions = options || []
+              const maxDisplay =
+                (props as MultiselectFieldConfig).maxSelectedDisplay || 5
+              return (
+                <FormItem className={cn(className)}>
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            'w-full justify-between',
+                            selectedValues.length === 0 &&
+                              'text-muted-foreground'
+                          )}
+                          onBlur={() =>
+                            handleBlur(fieldConfig, selectedValues)
+                          }>
+                          {selectedValues.length === 0 ? (
+                            fieldConfig.placeholder ||
+                            `Select ${label.toLowerCase()}`
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {selectedValues
+                                .slice(0, maxDisplay)
+                                .map((val) => {
+                                  const option = allOptions.find(
+                                    (opt) => opt.value === val
+                                  )
+                                  return (
+                                    <Badge
+                                      variant="outline"
+                                      key={String(val)}
+                                      className="text-xs">
+                                      {option?.label || val}
+                                    </Badge>
+                                  )
+                                })}
+                              {selectedValues.length > maxDisplay && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs">
+                                  +{selectedValues.length - maxDisplay} more
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command {...commandProps}>
+                          <CommandInput
+                            placeholder={
+                              commandProps.searchPlaceholder ||
+                              `Search ${label.toLowerCase()}...`
+                            }
+                            className="h-9"
+                            onValueChange={(value) =>
+                              commandProps.onSearchChange?.(name, value)
+                            }
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              {commandProps.emptyMessage || 'No option found.'}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {allOptions.map((option) => (
+                                <CommandItem
+                                  value={option.label}
+                                  key={String(option.value)}
+                                  disabled={option.disabled}
+                                  onSelect={() => {
+                                    const isSelected = selectedValues.some(
+                                      (v) => String(v) === String(option.value)
+                                    )
+                                    const newValues = isSelected
+                                      ? selectedValues.filter(
+                                          (v) =>
+                                            String(v) !== String(option.value)
+                                        )
+                                      : [...selectedValues, option.value]
+
+                                    field.onChange(
+                                      newValues as PathValue<T, Path<T>>
+                                    )
+                                    handleValueChange(fieldConfig, newValues)
+                                  }}>
+                                  <div className="flex items-center">
+                                    {option.icon && (
+                                      <option.icon className="mr-2 h-4 w-4" />
+                                    )}
+                                    {option.label}
+                                  </div>
+                                  <Check
+                                    className={cn(
+                                      'ml-auto h-4 w-4',
+                                      selectedValues.some(
+                                        (v) =>
+                                          String(v) === String(option.value)
+                                      )
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        )
+
       default:
-        return <p key={name}>Unsupported field type: {type}</p>
+        return (
+          <p key={name}>
+            Unsupported field type: {(fieldConfig as FormFieldConfig).fieldType}
+          </p>
+        )
     }
   }
 
@@ -706,12 +1305,12 @@ const DynamicForm = <T extends FieldValues>({
       <div className="space-y-6">
         {formConfig.map((field, idx) => (
           <div
-            key={field.name || idx}
-            className={field.className || ''}>
+            key={field.fieldName || idx}
+            className={className || ''}>
             <div className="mb-2">
-              <Skeleton className="h-4 w-32 rounded" /> {/* label skeleton */}
+              <Skeleton className="h-4 w-32 rounded" />
             </div>
-            <Skeleton className={cn('h-10 w-full rounded', field.className)} />{' '}
+            <Skeleton className={cn('h-10 w-full rounded', className)} />
           </div>
         ))}
         <Skeleton className="h-10 w-32 rounded-md" />
@@ -723,14 +1322,9 @@ const DynamicForm = <T extends FieldValues>({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className={cn('space-y-6', className)} // <-- apply className here
-      >
+        className={cn('space-y-6', className)}>
         {formConfig.map(renderField)}
-        {customSubmitButton ? (
-          customSubmitButton
-        ) : (
-          <Button type="submit">Submit</Button>
-        )}
+        {customSubmitButton || <Button type="submit">Submit</Button>}
       </form>
     </Form>
   )
