@@ -68,7 +68,6 @@ export interface SidebarHeaderConfig {
     avatarUrl?: string
     avatarComponent?: React.ElementType
   }
-  customComponent?: ReactNode
   className?: string
 }
 
@@ -86,16 +85,13 @@ export interface SidebarFooterConfig {
       | 'ghost'
       | 'link'
   }>
-  customComponent?: ReactNode
   className?: string
 }
 
 export interface SidebarConfig {
   groups: SidebarGroup[]
-  header?: ReactNode | SidebarHeaderConfig
-  footer?: ReactNode | SidebarFooterConfig
-  headerConfig?: SidebarHeaderConfig
-  footerConfig?: SidebarFooterConfig
+  header?: ReactNode | SidebarHeaderConfig | SidebarGroup[]
+  footer?: ReactNode | SidebarFooterConfig | SidebarGroup[]
 }
 
 // Badge component to show on sidebar menu items
@@ -115,55 +111,155 @@ const SidebarMenuBadge = ({
   </span>
 )
 
-const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
-  if (config.customComponent) {
-    return config.customComponent
-  }
+const SidebarLoadingSkeleton = () => (
+  <div className="space-y-6 p-4">
+    {/* Header Skeleton */}
+    <div className="flex flex-col items-center gap-4">
+      <Skeleton className="h-8 w-24 rounded" />
+      <div className="flex flex-col items-center gap-2">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <Skeleton className="h-4 w-32 rounded" />
+        <Skeleton className="h-3 w-24 rounded" />
+      </div>
+    </div>
 
-  return (
-    <div
-      className={cn(
-        'flex items-center justify-center flex-col',
-        config.className
-      )}>
-      {config.logo && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {config.logo.iconUrl && (
-              <div className="relative h-6 w-6">
-                <Image
-                  src={config.logo.iconUrl}
-                  alt="Logo"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            )}
-            {config.logo.iconComponent && (
-              <config.logo.iconComponent className="h-6 w-6" />
-            )}
-            {config.logo.text && (
-              <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">
-                {config.logo.text}
-              </span>
-            )}
+    {/* Search Skeleton */}
+    <Skeleton className="h-9 w-full rounded" />
+
+    {/* Menu Groups Skeleton */}
+    <div className="space-y-8">
+      {[1, 2, 3].map((group) => (
+        <div
+          key={group}
+          className="space-y-3">
+          <Skeleton className="h-4 w-24 rounded" />
+          <div className="space-y-2 ml-2">
+            {[1, 2].map((item) => (
+              <Skeleton
+                key={item}
+                className="h-8 w-full rounded"
+              />
+            ))}
           </div>
         </div>
+      ))}
+    </div>
+
+    {/* Footer Skeleton */}
+    <div className="space-y-2">
+      <Skeleton className="h-9 w-full rounded" />
+      <Skeleton className="h-9 w-full rounded" />
+    </div>
+  </div>
+)
+
+const renderHeaderAndFooter = (
+  header: ReactNode | SidebarHeaderConfig | SidebarGroup[],
+  isHeader: boolean = true
+) => {
+  if (React.isValidElement(header)) {
+    return header
+  }
+
+  if (Array.isArray(header)) {
+    return renderGroups(header)
+  }
+  if (isHeader) return renderHeaderFromConfig(header as SidebarHeaderConfig)
+  return renderFooterFromConfig(header as SidebarFooterConfig)
+}
+
+const renderIcon = (icon?: React.ElementType | React.ReactNode) => {
+  if (!icon) return null
+  if (React.isValidElement(icon)) return icon
+  const IconComponent = icon as React.ElementType
+  return <IconComponent className="h-4 w-4" />
+}
+
+const renderGroups = (groups: SidebarGroup[]) => (
+  <>
+    {groups &&
+      groups.length > 0 &&
+      groups.map((group) => (
+        <SidebarGroup key={group.id}>
+          {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild={!!item.url}
+                    onClick={item.onClick}
+                    tooltip={item.title}
+                    disabled={item.disabled}>
+                    {item.url ? (
+                      <a href={item.url}>
+                        {item.icon && renderIcon(item.icon)}
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {item.title}
+                        </span>
+                        {item.badge && (
+                          <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                        )}
+                      </a>
+                    ) : (
+                      <>
+                        {item.icon && renderIcon(item.icon)}
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {item.title}
+                        </span>
+                        {item.badge && (
+                          <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                        )}
+                      </>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+  </>
+)
+
+const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
+  return (
+    <div className={cn('flex flex-col items-center', config.className)}>
+      {config.logo && (
+        <div className="flex items-center gap-2">
+          {config.logo.iconUrl && (
+            <div className="relative h-6 w-6">
+              <Image
+                src={config.logo.iconUrl}
+                alt="Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+          )}
+          {config.logo.iconComponent && (
+            <config.logo.iconComponent className="h-6 w-6" />
+          )}
+          {config.logo.text && (
+            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">
+              {config.logo.text}
+            </span>
+          )}
+        </div>
       )}
+
       {config.user && (
-        <div className="flex items-center  rounded-md border p-2 group-data-[collapsible=icon]:p-1 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:justify-center w-full">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full shrink-0">
+        <div className="flex flex-col items-center gap-2 w-full">
+          <div className="relative h-10 w-10 rounded-full overflow-hidden">
             {config.user.avatarUrl ? (
-              <div className="relative h-full w-full">
-                <Image
-                  src={config.user.avatarUrl}
-                  alt={config.user.name || 'User'}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+              <Image
+                src={config.user.avatarUrl}
+                alt={config.user.name || 'User'}
+                fill
+                className="object-cover"
+              />
             ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
+              <div className="flex h-full w-full items-center justify-center bg-muted">
                 {config.user.avatarComponent ? (
                   <config.user.avatarComponent className="h-5 w-5" />
                 ) : (
@@ -172,14 +268,12 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
               </div>
             )}
           </div>
-          <div className="space-y-1 group-data-[collapsible=icon]:hidden">
+          <div className="text-center group-data-[collapsible=icon]:hidden">
             {config.user.name && (
-              <p className="text-sm font-medium leading-none">
-                {config.user.name}
-              </p>
+              <p className="text-sm font-medium">{config.user.name}</p>
             )}
             {config.user.email && (
-              <p className="text-xs leading-none text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {config.user.email}
               </p>
             )}
@@ -190,29 +284,23 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
   )
 }
 
-// Renders footer from JSON configuration
 const renderFooterFromConfig = (config: SidebarFooterConfig) => {
-  if (config.customComponent) {
-    return config.customComponent
-  }
-
   return (
-    <div className={cn('flex flex-col gap-2 p-4', config.className)}>
-      {config.buttons &&
-        config.buttons.map((button) => (
-          <Button
-            key={button.id}
-            variant={button.variant || 'outline'}
-            className="w-full group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center"
-            onClick={button.onClick}>
-            {button.icon && (
-              <button.icon className="mr-2 h-4 w-4 group-data-[collapsible=icon]:mr-0" />
-            )}
-            <span className="group-data-[collapsible=icon]:hidden">
-              {button.label}
-            </span>
-          </Button>
-        ))}
+    <div className={cn('space-y-2', config.className)}>
+      {config.buttons?.map((button) => (
+        <Button
+          key={button.id}
+          variant={button.variant || 'outline'}
+          className="w-full group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2"
+          onClick={button.onClick}>
+          {button.icon && (
+            <button.icon className="mr-2 h-4 w-4 group-data-[collapsible=icon]:mr-0" />
+          )}
+          <span className="group-data-[collapsible=icon]:hidden">
+            {button.label}
+          </span>
+        </Button>
+      ))}
     </div>
   )
 }
@@ -222,29 +310,6 @@ interface DynamicSidebarProps {
   enableSearch?: boolean
   isLoading?: boolean
 }
-
-// Skeleton components for loading states
-const SidebarItemSkeleton = () => (
-  <div className="flex items-center  px-4 py-2">
-    <Skeleton className="h-4 w-4" /> {/* Icon */}
-    <Skeleton className="h-4 flex-1" /> {/* Title */}
-  </div>
-)
-
-const SidebarGroupSkeleton = () => (
-  <div className="space-y-2 py-2">
-    <div className="px-4">
-      <Skeleton className="h-4 w-24" /> {/* Group Label */}
-    </div>
-    <div className="space-y-1">
-      {Array(2)
-        .fill(0)
-        .map((_, i) => (
-          <SidebarItemSkeleton key={i} />
-        ))}
-    </div>
-  </div>
-)
 
 export function DynamicSidebar({
   config,
@@ -256,7 +321,6 @@ export function DynamicSidebar({
   )
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
 
-  // Function to search through sidebar items
   const searchSidebarItems = (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
@@ -265,10 +329,8 @@ export function DynamicSidebar({
 
     const results: SearchResult[] = []
 
-    // Search through all groups and their items
     config.groups.forEach((group) => {
       group.items.forEach((item) => {
-        // Check main item
         if (item.title.toLowerCase().includes(query.toLowerCase())) {
           results.push({
             id: item.id,
@@ -280,22 +342,19 @@ export function DynamicSidebar({
           })
         }
 
-        // Check sub items
-        if (item.subItems) {
-          item.subItems.forEach((subItem) => {
-            if (subItem.title.toLowerCase().includes(query.toLowerCase())) {
-              results.push({
-                id: subItem.id,
-                title: subItem.title,
-                groupLabel: group.label,
-                path: [...(group.label ? [group.label] : []), item.title],
-                isSubItem: true,
-                url: subItem.url,
-                icon: subItem.icon,
-              })
-            }
-          })
-        }
+        item.subItems?.forEach((subItem) => {
+          if (subItem.title.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              id: subItem.id,
+              title: subItem.title,
+              groupLabel: group.label,
+              path: [...(group.label ? [group.label] : []), item.title],
+              isSubItem: true,
+              url: subItem.url,
+              icon: subItem.icon,
+            })
+          }
+        })
       })
     })
 
@@ -313,36 +372,29 @@ export function DynamicSidebar({
     return openItems[id] === undefined ? !!defaultOpen : openItems[id]
   }
 
-  const renderIcon = (
-    icon: React.ElementType | React.ReactNode | undefined
-  ) => {
-    if (!icon) return null
-    if (React.isValidElement(icon)) return icon
-    const IconComponent = icon as React.ElementType
-    return <IconComponent />
-  }
-
   const renderMenuItem = (item: SidebarItem) => {
-    if (item.subItems && item.subItems.length > 0) {
+    const menuButtonContent = (
+      <>
+        {item.icon && renderIcon(item.icon)}
+        <span className="group-data-[collapsible=icon]:hidden">
+          {item.title}
+        </span>
+        {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+      </>
+    )
+
+    if (item.subItems?.length) {
       return (
         <Collapsible
           key={item.id}
           defaultOpen={item.defaultOpen}
           open={isCollapsibleOpen(item.id, item.defaultOpen)}
           onOpenChange={() => toggleCollapsible(item.id)}
-          className="group/collapsible w-full ">
-          <SidebarMenuItem key={item.id}>
+          className="w-full">
+          <SidebarMenuItem>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton
-                className="w-full"
-                tooltip={item.title}>
-                {item.icon && renderIcon(item.icon)}
-                <span className="group-data-[collapsible=icon]:hidden">
-                  {item.title}
-                </span>
-                {item.badge && (
-                  <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                )}
+              <SidebarMenuButton tooltip={item.title}>
+                {menuButtonContent}
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -354,7 +406,7 @@ export function DynamicSidebar({
                       onClick={subItem.onClick}>
                       {subItem.url ? (
                         <a href={subItem.url}>
-                          {subItem.icon && renderIcon(subItem.icon)}
+                          {renderIcon(subItem.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {subItem.title}
                           </span>
@@ -364,7 +416,7 @@ export function DynamicSidebar({
                         </a>
                       ) : (
                         <>
-                          {subItem.icon && renderIcon(subItem.icon)}
+                          {renderIcon(subItem.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {subItem.title}
                           </span>
@@ -382,6 +434,7 @@ export function DynamicSidebar({
         </Collapsible>
       )
     }
+
     return (
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
@@ -389,120 +442,65 @@ export function DynamicSidebar({
           onClick={item.onClick}
           tooltip={item.title}>
           {item.url ? (
-            <a href={item.url}>
-              {item.icon && renderIcon(item.icon)}
-              <span className="group-data-[collapsible=icon]:hidden">
-                {item.title}
-              </span>
-              {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
-            </a>
+            <a href={item.url}>{menuButtonContent}</a>
           ) : (
-            <>
-              {item.icon && renderIcon(item.icon)}
-              <span className="group-data-[collapsible=icon]:hidden">
-                {item.title}
-              </span>
-              {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
-            </>
+            menuButtonContent
           )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     )
   }
-  // Render skeleton loading state
+
   if (isLoading) {
     return (
-      <div className="sidebar-wrapper">
-        <Sidebar
-          variant="inset"
-          collapsible="icon"
-          className="overflow-hidden">
-          <SidebarHeader>
-            <div className="flex items-center justify-center flex-col space-y-4 p-4">
-              <Skeleton className="h-6 w-24" /> {/* Logo */}
-              <div className="w-full space-y-2">
-                <Skeleton className="h-10 w-10 rounded-full mx-auto" />{' '}
-                {/* Avatar */}
-                <Skeleton className="h-4 w-32 mx-auto" /> {/* Name */}
-                <Skeleton className="h-3 w-24 mx-auto" /> {/* Email */}
-              </div>
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            {enableSearch && (
-              <div className="p-4">
-                <Skeleton className="h-9 w-full" /> {/* Search Bar */}
-              </div>
-            )}
-            {Array(3)
-              .fill(0)
-              .map((_, i) => (
-                <SidebarGroupSkeleton key={i} />
-              ))}
-          </SidebarContent>
-          <SidebarFooter>
-            <div className="p-4 space-y-2">
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-          </SidebarFooter>
-          <SidebarRail />
-        </Sidebar>
-      </div>
+      <Sidebar
+        variant="inset"
+        collapsible="icon">
+        <SidebarLoadingSkeleton />
+      </Sidebar>
     )
   }
 
   return (
-    <div className="sidebar-wrapper">
-      <Sidebar
-        variant="inset"
-        collapsible="icon"
-        className="sidebar-fixed-bg">
-        {(config.header || config.headerConfig) && (
-          <SidebarHeader>
-            {typeof config.header === 'object' &&
-            !React.isValidElement(config.header)
-              ? renderHeaderFromConfig(config.header as SidebarHeaderConfig)
-              : config.headerConfig
-              ? renderHeaderFromConfig(config.headerConfig)
-              : config.header}
-          </SidebarHeader>
+    <Sidebar
+      variant="inset"
+      collapsible="icon"
+      className="sidebar-fixed-bg">
+      {/* Header */}
+      {config.header && (
+        <SidebarHeader>{renderHeaderAndFooter(config.header)}</SidebarHeader>
+      )}
+
+      {/* Content */}
+      <SidebarContent>
+        {enableSearch && (
+          <SearchWrapper
+            onSearch={searchSidebarItems}
+            searchResults={searchResults}
+            className="w-full"
+          />
         )}
-        <SidebarContent>
-          {enableSearch && (
-            <div>
-              <SearchWrapper
-                onSearch={searchSidebarItems}
-                searchResults={searchResults}
-                className="w-full"
-              />
-            </div>
-          )}
-          {config.groups.map((group) => (
-            <SidebarGroup key={group.id}>
-              {group.label && (
-                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-              )}
-              <SidebarGroupContent>
-                <SidebarMenu>{group.items.map(renderMenuItem)}</SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
-        </SidebarContent>
-        {/* Render footer */}
-        {(config.footer || config.footerConfig) && (
-          <SidebarFooter>
-            {typeof config.footer === 'object' &&
-            !React.isValidElement(config.footer)
-              ? renderFooterFromConfig(config.footer as SidebarFooterConfig)
-              : config.footerConfig
-              ? renderFooterFromConfig(config.footerConfig)
-              : config.footer}
-          </SidebarFooter>
-        )}
-        {/* Add the rail for resizing */}
-        <SidebarRail />
-      </Sidebar>
-    </div>
+
+        {config.groups.map((group) => (
+          <SidebarGroup key={group.id}>
+            {group.label && (
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>{group.items.map(renderMenuItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+
+      {/* Footer */}
+      {config.footer && (
+        <SidebarFooter>
+          {renderHeaderAndFooter(config.footer, false)}
+        </SidebarFooter>
+      )}
+
+      <SidebarRail />
+    </Sidebar>
   )
 }
