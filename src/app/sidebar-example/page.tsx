@@ -16,7 +16,7 @@
 // import Home from '../page'
 // import { AlertDialogDemo } from '@/components/AlertDialog'
 // import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
-// import { use, useState } from 'react'
+// import { useState } from 'react'
 
 // export function sidebarExample() {
 //   const [open, setOpen] = useState<boolean>(false)

@@ -44,33 +44,7 @@ export function SidebarExample({ children }: MainLayoutProps) {
     showAlert('default', 'Logged out', 'You have been logged out successfully.')
   }
 
-  const headerConfig = {
-    logo: {
-      text: 'MyApp',
-    },
-    user: {
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      avatarComponent: User,
-    },
-  }
-
-  const footerConfig = {
-    buttons: [
-      {
-        id: 'logout',
-        label: 'Logout',
-        icon: LogOut,
-        variant: 'outline' as const,
-        onClick: handleLogout,
-      },
-    ],
-    className: 'p-0 m-0',
-  }
-
   const sidebarConfig: SidebarConfig = {
-    headerConfig: headerConfig,
-    footerConfig: footerConfig,
     groups: [
       {
         id: 'main',
@@ -145,66 +119,27 @@ export function SidebarExample({ children }: MainLayoutProps) {
         ],
       },
     ],
+    header: [
+      {
+        id: 'header',
+        items: [
+          {
+            id: 'privacy',
+            title: 'Privacy Policy',
+            url: '/privacy',
+            onClick: () => console.log('Privacy Policy clicked'),
+          },
+        ],
+      },
+    ],
   }
-
-  // Helper to generate breadcrumb from current path and sidebar config
-  function getBreadcrumb() {
-    // Flatten all sidebar items and subitems with their paths
-    const items: Array<{ title: string; url?: string }> = []
-    sidebarConfig.groups.forEach((group) => {
-      group.items.forEach((item) => {
-        items.push({ title: item.title, url: item.url })
-        if (item.subItems) {
-          item.subItems.forEach((sub) => {
-            items.push({ title: sub.title, url: sub.url })
-          })
-        }
-      })
-    })
-    // Find the breadcrumb path
-    const segments = pathname.split('/').filter(Boolean)
-    let currentUrl = ''
-    const breadcrumb: Array<{ title: string; url?: string }> = []
-    segments.forEach((seg) => {
-      currentUrl += '/' + seg
-      const match = items.find((i) => i.url === currentUrl)
-      if (match) breadcrumb.push(match)
-    })
-    // Always add Home at the start
-    return [
-      { title: 'Home', url: '/' },
-      ...breadcrumb.filter((b) => b.url !== '/'),
-    ]
-  }
-
-  const breadcrumb = getBreadcrumb()
 
   return (
     <div className="flex h-full w-full rounded-sm">
       <DynamicSidebar config={sidebarConfig} />
       <SidebarInset>
-        <nav className="flex  p-3 items-center justify-between">
+        <nav className="flex items-center justify-between">
           <SidebarTrigger className="mr-2" />
-          <div className="flex-1 flex items-center min-w-0">
-            <nav className="flex items-center text-sm text-gray-500 overflow-x-auto whitespace-nowrap">
-              {breadcrumb.map((b, i) => (
-                <span
-                  key={b.url || b.title}
-                  className="flex items-center">
-                  {i > 0 && <span className="mx-2">/</span>}
-                  {b.url && i !== breadcrumb.length - 1 ? (
-                    <Link
-                      href={b.url}
-                      className="hover:underline text-gray-700">
-                      {b.title}
-                    </Link>
-                  ) : (
-                    <span className="text-gray-900 font-medium">{b.title}</span>
-                  )}
-                </span>
-              ))}
-            </nav>
-          </div>
           <div className="ml-auto">
             <Input
               type="text"
