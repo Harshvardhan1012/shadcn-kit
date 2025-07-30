@@ -306,6 +306,12 @@ export default function AdvancedChartExamples() {
         xAxisKey="formattedDate"
         yAxisKeys={['value1', 'value2', 'value3']}
         height={chartHeight}
+        autoSize={{
+          minWidth: 1000,
+          maxWidth: 3000,
+          minHeight: 20000,
+          maxHeight: 20000,
+        }}
         showGrid={showGrid}
         stacked={stacked}
         tooltipFormatter={customTooltipFormatter}
