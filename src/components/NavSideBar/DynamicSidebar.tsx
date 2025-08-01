@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import React, { ReactNode, useState } from 'react'
 import { SearchResult, SearchWrapper } from '../Form/SearchWrapper'
+import Link from 'next/link'
 
 // Types for the sidebar items
 export interface SidebarSubItem {
@@ -36,6 +37,7 @@ export interface SidebarSubItem {
   onClick?: () => void
   badge?: ReactNode | string | number
   disabled?: boolean
+  showIf?: boolean | (() => boolean)
 }
 
 export interface SidebarItem {
@@ -48,6 +50,7 @@ export interface SidebarItem {
   subItems?: SidebarSubItem[]
   disabled?: boolean
   defaultOpen?: boolean
+  showIf?: boolean | (() => boolean)
 }
 
 export interface SidebarGroup {
@@ -153,6 +156,14 @@ const SidebarLoadingSkeleton = () => (
   </div>
 )
 
+// Helper function to evaluate showIf condition
+const shouldShow = (showIf?: boolean | (() => boolean)): boolean => {
+  if (showIf === undefined) return true
+  if (typeof showIf === 'boolean') return showIf
+  if (typeof showIf === 'function') return showIf()
+  return true
+}
+
 const renderHeaderAndFooter = (
   header: ReactNode | SidebarHeaderConfig | SidebarGroup[],
   isHeader: boolean = true
@@ -184,37 +195,39 @@ const renderGroups = (groups: SidebarGroup[]) => (
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {group.items.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    asChild={!!item.url}
-                    onClick={item.onClick}
-                    tooltip={item.title}
-                    disabled={item.disabled}>
-                    {item.url ? (
-                      <a href={item.url}>
-                        {item.icon && renderIcon(item.icon)}
-                        <span className="group-data-[collapsible=icon]:hidden">
-                          {item.title}
-                        </span>
-                        {item.badge && (
-                          <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                        )}
-                      </a>
-                    ) : (
-                      <>
-                        {item.icon && renderIcon(item.icon)}
-                        <span className="group-data-[collapsible=icon]:hidden">
-                          {item.title}
-                        </span>
-                        {item.badge && (
-                          <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                        )}
-                      </>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {group.items
+                .filter((item) => shouldShow(item.showIf))
+                .map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      asChild={!!item.url}
+                      onClick={item.onClick}
+                      tooltip={item.title}
+                      disabled={item.disabled}>
+                      {item.url ? (
+                        <Link href={item.url}>
+                          {item.icon && renderIcon(item.icon)}
+                          <span className="group-data-[collapsible=icon]:hidden">
+                            {item.title}
+                          </span>
+                          {item.badge && (
+                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                          )}
+                        </Link>
+                      ) : (
+                        <>
+                          {item.icon && renderIcon(item.icon)}
+                          <span className="group-data-[collapsible=icon]:hidden">
+                            {item.title}
+                          </span>
+                          {item.badge && (
+                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                          )}
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -330,32 +343,36 @@ export function DynamicSidebar({
     const results: SearchResult[] = []
 
     config.groups.forEach((group) => {
-      group.items.forEach((item) => {
-        if (item.title.toLowerCase().includes(query.toLowerCase())) {
-          results.push({
-            id: item.id,
-            title: item.title,
-            groupLabel: group.label,
-            path: group.label ? [group.label] : [],
-            url: item.url,
-            icon: item.icon,
-          })
-        }
-
-        item.subItems?.forEach((subItem) => {
-          if (subItem.title.toLowerCase().includes(query.toLowerCase())) {
+      group.items
+        .filter((item) => shouldShow(item.showIf))
+        .forEach((item) => {
+          if (item.title.toLowerCase().includes(query.toLowerCase())) {
             results.push({
-              id: subItem.id,
-              title: subItem.title,
+              id: item.id,
+              title: item.title,
               groupLabel: group.label,
-              path: [...(group.label ? [group.label] : []), item.title],
-              isSubItem: true,
-              url: subItem.url,
-              icon: subItem.icon,
+              path: group.label ? [group.label] : [],
+              url: item.url,
+              icon: item.icon,
             })
           }
+
+          item.subItems
+            ?.filter((subItem) => shouldShow(subItem.showIf))
+            .forEach((subItem) => {
+              if (subItem.title.toLowerCase().includes(query.toLowerCase())) {
+                results.push({
+                  id: subItem.id,
+                  title: subItem.title,
+                  groupLabel: group.label,
+                  path: [...(group.label ? [group.label] : []), item.title],
+                  isSubItem: true,
+                  url: subItem.url,
+                  icon: subItem.icon,
+                })
+              }
+            })
         })
-      })
     })
 
     setSearchResults(results)
@@ -373,6 +390,11 @@ export function DynamicSidebar({
   }
 
   const renderMenuItem = (item: SidebarItem) => {
+    // Filter visible sub-items
+    const visibleSubItems = item.subItems?.filter((subItem) =>
+      shouldShow(subItem.showIf)
+    )
+
     const menuButtonContent = (
       <>
         {item.icon && renderIcon(item.icon)}
@@ -383,7 +405,7 @@ export function DynamicSidebar({
       </>
     )
 
-    if (item.subItems?.length) {
+    if (visibleSubItems?.length) {
       return (
         <Collapsible
           key={item.id}
@@ -399,7 +421,7 @@ export function DynamicSidebar({
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarMenuSub>
-                {item.subItems.map((subItem) => (
+                {visibleSubItems.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.id}>
                     <SidebarMenuSubButton
                       asChild={!!subItem.url}
@@ -487,7 +509,11 @@ export function DynamicSidebar({
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu>{group.items.map(renderMenuItem)}</SidebarMenu>
+              <SidebarMenu>
+                {group.items
+                  .filter((item) => shouldShow(item.showIf))
+                  .map(renderMenuItem)}
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
