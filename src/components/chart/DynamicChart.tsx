@@ -44,8 +44,6 @@ import {
   LineChart,
   Pie,
   PieChart,
-  RadialBar,
-  RadialBarChart,
   Sector,
   XAxis,
   YAxis,
@@ -105,7 +103,7 @@ const DEFAULT_LINE_COLORS = [
 ]
 
 // Chart types
-export type ChartType = 'area' | 'line' | 'bar' | 'pie' | 'table' | 'radial' | 'donut'
+export type ChartType = 'area' | 'line' | 'bar' | 'pie' | 'table' | 'donut'
 
 export interface ChartDataPoint {
   [key: string]: string | number
@@ -1234,45 +1232,6 @@ export function DynamicChart({
         )
       }
 
-      case 'radial': {
-        // Radial bar chart
-        const radialData = data.map((item, index) => ({
-          ...item,
-          fill: pieColors[index % pieColors.length],
-        }))
-
-        return (
-          <RadialBarChart
-            {...commonProps}
-            innerRadius="10%"
-            outerRadius="90%"
-            barSize={10}
-            data={radialData}>
-            <RadialBar
-              label={{ position: 'insideStart', fill: '#fff' }}
-              background
-              dataKey={validYAxisKeys[0]}
-            />
-            {showTooltip && (
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                  />
-                }
-              />
-            )}
-            {showLegend && (
-              <ChartLegend
-                content={<ChartLegendContent payload={undefined} />}
-                verticalAlign={legendPosition}
-              />
-            )}
-          </RadialBarChart>
-        )
-      }
-
       default:
         return <div>Unsupported chart type</div>
     }
@@ -1354,7 +1313,6 @@ export function DynamicChart({
                       <SelectItem value="pie">Pie</SelectItem>
                       <SelectItem value="table">Table</SelectItem>
                       <SelectItem value="donut">Donut</SelectItem>
-                      <SelectItem value="radial">Radial</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

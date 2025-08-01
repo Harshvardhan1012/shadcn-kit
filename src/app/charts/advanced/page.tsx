@@ -321,10 +321,6 @@ export default function AdvancedChartExamples() {
           label: 'Time Period',
           fontSize: 12,
         }}
-        yAxis={{
-          label: 'Amount (USD)',
-          tickFormatter: (value) => `$${value}`,
-        }}
         grid={{
           horizontal: true,
           vertical: true,
