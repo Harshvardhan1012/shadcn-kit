@@ -6,7 +6,7 @@ import * as React from 'react'
 import { type DateRange } from 'react-day-picker'
 
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 import { Calendar } from './calendar'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 

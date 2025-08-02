@@ -1,11 +1,11 @@
 'use client'
 
-import { useAlert } from '@/app/services/AlertService'
 import { AlertDialogDemo } from '@/components/Alert/AlertDialog'
 import {
   DynamicSidebar,
   SidebarConfig,
 } from '@/components/NavSideBar/DynamicSidebar'
+import { useAlert } from '@/components/services/AlertService'
 import { Input } from '@/components/ui/input'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -16,13 +16,9 @@ import {
   GitPullRequest,
   Home,
   Inbox,
-  LogOut,
   Settings,
-  User,
   X,
 } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 interface MainLayoutProps {
@@ -32,11 +28,6 @@ interface MainLayoutProps {
 export function SidebarExample({ children }: MainLayoutProps) {
   const [open, setOpen] = useState(false)
   const { showAlert } = useAlert()
-  const pathname = usePathname()
-
-  const handleLogout = () => {
-    setOpen(true)
-  }
 
   const handleConfirmLogout = () => {
     setOpen(false)

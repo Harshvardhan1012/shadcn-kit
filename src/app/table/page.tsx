@@ -2,7 +2,7 @@
 import { DataTable } from '@/components/table/Table'
 import { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useState } from 'react'
-import { AlertProvider, useAlert } from '../services/AlertService'
+import { AlertProvider, useAlert } from '../../components/services/AlertService'
 
 interface Todo {
   userId: number
@@ -70,7 +70,7 @@ export default function HomePage() {
     }
 
     fetchData()
-  }, [page, pageSize])
+  }, [data, fullData.length, isLoading, page, pageCount, pageSize])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -89,7 +89,7 @@ export default function HomePage() {
         `Selected row IDs: ${selectedIds.join(', ')}`
       )
     }
-  }, [rowSelection])
+  }, [rowSelection, showAlert])
 
   return (
     <AlertProvider>

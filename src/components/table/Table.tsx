@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 import React from 'react'
 import { DataTablePagination } from './Pagination'
 

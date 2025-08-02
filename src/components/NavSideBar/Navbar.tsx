@@ -3,7 +3,7 @@
 import { ModeToggle } from '@/components/theme/mode-toggle'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 
 interface NavbarProps {
   className?: string
@@ -18,7 +18,7 @@ export function Navbar({ className }: NavbarProps) {
           className
         )}>
         <div className="flex flex-1 items-center gap-2">
-          <SidebarTrigger />
+          <SidebarTrigger/>
         </div>
         <div className="flex items-center">
           <ModeToggle />

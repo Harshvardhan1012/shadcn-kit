@@ -1,96 +1,65 @@
 'use client'
 
-import { ChartType, DynamicChart } from '@/components/chart/DynamicChart'
+import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DownloadIcon,
   InfoIcon,
   TrendingDownIcon,
   TrendingUpIcon,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 
 // Advanced usage example with more customization options
 export default function AdvancedChartExamples() {
   // Sample data for time series
-  const [timeSeriesData, setTimeSeriesData] = useState([
-    { date: '2025-01', value1: 400, value2: 240, value3: 320 },
-    { date: '2025-02', value1: 300, value2: 198, value3: 280 },
-    { date: '2025-03', value1: 450, value2: 260, value3: 340 },
-    { date: '2025-04', value1: 470, value2: 280, value3: 380 },
-    { date: '2025-05', value1: 540, value2: 305, value3: 430 },
-    { date: '2025-06', value1: 580, value2: 350, value3: 450 },
-  ])
+  const timeSeriesData= [
+    {
+      date: '2025-01',
+      value1: 400,
+      value2: 240,
+      value3: 320,
+      formattedDate: 'Jan',
+    },
+    {
+      date: '2025-02',
+      value1: 300,
+      value2: 198,
+      value3: 280,
+      formattedDate: 'Feb',
+    },
+    {
+      date: '2025-03',
+      value1: 450,
+      value2: 260,
+      value3: 340,
+      formattedDate: 'Mar',
+    },
+    {
+      date: '2025-04',
+      value1: 470,
+      value2: 280,
+      value3: 380,
+      formattedDate: 'Apr',
+    },
+    {
+      date: '2025-05',
+      value1: 540,
+      value2: 305,
+      value3: 430,
+      formattedDate: 'May',
+    },
+    {
+      date: '2025-06',
+      value1: 580,
+      value2: 350,
+      value3: 450,
+      formattedDate: 'Jun',
+    },
+  ]
 
   // State for controlling advanced options
-  const [chartType, setChartType] = useState<ChartType>('area')
-  const [stacked, setStacked] = useState(false)
-  const [showGrid, setShowGrid] = useState(true)
-  const [showReferenceLines, setShowReferenceLines] = useState(false)
-  const [dateFormat, setDateFormat] = useState('month')
-  const [chartHeight, setChartHeight] = useState(400)
-
   // Format dates based on selection
-  useEffect(() => {
-    const formatData = () => {
-      return timeSeriesData.map((item) => {
-        const date = new Date(item.date)
-        let formattedDate
-
-        switch (dateFormat) {
-          case 'month':
-            formattedDate = date.toLocaleString('default', { month: 'short' })
-            break
-          case 'quarter':
-            const quarter = Math.floor(date.getMonth() / 3) + 1
-            formattedDate = `Q${quarter}`
-            break
-          case 'full':
-            formattedDate = date.toLocaleString('default', {
-              month: 'short',
-              year: '2-digit',
-            })
-            break
-          default:
-            formattedDate = item.date
-        }
-
-        return { ...item, formattedDate }
-      })
-    }
-
-    setTimeSeriesData((prevData) => {
-      const baseData = prevData.map((item) => ({
-        date: item.date,
-        value1: item.value1,
-        value2: item.value2,
-        value3: item.value3,
-      }))
-
-      return formatData(baseData)
-    })
-  }, [dateFormat])
-
-  // Calculate the threshold for reference line
-  const averageValue =
-    timeSeriesData.reduce((sum, item) => sum + item.value1, 0) /
-    timeSeriesData.length
 
   // Advanced chart configuration
   const advancedConfig = {
@@ -115,27 +84,6 @@ export default function AdvancedChartExamples() {
         dark: 'oklch(0.6 0.28 30)',
       },
     },
-  }
-
-  // Custom tooltip formatter
-  const customTooltipFormatter = (value, name, entry) => {
-    const formattedValue = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value)
-
-    // Find the label from config
-    const label =
-      Object.entries(advancedConfig).find(([key]) => key === entry.dataKey)?.[1]
-        ?.label || name
-
-    return (
-      <span>
-        <strong>{label}</strong>: {formattedValue}
-      </span>
-    )
   }
 
   // Dynamic footer that changes based on trends
@@ -174,26 +122,6 @@ export default function AdvancedChartExamples() {
     )
   }
 
-  // Reference lines configuration
-  const referenceLines = showReferenceLines
-    ? [
-        {
-          y: averageValue,
-          label: 'Average',
-          stroke: 'var(--color-value1)',
-          strokeDasharray: '3 3',
-          strokeWidth: 2,
-        },
-        {
-          y: averageValue * 1.2,
-          label: 'Target',
-          stroke: 'var(--color-value3)',
-          strokeDasharray: '5 5',
-          strokeWidth: 1,
-        },
-      ]
-    : []
-
   return (
     <div className="container mx-auto py-10 space-y-8">
       <div>
@@ -204,118 +132,19 @@ export default function AdvancedChartExamples() {
         </p>
       </div>
 
-      {/* Controls panel */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chart Controls</CardTitle>
-          <CardDescription>
-            Customize the appearance and behavior of the chart
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <Label>Chart Type</Label>
-              <Select
-                defaultValue={chartType}
-                onValueChange={setChartType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select chart type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="area">Area Chart</SelectItem>
-                  <SelectItem value="line">Line Chart</SelectItem>
-                  <SelectItem value="bar">Bar Chart</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Date Format</Label>
-              <Select
-                defaultValue={dateFormat}
-                onValueChange={setDateFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select date format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Month Only</SelectItem>
-                  <SelectItem value="quarter">Quarters</SelectItem>
-                  <SelectItem value="full">Month and Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Chart Height</Label>
-              <Select
-                defaultValue={String(chartHeight)}
-                onValueChange={(val) => setChartHeight(Number(val))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select height" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="300">Small (300px)</SelectItem>
-                  <SelectItem value="400">Medium (400px)</SelectItem>
-                  <SelectItem value="500">Large (500px)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="stacked"
-                  checked={stacked}
-                  onCheckedChange={setStacked}
-                />
-                <Label htmlFor="stacked">Stacked Chart</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="grid"
-                  checked={showGrid}
-                  onCheckedChange={setShowGrid}
-                />
-                <Label htmlFor="grid">Show Grid</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="refLines"
-                  checked={showReferenceLines}
-                  onCheckedChange={setShowReferenceLines}
-                />
-                <Label htmlFor="refLines">Reference Lines</Label>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Main advanced chart */}
       <DynamicChart
         title="Financial Performance 2025"
-        description={`Monthly financial metrics with ${
-          stacked ? 'stacked' : 'individual'
-        } visualization`}
-        chartType={chartType}
         data={timeSeriesData}
         config={advancedConfig}
         xAxisKey="formattedDate"
         yAxisKeys={['value1', 'value2', 'value3']}
-        height={chartHeight}
         autoSize={{
           minWidth: 1000,
           maxWidth: 3000,
           minHeight: 20000,
           maxHeight: 20000,
         }}
-        showGrid={showGrid}
-        stacked={stacked}
-        tooltipFormatter={customTooltipFormatter}
-        referenceLines={referenceLines}
         footer={<DynamicFooter />}
         xAxis={{
           label: 'Time Period',
@@ -340,9 +169,6 @@ export default function AdvancedChartExamples() {
           xAxisKey="formattedDate"
           yAxisKeys={['value1', 'value3']}
           height={300}
-          referenceLines={[
-            { y: averageValue * 1.1, label: 'Target', stroke: '#f43f5e' },
-          ]}
           chartProps={{
             value1: {
               strokeWidth: 2,
@@ -371,10 +197,6 @@ export default function AdvancedChartExamples() {
           xAxis={{
             angle: -45,
             fontSize: 10,
-          }}
-          yAxis={{
-            tickFormatter: (value) => `$${value / 1000}k`,
-            tickCount: 5,
           }}
           chartProps={{
             value1: { radius: [8, 8, 0, 0] },

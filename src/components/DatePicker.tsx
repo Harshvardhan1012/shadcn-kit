@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 import { CalendarIcon } from 'lucide-react'
 
 interface SingleDatePickerProps {

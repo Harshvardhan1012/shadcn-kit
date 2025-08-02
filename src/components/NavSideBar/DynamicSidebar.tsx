@@ -22,11 +22,11 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 import Image from 'next/image'
 import React, { ReactNode, useState } from 'react'
-import { SearchResult, SearchWrapper } from '../Form/SearchWrapper'
 import Link from 'next/link'
+import { SearchResult, SearchWrapper } from './search-wrapper'
 
 // Types for the sidebar items
 export interface SidebarSubItem {

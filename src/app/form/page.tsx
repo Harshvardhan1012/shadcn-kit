@@ -6,12 +6,13 @@ import {
   Lock,
   Mail,
   User,
-} from 'lucide-react' // Import appropriate icons
-import { useEffect, useState } from 'react'
+} from 'lucide-react'; // Import appropriate icons
 import { FieldValues } from 'react-hook-form'
 import * as z from 'zod'
+import { Form, FormFieldConfig } from 'json-reactify'
 import { H3 } from '../../components/ui/Typography'
-import DynamicForm, { FormFieldConfig, FormFieldType } from './DynamicForm'
+import { FormFieldType } from '@/components'
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -29,7 +30,7 @@ const formSchema = z.object({
   }),
   birthDateRange: z.object({
     from: z.date(),
-    to: z.date()
+    to: z.date(),
   }),
   // Type: { from?: Date; to?: Date } Type: [Date, Date]
   gender: z.enum(['male', 'female', 'other'], {
@@ -48,29 +49,10 @@ const formSchema = z.object({
 
 const FormPage = () => {
   const onSubmit = (data: FieldValues) => {
+    // showAlert('default', 'Form Submitted', 'Your form has been submitted successfully.')
     console.log('Form submitted!', data)
   }
 
-  const [todos, setTodos] = useState([])
-  const [searchParam, setSearchParam] = useState('')
-
-  useEffect(() => {
-    const fetchTodos = async () => {
-      const todos = await fetch(
-        `https://dummyjson.com/products/search?q=${searchParam}`
-      )
-      const todosData = await todos.json()
-      setTodos(
-        todosData.products.map((e: { id: number; title: string }) => {
-          return {
-            value: e.id,
-            label: e.title,
-          }
-        })
-      )
-    }
-    fetchTodos()
-  }, [searchParam])
   const exampleFormConfig: FormFieldConfig[] = [
     {
       fieldName: 'username',
@@ -108,8 +90,8 @@ const FormPage = () => {
       validation: formSchema.shape.age,
       description: 'You must be at least 1 year old.',
       hidden: false,
-      max: 120, 
-      min:10
+      max: 120,
+      min: 10,
     },
     {
       fieldName: 'profilePicture',
@@ -191,7 +173,7 @@ const FormPage = () => {
       fieldName: 'newsletter',
       fieldLabel: 'Subscribe to newsletter',
       fieldType: FormFieldType.DATETIME,
-      timeStructure:'hh:mm:ss',
+      timeStructure: 'hh:mm:ss',
       timeFormat: '12',
       onChangeField(value) {
         console.log('Newsletter subscription time changed:', value)
@@ -199,10 +181,12 @@ const FormPage = () => {
       description: 'Get updates in your inbox.',
     },
   ]
+
+  // const { showAlert } = useAlert()
   return (
     <div className="container mx-auto max-w-2xl py-12">
       <H3 className="mb-8">Dynamic Form Example</H3>
-      <DynamicForm
+      <Form
         formConfig={exampleFormConfig}
         onSubmit={(data) => onSubmit(data)}
         schema={formSchema}
@@ -222,7 +206,7 @@ const FormPage = () => {
           gender: 'male',
           department: 'engineering',
           favoriteFruit: 'apple',
-          newsletter: new Date(),
+          newsletter: new Date().toString(), // Example date for datetime input
         }}
       />
     </div>

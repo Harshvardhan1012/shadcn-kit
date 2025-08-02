@@ -4,7 +4,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { cn } from "@/lib/utils"
+import { cn } from "@/components/lib/utils"
 
 interface DateRangePickerProps {
   value?: { from?: Date; to?: Date }
