@@ -162,6 +162,7 @@ type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
     fieldType: FormFieldType.DATETIME
     mode?: 'single' | 'multiple' | 'range'
     timeFormat?: '12' | '24'
+    timeStructure?: 'hh:mm:ss' | 'hh:mm' | 'hh'
     fromDate?: Date
     toDate?: Date
   }
@@ -322,41 +323,6 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
       options,
       ...props
     } = fieldConfig
-
-    const handleTimeChange = (
-      field: { onChange: (value: any) => void; value: string },
-      fieldConfig: DateTimeFieldConfig,
-      type: 'hour' | 'minute' | 'ampm',
-      value: string
-    ) => {
-      const currentDate = field.value ? new Date(field.value) : new Date()
-
-      if (type === 'hour') {
-        const hour = parseInt(value)
-        currentDate.setHours(hour)
-      } else if (type === 'minute') {
-        const minute = parseInt(value)
-        currentDate.setMinutes(minute)
-      } else if (type === 'ampm') {
-        const currentHour = currentDate.getHours()
-        if (value === 'AM' && currentHour >= 12) {
-          currentDate.setHours(currentHour - 12)
-        } else if (value === 'PM' && currentHour < 12) {
-          currentDate.setHours(currentHour + 12)
-        }
-      }
-
-      const year = currentDate.getFullYear()
-      const month = String(currentDate.getMonth() + 1).padStart(2, '0')
-      const day = String(currentDate.getDate()).padStart(2, '0')
-      const hours = String(currentDate.getHours()).padStart(2, '0')
-      const minutes = String(currentDate.getMinutes()).padStart(2, '0')
-      const seconds = String(currentDate.getSeconds()).padStart(2, '0')
-      const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-
-      field.onChange(localDateTimeString)
-      fieldConfig.onChangeField?.(localDateTimeString)
-    }
 
     // Handle visibility
     if (hidden || (showIf && !showIf(formValues))) return null
@@ -934,21 +900,26 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                 ? new Date(field.value)
                 : undefined
               const is24Hour = dateTimeConfig.timeFormat === '24'
+              const timeStructure = dateTimeConfig.timeStructure || 'hh:mm:ss'
 
               const handleTimeChange = (
-                type: 'hour' | 'minute' | 'ampm',
+                type: 'hour' | 'minute' | 'second' | 'ampm',
                 value: string
               ) => {
-                if (!selectedDate) return
-
-                const newDate = new Date(selectedDate)
+                const newDate = selectedDate
+                  ? new Date(selectedDate)
+                  : new Date()
 
                 switch (type) {
                   case 'hour':
-                    newDate.setHours(parseInt(value))
+                    const hour = parseInt(value)
+                    newDate.setHours(hour)
                     break
                   case 'minute':
                     newDate.setMinutes(parseInt(value))
+                    break
+                  case 'second':
+                    newDate.setSeconds(parseInt(value))
                     break
                   case 'ampm':
                     const currentHour = newDate.getHours()
@@ -960,9 +931,25 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                     break
                 }
 
-                const isoString = newDate.toISOString()
-                field.onChange(isoString as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, isoString)
+                // Set default values based on timeStructure
+                if (timeStructure === 'hh') {
+                  newDate.setMinutes(0)
+                  newDate.setSeconds(0)
+                } else if (timeStructure === 'hh:mm') {
+                  newDate.setSeconds(0)
+                }
+
+                // Create a properly formatted local datetime string
+                const year = newDate.getFullYear()
+                const month = String(newDate.getMonth() + 1).padStart(2, '0')
+                const day = String(newDate.getDate()).padStart(2, '0')
+                const hours = String(newDate.getHours()).padStart(2, '0')
+                const minutes = String(newDate.getMinutes()).padStart(2, '0')
+                const seconds = String(newDate.getSeconds()).padStart(2, '0')
+
+                const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+                field.onChange(localDateTimeString as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, localDateTimeString)
               }
 
               const handleDateSelect = (date: Date | undefined) => {
@@ -973,24 +960,76 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                   date.setHours(
                     selectedDate.getHours(),
                     selectedDate.getMinutes(),
-                    selectedDate.getSeconds(),
+                    timeStructure === 'hh:mm:ss'
+                      ? selectedDate.getSeconds()
+                      : 0,
                     selectedDate.getMilliseconds()
                   )
                 } else {
                   // Default to current time if no time is selected
                   const now = new Date()
-                  date.setHours(now.getHours(), now.getMinutes(), 0, 0)
+                  date.setHours(
+                    now.getHours(),
+                    timeStructure === 'hh' ? 0 : now.getMinutes(),
+                    timeStructure === 'hh:mm:ss' ? now.getSeconds() : 0,
+                    0
+                  )
                 }
 
-                const isoString = date.toISOString()
-                field.onChange(isoString as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, isoString)
+                // Ensure proper defaults based on timeStructure
+                if (timeStructure === 'hh') {
+                  date.setMinutes(0)
+                  date.setSeconds(0)
+                } else if (timeStructure === 'hh:mm') {
+                  date.setSeconds(0)
+                }
+
+                // Create a properly formatted local datetime string
+                const year = date.getFullYear()
+                const month = String(date.getMonth() + 1).padStart(2, '0')
+                const day = String(date.getDate()).padStart(2, '0')
+                const hours = String(date.getHours()).padStart(2, '0')
+                const minutes = String(date.getMinutes()).padStart(2, '0')
+                const seconds = String(date.getSeconds()).padStart(2, '0')
+
+                const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+                field.onChange(localDateTimeString as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, localDateTimeString)
               }
 
               const formatDisplay = (date: Date) => {
-                return is24Hour
-                  ? format(date, 'MM/dd/yyyy HH:mm')
-                  : format(date, 'MM/dd/yyyy hh:mm aa')
+                switch (timeStructure) {
+                  case 'hh':
+                    return is24Hour
+                      ? format(date, 'MM/dd/yyyy HH')
+                      : format(date, 'MM/dd/yyyy hh aa')
+                  case 'hh:mm':
+                    return is24Hour
+                      ? format(date, 'MM/dd/yyyy HH:mm')
+                      : format(date, 'MM/dd/yyyy hh:mm aa')
+                  case 'hh:mm:ss':
+                  default:
+                    return is24Hour
+                      ? format(date, 'MM/dd/yyyy HH:mm:ss')
+                      : format(date, 'MM/dd/yyyy hh:mm:ss aa')
+                }
+              }
+
+              const getPlaceholder = () => {
+                if (dateTimeConfig.placeholder)
+                  return dateTimeConfig.placeholder
+
+                switch (timeStructure) {
+                  case 'hh':
+                    return is24Hour ? 'MM/DD/YYYY HH' : 'MM/DD/YYYY hh aa'
+                  case 'hh:mm':
+                    return is24Hour ? 'MM/DD/YYYY HH:mm' : 'MM/DD/YYYY hh:mm aa'
+                  case 'hh:mm:ss':
+                  default:
+                    return is24Hour
+                      ? 'MM/DD/YYYY HH:mm:ss'
+                      : 'MM/DD/YYYY hh:mm:ss aa'
+                }
               }
 
               return (
@@ -1009,12 +1048,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                           {selectedDate ? (
                             formatDisplay(selectedDate)
                           ) : (
-                            <span>
-                              {dateTimeConfig.placeholder ||
-                                (is24Hour
-                                  ? 'MM/DD/YYYY HH:mm'
-                                  : 'MM/DD/YYYY hh:mm aa')}
-                            </span>
+                            <span>{getPlaceholder()}</span>
                           )}
                         </Button>
                       </FormControl>
@@ -1054,9 +1088,34 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                                     size="sm"
                                     variant={isSelected ? 'default' : 'ghost'}
                                     className="sm:w-full justify-center"
-                                    onClick={() =>
-                                      handleTimeChange('hour', hour.toString())
-                                    }>
+                                    onClick={() => {
+                                      if (is24Hour) {
+                                        handleTimeChange(
+                                          'hour',
+                                          hour.toString()
+                                        )
+                                      } else {
+                                        // For 12-hour format, convert display hour to 24-hour
+                                        const currentDate =
+                                          selectedDate || new Date()
+                                        const isPM =
+                                          currentDate.getHours() >= 12
+
+                                        let hourValue: number
+                                        if (hour === 12) {
+                                          // 12 AM = 0, 12 PM = 12
+                                          hourValue = isPM ? 12 : 0
+                                        } else {
+                                          // 1-11 AM = 1-11, 1-11 PM = 13-23
+                                          hourValue = isPM ? hour + 12 : hour
+                                        }
+
+                                        handleTimeChange(
+                                          'hour',
+                                          hourValue.toString()
+                                        )
+                                      }
+                                    }}>
                                     {hour}
                                   </Button>
                                 )
@@ -1067,12 +1126,15 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                               className="sm:hidden"
                             />
                           </ScrollArea>
-
                           {/* Minutes Selector */}
-                          <ScrollArea className="w-64 sm:w-auto">
-                            <div className="flex sm:flex-col p-2 gap-1">
-                              {Array.from({ length: 12 }, (_, i) => i * 5).map(
-                                (minute) => {
+                          {(timeStructure === 'hh:mm' ||
+                            timeStructure === 'hh:mm:ss') && (
+                            <ScrollArea className="w-64 sm:w-auto">
+                              <div className="flex sm:flex-col p-2 gap-1">
+                                {Array.from(
+                                  { length: 60 },
+                                  (_, i) => i * 1
+                                ).map((minute) => {
                                   const isSelected =
                                     selectedDate?.getMinutes() === minute
                                   return (
@@ -1090,15 +1152,47 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                                       {minute.toString().padStart(2, '0')}
                                     </Button>
                                   )
-                                }
-                              )}
-                            </div>
-                            <ScrollBar
-                              orientation="horizontal"
-                              className="sm:hidden"
-                            />
-                          </ScrollArea>
-
+                                })}
+                              </div>
+                              <ScrollBar
+                                orientation="horizontal"
+                                className="sm:hidden"
+                              />
+                            </ScrollArea>
+                          )}
+                          {/* Seconds Selector */}
+                          {timeStructure === 'hh:mm:ss' && (
+                            <ScrollArea className="w-64 sm:w-auto">
+                              <div className="flex sm:flex-col p-2 gap-1">
+                                {Array.from(
+                                  { length: 60 },
+                                  (_, i) => i * 1
+                                ).map((second) => {
+                                  const isSelected =
+                                    selectedDate?.getSeconds() === second
+                                  return (
+                                    <Button
+                                      key={second}
+                                      size="sm"
+                                      variant={isSelected ? 'default' : 'ghost'}
+                                      className="sm:w-full justify-center"
+                                      onClick={() =>
+                                        handleTimeChange(
+                                          'second',
+                                          second.toString()
+                                        )
+                                      }>
+                                      {second.toString().padStart(2, '0')}
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                              <ScrollBar
+                                orientation="horizontal"
+                                className="sm:hidden"
+                              />
+                            </ScrollArea>
+                          )}
                           {/* AM/PM Selector */}
                           {!is24Hour && (
                             <ScrollArea>
@@ -1140,6 +1234,8 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             }}
           />
         )
+
+      // ...existing code...
 
       case FormFieldType.MULTISELECT:
         return (

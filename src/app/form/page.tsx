@@ -48,11 +48,8 @@ const formSchema = z.object({
 
 const FormPage = () => {
   const onSubmit = (data: FieldValues) => {
-    debugger
     console.log('Form submitted!', data)
-    alert('Form Submitted! Check the console for data.')
   }
-  console.log(formSchema.shape.skills)
 
   const [todos, setTodos] = useState([])
   const [searchParam, setSearchParam] = useState('')
@@ -110,6 +107,9 @@ const FormPage = () => {
       placeholder: 'Enter your age',
       validation: formSchema.shape.age,
       description: 'You must be at least 1 year old.',
+      hidden: false,
+      max: 120, 
+      min:10
     },
     {
       fieldName: 'profilePicture',
@@ -137,6 +137,9 @@ const FormPage = () => {
       icon: CalendarDays,
       mode: 'range',
       description: 'Pick your date of birth.',
+      onChangeField(value) {
+        console.log('Birth date range changed:', value)
+      },
       validation: formSchema.shape.birthDateRange,
     },
     {
@@ -188,7 +191,11 @@ const FormPage = () => {
       fieldName: 'newsletter',
       fieldLabel: 'Subscribe to newsletter',
       fieldType: FormFieldType.DATETIME,
+      timeStructure:'hh:mm:ss',
       timeFormat: '12',
+      onChangeField(value) {
+        console.log('Newsletter subscription time changed:', value)
+      },
       description: 'Get updates in your inbox.',
     },
   ]
