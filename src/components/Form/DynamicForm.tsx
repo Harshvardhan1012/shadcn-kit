@@ -564,7 +564,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             <SingleDatePicker
               key={name}
               value={form.watch(name as Path<T>)}
-              onChange={(value) => {
+              onChange={(value: Date) => {
                 form.setValue(name as Path<T>, value as PathValue<T, Path<T>>)
                 handleValueChange(fieldConfig, value)
               }}
@@ -903,6 +903,22 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
               const is24Hour = dateTimeConfig.timeFormat === '24'
               const timeStructure = dateTimeConfig.timeStructure || 'hh:mm:ss'
 
+              const formatDateTimeOutput = (date: Date) => {
+                // Create a copy to avoid mutating the original
+                const outputDate = new Date(date)
+
+                // Set default values based on timeStructure
+                if (timeStructure === 'hh') {
+                  outputDate.setMinutes(0)
+                  outputDate.setSeconds(0)
+                } else if (timeStructure === 'hh:mm') {
+                  outputDate.setSeconds(0)
+                }
+
+                // Return the Date object directly (not string)
+                return outputDate
+              }
+
               const handleTimeChange = (
                 type: 'hour' | 'minute' | 'second' | 'ampm',
                 value: string
@@ -940,17 +956,9 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                   newDate.setSeconds(0)
                 }
 
-                // Create a properly formatted local datetime string
-                const year = newDate.getFullYear()
-                const month = String(newDate.getMonth() + 1).padStart(2, '0')
-                const day = String(newDate.getDate()).padStart(2, '0')
-                const hours = String(newDate.getHours()).padStart(2, '0')
-                const minutes = String(newDate.getMinutes()).padStart(2, '0')
-                const seconds = String(newDate.getSeconds()).padStart(2, '0')
-
-                const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-                field.onChange(localDateTimeString as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, localDateTimeString)
+                const formattedOutput = formatDateTimeOutput(newDate)
+                field.onChange(formattedOutput as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, formattedOutput)
               }
 
               const handleDateSelect = (date: Date | undefined) => {
@@ -985,19 +993,10 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                   date.setSeconds(0)
                 }
 
-                // Create a properly formatted local datetime string
-                const year = date.getFullYear()
-                const month = String(date.getMonth() + 1).padStart(2, '0')
-                const day = String(date.getDate()).padStart(2, '0')
-                const hours = String(date.getHours()).padStart(2, '0')
-                const minutes = String(date.getMinutes()).padStart(2, '0')
-                const seconds = String(date.getSeconds()).padStart(2, '0')
-
-                const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-                field.onChange(localDateTimeString as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, localDateTimeString)
+                const formattedOutput = formatDateTimeOutput(date)
+                field.onChange(formattedOutput as PathValue<T, Path<T>>)
+                handleValueChange(fieldConfig, formattedOutput)
               }
-
               const formatDisplay = (date: Date) => {
                 switch (timeStructure) {
                   case 'hh':

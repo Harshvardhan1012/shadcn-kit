@@ -6,13 +6,13 @@ import {
   Lock,
   Mail,
   User,
-} from 'lucide-react'; // Import appropriate icons
+} from 'lucide-react' // Import appropriate icons
 import { FieldValues } from 'react-hook-form'
 import * as z from 'zod'
-import { Form, FormFieldConfig } from 'json-reactify'
+import DynamicForm from '@/components/form/DynamicForm'
+import { FormFieldConfig } from './../../components/form/DynamicForm'
 import { H3 } from '../../components/ui/Typography'
-import { FormFieldType } from '@/components'
-
+import {  FormFieldType } from '@/components'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -36,21 +36,20 @@ const formSchema = z.object({
   gender: z.enum(['male', 'female', 'other'], {
     errorMap: () => ({ message: 'Please select a gender.' }),
   }),
-  department: z.enum(['engineering', 'marketing', 'hr'], {
-    errorMap: () => ({ message: 'Please select a department.' }),
-  }),
+  department: z.date().optional(), // Changed to date type for date input
   favoriteFruit: z.enum(['apple', 'banana', 'orange'], {
     errorMap: () => ({ message: 'Please select a fruit.' }),
   }),
-  newsletter: z.string().optional(), // Changed to date type for datetime input
+  newsletter: z.date().optional(), // Changed to date type for datetime input
 })
 
 // Define form configuration as a function to accept variables
 
 const FormPage = () => {
   const onSubmit = (data: FieldValues) => {
+    console.log(data)
     // showAlert('default', 'Form Submitted', 'Your form has been submitted successfully.')
-    console.log('Form submitted!', data)
+    console.log('Form submitted!', data.newsletter.getDate(), data.newsletter.getHours(), data.newsletter.getMinutes(), data.newsletter.getSeconds())
   }
 
   const exampleFormConfig: FormFieldConfig[] = [
@@ -148,13 +147,9 @@ const FormPage = () => {
     {
       fieldName: 'department',
       fieldLabel: 'Department',
-      fieldType: FormFieldType.COMBOBOX,
-      options: [
-        { value: 'engineering', label: 'Engineering' },
-        { value: 'marketing', label: 'Marketing' },
-        { value: 'hr', label: 'HR' },
-      ],
-      validation: formSchema.shape.department,
+      fieldType: FormFieldType.DATE,
+      mode: 'single',
+      // validation: formSchema.shape.department,
       description: 'Select your department.',
     },
     {
@@ -186,7 +181,7 @@ const FormPage = () => {
   return (
     <div className="container mx-auto max-w-2xl py-12">
       <H3 className="mb-8">Dynamic Form Example</H3>
-      <Form
+      <DynamicForm
         formConfig={exampleFormConfig}
         onSubmit={(data) => onSubmit(data)}
         schema={formSchema}
@@ -204,9 +199,9 @@ const FormPage = () => {
             to: new Date(2025, 7, 20), // Example date
           },
           gender: 'male',
-          department: 'engineering',
+          department: new Date(), // Example date for date input
           favoriteFruit: 'apple',
-          newsletter: new Date().toString(), // Example date for datetime input
+          newsletter: new Date() // Example date for datetime input
         }}
       />
     </div>

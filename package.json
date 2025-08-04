@@ -1,6 +1,6 @@
 {
   "name": "json-reactify",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "keywords": [
     "react",
     "json",
@@ -50,7 +50,7 @@
     "combobox": "^1.0.1",
     "command": "^1.1.1",
     "date-fns": "^4.1.0",
-    "json-reactify": "^0.0.2",
+    "json-reactify": "^0.0.5",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.513.0",

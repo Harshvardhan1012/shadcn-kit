@@ -17,8 +17,8 @@ import { cn } from '@/components/lib/utils'
 import { CalendarIcon } from 'lucide-react'
 
 interface SingleDatePickerProps {
-  value?: string
-  onChange: (value: string) => void
+  value?: string | Date
+  onChange: (value: Date) => void  // Changed to return Date object
   label?: string
   description?: string
   disabled?: boolean
@@ -37,6 +37,16 @@ export function SingleDatePicker({
   fromDate,
   toDate,
 }: SingleDatePickerProps) {
+  // Convert string value to Date for display and calendar selection
+  const selectedDate = value ? new Date(value) : undefined
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Return the Date object directly (not string)
+      onChange(date)
+    }
+  }
+
   return (
     <FormItem className={cn(className)}>
       {label && <FormLabel>{label}</FormLabel>}
@@ -48,18 +58,18 @@ export function SingleDatePicker({
               disabled={disabled}
               className={cn(
                 'w-full justify-start text-left font-normal',
-                !value && 'text-muted-foreground'
+                !selectedDate && 'text-muted-foreground'
               )}>
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {value ? format(new Date(value), 'PPP') : 'Pick a date'}
+              {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
             mode="single"
-            selected={value ? new Date(value) : undefined}
-            onSelect={(date) => date && onChange(date.toISOString())}
+            selected={selectedDate}
+            onSelect={handleDateSelect}
             disabled={disabled}
             fromDate={fromDate}
             toDate={toDate}
