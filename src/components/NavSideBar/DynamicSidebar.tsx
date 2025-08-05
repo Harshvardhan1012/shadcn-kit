@@ -1,4 +1,5 @@
 'use client'
+import { cn } from '@/components/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -20,12 +21,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/components/lib/utils'
 import Image from 'next/image'
-import React, { ReactNode, useState } from 'react'
 import Link from 'next/link'
+import React, { ReactNode, useState } from 'react'
 import { SearchResult, SearchWrapper } from './search-wrapper'
 
 // Types for the sidebar items
@@ -191,7 +192,7 @@ const renderGroups = (groups: SidebarGroup[]) => (
     {groups &&
       groups.length > 0 &&
       groups.map((group) => (
-        <SidebarGroup key={group.id}>
+        <SidebarGroup key={group.id} className='p-0'>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
@@ -299,7 +300,7 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
 
 const renderFooterFromConfig = (config: SidebarFooterConfig) => {
   return (
-    <div className={cn('space-y-2', config.className)}>
+    <div className={cn(config.className)}>
       {config.buttons?.map((button) => (
         <Button
           key={button.id}
@@ -333,6 +334,7 @@ export function DynamicSidebar({
     {}
   )
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const { state } = useSidebar()
 
   const searchSidebarItems = (query: string) => {
     if (!query.trim()) {
@@ -495,7 +497,7 @@ export function DynamicSidebar({
 
       {/* Content */}
       <SidebarContent>
-        {enableSearch && (
+        {enableSearch && state === 'expanded' && (
           <SearchWrapper
             onSearch={searchSidebarItems}
             searchResults={searchResults}

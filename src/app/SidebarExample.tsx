@@ -15,6 +15,7 @@ import {
   ClockFading,
   GitPullRequest,
   Home,
+  Icon,
   Inbox,
   Settings,
   X,
@@ -118,7 +119,22 @@ export function SidebarExample({ children }: MainLayoutProps) {
             id: 'privacy',
             title: 'Privacy Policy',
             url: '/privacy',
+            icon: Settings,
             onClick: () => console.log('Privacy Policy clicked'),
+          },
+        ],
+      },
+    ],
+    footer: [
+      {
+        id: 'footer',
+        items: [
+          {
+            id: 'terms',
+            title: 'Terms of Service',
+            icon: Settings,
+            url: '/terms',
+            onClick: () => console.log('Terms of Service clicked'),
           },
         ],
       },
