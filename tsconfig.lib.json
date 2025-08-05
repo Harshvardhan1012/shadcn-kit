@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,                // enable emitting output
+    "declaration": true,            // generate types
+    "emitDeclarationOnly": false,
+    "outDir": "dist",               // output folder
+    "module": "ESNext",             // keep ES modules for bundlers
+    "jsx": "react-jsx",             // for react 17+ JSX transform
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "incremental": false            // optional, disable incremental for clean build
+  },
+  "include": ["src/components/**/*"]  // build only your components
+}

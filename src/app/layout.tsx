@@ -1,13 +1,13 @@
 import { SidebarExample } from '@/app/SidebarExample'
-import { GlobalAlert } from '@/components/Alert/Alert'
-import { ClientAlertProvider } from '@/components/Alert/ClientAlertProvider'
-import { ClientSidebarProvider } from '@/components/NavSideBar/ClientSidebarProvider'
 import { ModeToggle } from '@/components/theme/mode-toggle'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { ThemeSelector } from '@/components/theme/theme-selector'
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import './globals.css'
+import { ClientSidebarProvider } from '@/components/NavSideBar/ClientSidebarProvider'
+import { GlobalAlert } from '@/components/Alert/Alert'
+import { ClientAlertProvider } from '@/components/services/AlertService'
 
 export const metadata: Metadata = {
   title: 'Create Next App',

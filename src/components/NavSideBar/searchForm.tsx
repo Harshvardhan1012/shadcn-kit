@@ -1,9 +1,10 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Input } from '../ui/input'
 
 export interface SearchResult {
   id: string | number
@@ -77,7 +78,7 @@ export function SearchForm({
               isCentered && 'h-5 w-5'
             )}
           />
-          <input
+          <Input
             id="search"
             name="search"
             value={searchValue}

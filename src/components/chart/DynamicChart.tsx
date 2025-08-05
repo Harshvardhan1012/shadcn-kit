@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -21,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -30,8 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/components/lib/utils'
+import { Download, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
 import * as React from 'react'
 import {
   Area,
@@ -48,6 +48,48 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+
+// Type definitions for Recharts components
+interface ChartClickData {
+  activePayload?: Array<{
+    payload: ChartDataPoint
+    dataKey: string
+    value: number | string
+  }>
+  activeLabel?: string
+  activeCoordinate?: { x: number; y: number }
+}
+
+interface PieChartEntryData {
+  [key: string]: string | number | undefined
+}
+
+interface RechartsActiveShapeProps {
+  cx: number
+  cy: number
+  innerRadius: number
+  outerRadius: number
+  startAngle: number
+  endAngle: number
+  fill: string
+  percent: number
+  value: number
+  name: string
+  payload?: ChartDataPoint
+  [key: string]: unknown
+}
+
+interface RechartsTooltipProps {
+  active?: boolean
+  payload?: Array<{
+    value: number | string
+    name: string
+    dataKey: string
+    color?: string
+    payload?: ChartDataPoint
+  }>
+  label?: string | number
+}
 
 // Default chart config
 const defaultConfig: ChartConfig = {
@@ -156,12 +198,11 @@ export interface DynamicChartProps {
   showLegend?: boolean
   /**
    * Custom tooltip formatter
-   * See recharts Formatter type: (value: ValueType, name: NameType, ...rest) => ReactNode
    */
   tooltipFormatter?: (
     value: unknown,
     name: string | number,
-    props: any
+    props: RechartsTooltipProps
   ) => React.ReactNode
   /**
    * Tooltip label formatter
@@ -346,11 +387,7 @@ export interface DynamicChartProps {
   /**
    * Callback when a data point is clicked in the chart
    */
-  onDataPointClick?: (data: {
-    activePayload: any
-    activeLabel: string
-    activeCoordinate: { x: number; y: number }
-  }) => void
+  onDataPointClick?: (data: ChartClickData) => void
 
   /**
    * Whether to highlight the active (clicked) data point (for pie chart)
@@ -395,7 +432,7 @@ export interface DynamicChartProps {
      * Custom cell renderer
      */
     cellRenderer?: (
-      value: any,
+      value: string | number,
       key: string,
       row: ChartDataPoint
     ) => React.ReactNode
@@ -782,13 +819,15 @@ export function DynamicChart({
     })
   }, [data, sortConfig])
 
-  const handleClick = (data: any) => {
+  const handleClick = (data: ChartClickData | PieChartEntryData) => {
     if (data) {
-      onDataPointClick?.(data)
+      onDataPointClick?.(data as ChartClickData)
     }
   }
 
-  const renderActiveShape = (props: any) => {
+  const renderActiveShape = (props: unknown) => {
+    // Type guard to ensure props has the expected structure
+    const shapeProps = props as RechartsActiveShapeProps
     const {
       cx,
       cy,
@@ -800,7 +839,7 @@ export function DynamicChart({
       percent,
       value,
       name,
-    } = props
+    } = shapeProps
 
     return (
       <g>
@@ -1026,7 +1065,7 @@ export function DynamicChart({
                 key={index}
                 dataKey={key}
                 fill={getColorForKey(key, index, config)}
-                onClick={(e: any) => {
+                onClick={(e: ChartClickData) => {
                   handleClick(e)
                 }}
                 {...(chartProps[key] || {})}
@@ -1091,11 +1130,12 @@ export function DynamicChart({
               labelLine={chartProps.labelLine !== false}
               label={
                 chartProps
-                  ? chartProps.label ?? ((entry: any) => entry.name)
+                  ? chartProps.label ??
+                    ((entry: PieChartEntryData) => entry.name)
                   : false
               }
               activeShape={highlightActive ? renderActiveShape : undefined}
-              onClick={(data: any) => {
+              onClick={(data: PieChartEntryData) => {
                 handleClick(data)
               }}>
               {validYAxisKeys.length > 1
@@ -1187,11 +1227,12 @@ export function DynamicChart({
               labelLine={chartProps.labelLine !== false}
               label={
                 chartProps
-                  ? chartProps.label ?? ((entry: any) => entry.name)
+                  ? chartProps.label ??
+                    ((entry: PieChartEntryData) => entry.name)
                   : false
               }
               activeShape={highlightActive ? renderActiveShape : undefined}
-              onClick={(data: any) => {
+              onClick={(data: PieChartEntryData) => {
                 handleClick(data)
               }}>
               {validYAxisKeys.length > 1

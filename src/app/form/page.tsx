@@ -7,11 +7,12 @@ import {
   Mail,
   User,
 } from 'lucide-react' // Import appropriate icons
-import { useEffect, useState } from 'react'
 import { FieldValues } from 'react-hook-form'
 import * as z from 'zod'
+import DynamicForm from '@/components/form/DynamicForm'
+import { FormFieldConfig } from './../../components/form/DynamicForm'
 import { H3 } from '../../components/ui/Typography'
-import DynamicForm, { FormFieldConfig, FormFieldType } from './DynamicForm'
+import {  FormFieldType } from '@/components'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -29,51 +30,28 @@ const formSchema = z.object({
   }),
   birthDateRange: z.object({
     from: z.date(),
-    to: z.date()
+    to: z.date(),
   }),
   // Type: { from?: Date; to?: Date } Type: [Date, Date]
   gender: z.enum(['male', 'female', 'other'], {
     errorMap: () => ({ message: 'Please select a gender.' }),
   }),
-  department: z.enum(['engineering', 'marketing', 'hr'], {
-    errorMap: () => ({ message: 'Please select a department.' }),
-  }),
+  department: z.date().optional(), // Changed to date type for date input
   favoriteFruit: z.enum(['apple', 'banana', 'orange'], {
     errorMap: () => ({ message: 'Please select a fruit.' }),
   }),
-  newsletter: z.string().optional(), // Changed to date type for datetime input
+  newsletter: z.date().optional(), // Changed to date type for datetime input
 })
 
 // Define form configuration as a function to accept variables
 
 const FormPage = () => {
   const onSubmit = (data: FieldValues) => {
-    debugger
-    console.log('Form submitted!', data)
-    alert('Form Submitted! Check the console for data.')
+    console.log(data)
+    // showAlert('default', 'Form Submitted', 'Your form has been submitted successfully.')
+    console.log('Form submitted!', data.newsletter.getDate(), data.newsletter.getHours(), data.newsletter.getMinutes(), data.newsletter.getSeconds())
   }
-  console.log(formSchema.shape.skills)
 
-  const [todos, setTodos] = useState([])
-  const [searchParam, setSearchParam] = useState('')
-
-  useEffect(() => {
-    const fetchTodos = async () => {
-      const todos = await fetch(
-        `https://dummyjson.com/products/search?q=${searchParam}`
-      )
-      const todosData = await todos.json()
-      setTodos(
-        todosData.products.map((e: { id: number; title: string }) => {
-          return {
-            value: e.id,
-            label: e.title,
-          }
-        })
-      )
-    }
-    fetchTodos()
-  }, [searchParam])
   const exampleFormConfig: FormFieldConfig[] = [
     {
       fieldName: 'username',
@@ -110,6 +88,9 @@ const FormPage = () => {
       placeholder: 'Enter your age',
       validation: formSchema.shape.age,
       description: 'You must be at least 1 year old.',
+      hidden: false,
+      max: 120,
+      min: 10,
     },
     {
       fieldName: 'profilePicture',
@@ -137,6 +118,9 @@ const FormPage = () => {
       icon: CalendarDays,
       mode: 'range',
       description: 'Pick your date of birth.',
+      onChangeField(value) {
+        console.log('Birth date range changed:', value)
+      },
       validation: formSchema.shape.birthDateRange,
     },
     {
@@ -163,13 +147,9 @@ const FormPage = () => {
     {
       fieldName: 'department',
       fieldLabel: 'Department',
-      fieldType: FormFieldType.COMBOBOX,
-      options: [
-        { value: 'engineering', label: 'Engineering' },
-        { value: 'marketing', label: 'Marketing' },
-        { value: 'hr', label: 'HR' },
-      ],
-      validation: formSchema.shape.department,
+      fieldType: FormFieldType.DATE,
+      mode: 'single',
+      // validation: formSchema.shape.department,
       description: 'Select your department.',
     },
     {
@@ -188,10 +168,16 @@ const FormPage = () => {
       fieldName: 'newsletter',
       fieldLabel: 'Subscribe to newsletter',
       fieldType: FormFieldType.DATETIME,
+      timeStructure: 'hh:mm:ss',
       timeFormat: '12',
+      onChangeField(value) {
+        console.log('Newsletter subscription time changed:', value)
+      },
       description: 'Get updates in your inbox.',
     },
   ]
+
+  // const { showAlert } = useAlert()
   return (
     <div className="container mx-auto max-w-2xl py-12">
       <H3 className="mb-8">Dynamic Form Example</H3>
@@ -213,9 +199,9 @@ const FormPage = () => {
             to: new Date(2025, 7, 20), // Example date
           },
           gender: 'male',
-          department: 'engineering',
+          department: new Date(), // Example date for date input
           favoriteFruit: 'apple',
-          newsletter: new Date(),
+          newsletter: new Date() // Example date for datetime input
         }}
       />
     </div>

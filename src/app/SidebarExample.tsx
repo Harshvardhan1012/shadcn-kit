@@ -1,11 +1,11 @@
 'use client'
 
-import { useAlert } from '@/app/services/AlertService'
 import { AlertDialogDemo } from '@/components/Alert/AlertDialog'
 import {
   DynamicSidebar,
   SidebarConfig,
 } from '@/components/NavSideBar/DynamicSidebar'
+import { useAlert } from '@/components/services/AlertService'
 import { Input } from '@/components/ui/input'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import {
@@ -15,14 +15,11 @@ import {
   ClockFading,
   GitPullRequest,
   Home,
+  Icon,
   Inbox,
-  LogOut,
   Settings,
-  User,
   X,
 } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 interface MainLayoutProps {
@@ -32,11 +29,6 @@ interface MainLayoutProps {
 export function SidebarExample({ children }: MainLayoutProps) {
   const [open, setOpen] = useState(false)
   const { showAlert } = useAlert()
-  const pathname = usePathname()
-
-  const handleLogout = () => {
-    setOpen(true)
-  }
 
   const handleConfirmLogout = () => {
     setOpen(false)
@@ -127,7 +119,22 @@ export function SidebarExample({ children }: MainLayoutProps) {
             id: 'privacy',
             title: 'Privacy Policy',
             url: '/privacy',
+            icon: Settings,
             onClick: () => console.log('Privacy Policy clicked'),
+          },
+        ],
+      },
+    ],
+    footer: [
+      {
+        id: 'footer',
+        items: [
+          {
+            id: 'terms',
+            title: 'Terms of Service',
+            icon: Settings,
+            url: '/terms',
+            onClick: () => console.log('Terms of Service clicked'),
           },
         ],
       },
