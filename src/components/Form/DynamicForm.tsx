@@ -1,5 +1,6 @@
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+"use client"
 import { cn } from '@/components/lib/utils'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
 import Image from 'next/image'
@@ -20,7 +21,6 @@ import { DateRangePicker } from '@/components/DateRangePicker'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Command,
   CommandEmpty,
@@ -44,19 +44,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import { CalendarIcon, Check, FileText } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
+import {
+  CheckboxFieldConfig,
+  CheckboxInput,
+  CheckBoxProps,
+} from './CheckBoxInput'
+import { DateTimeFieldConfig } from './DateTime'
+import { RadioFieldConfig, RadioGroupInput } from './RadioGroupInput'
+import { SelectFieldConfig, SelectInput } from './SelectInput'
+import { SwitchFieldConfig, SwitchInput } from './SwitchInput'
+import {
+  TextareaFieldConfig,
+  TextareaInput,
+  TextAreaProps,
+} from './TextAreaInput'
+import { InputFieldConfig, TextInput, TextInputProps } from './TextInput'
 
 // Form field types enum
 export enum FormFieldType {
@@ -77,8 +82,8 @@ export enum FormFieldType {
 }
 
 // Option interface
-export interface FormOption {
-  value: string | boolean | number
+export interface FormOption<T = string | boolean | number> {
+  value: T
   label: string
   icon?: React.ElementType
   disabled?: boolean
@@ -112,44 +117,6 @@ export interface BaseFormFieldConfig<T extends FormFieldType = FormFieldType> {
   onErrorField?: (error: unknown) => void
 }
 
-// Component-specific configurations
-interface InputFieldConfig
-  extends BaseFormFieldConfig<
-      | FormFieldType.TEXT
-      | FormFieldType.PASSWORD
-      | FormFieldType.EMAIL
-      | FormFieldType.NUMBER
-    >,
-    Omit<React.ComponentProps<typeof Input>, 'ref'> {
-  fieldType:
-    | FormFieldType.TEXT
-    | FormFieldType.PASSWORD
-    | FormFieldType.EMAIL
-    | FormFieldType.NUMBER
-  ref?: React.Ref<HTMLInputElement>
-}
-
-interface TextareaFieldConfig
-  extends BaseFormFieldConfig<FormFieldType.TEXTAREA>,
-    Omit<React.ComponentProps<typeof Textarea>, 'ref'> {
-  fieldType: FormFieldType.TEXTAREA
-  ref?: React.Ref<HTMLTextAreaElement>
-}
-
-interface CheckboxFieldConfig
-  extends BaseFormFieldConfig<FormFieldType.CHECKBOX>,
-    Omit<React.ComponentProps<typeof Checkbox>, 'ref'> {
-  fieldType: FormFieldType.CHECKBOX
-  ref?: React.Ref<HTMLButtonElement>
-}
-
-interface SwitchFieldConfig
-  extends BaseFormFieldConfig<FormFieldType.SWITCH>,
-    Omit<React.ComponentProps<typeof Switch>, 'ref'> {
-  fieldType: FormFieldType.SWITCH
-  ref?: React.Ref<HTMLButtonElement>
-}
-
 type DateFieldConfig = BaseFormFieldConfig<FormFieldType.DATE> &
   React.ComponentProps<typeof DayPicker> & {
     fieldType: FormFieldType.DATE
@@ -157,35 +124,6 @@ type DateFieldConfig = BaseFormFieldConfig<FormFieldType.DATE> &
     fromDate?: Date
     toDate?: Date
   }
-
-type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
-  React.ComponentProps<typeof DayPicker> & {
-    fieldType: FormFieldType.DATETIME
-    mode?: 'single' | 'multiple' | 'range'
-    timeFormat?: '12' | '24'
-    timeStructure?: 'hh:mm:ss' | 'hh:mm' | 'hh'
-    fromDate?: Date
-    toDate?: Date
-  }
-
-interface RadioFieldConfig
-  extends BaseFormFieldConfig<FormFieldType.RADIO>,
-    Omit<
-      React.ComponentProps<typeof RadioGroup>,
-      'name' | 'onValueChange' | 'defaultValue'
-    > {
-  fieldType: FormFieldType.RADIO
-  orientation?: 'horizontal' | 'vertical'
-}
-
-interface SelectFieldConfig
-  extends BaseFormFieldConfig<FormFieldType.SELECT>,
-    Omit<
-      React.ComponentProps<typeof Select>,
-      'onValueChange' | 'defaultValue' | 'value'
-    > {
-  fieldType: FormFieldType.SELECT
-}
 
 interface ComboboxFieldConfig
   extends BaseFormFieldConfig<FormFieldType.COMBOBOX>,
@@ -339,58 +277,32 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const inputProps = props as Omit<
-                InputFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-              >
+              const inputProps = props as TextInputProps
               return (
                 <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      {inputProps.icon &&
-                        React.createElement(inputProps.icon, {
-                          className:
-                            'absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400',
-                        })}
-                      <Input
-                        {...inputProps}
-                        type={fieldType}
-                        value={field.value as string | number}
-                        onChange={(e) => {
-                          const value =
-                            fieldType === FormFieldType.NUMBER
-                              ? Number(e.target.value)
-                              : e.target.value
-                          field.onChange(value)
-                          handleValueChange(fieldConfig, value)
-                        }}
-                        onBlur={(e) => {
-                          field.onBlur()
-                          const value =
-                            fieldType === FormFieldType.NUMBER
-                              ? Number(e.target.value)
-                              : e.target.value
-                          handleBlur(fieldConfig, value)
-                        }}
-                        className={cn(
-                          inputProps.icon ? 'pl-10' : '',
-                          inputProps.className
-                        )}
-                        ref={field.ref}
-                      />
-                    </div>
+                    <TextInput
+                      {...inputProps}
+                      type={fieldType}
+                      value={field.value as string | number}
+                      placeholder={inputProps.placeholder}
+                      icon={inputProps.icon}
+                      disabled={inputProps.disabled}
+                      onChange={(value) => {
+                        field.onChange(value)
+                        handleValueChange(fieldConfig, value)
+                      }}
+                      onBlur={(value) => {
+                        field.onBlur()
+                        handleBlur(fieldConfig, value)
+                      }}
+                      className={inputProps.className}
+                      ref={field.ref}
+                      description={description}
+                      error={<FormMessage />}
+                    />
                   </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
                 </FormItem>
               )
             }}
@@ -404,22 +316,12 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const textareaProps = props as Omit<
-                TextareaFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-              >
+              const textareaProps = props as TextAreaProps
               return (
                 <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
-                    <Textarea
+                    <TextareaInput
                       {...textareaProps}
                       value={field.value as string}
                       onChange={(e) => {
@@ -430,13 +332,11 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                         field.onBlur()
                         handleBlur(fieldConfig, e.target.value)
                       }}
+                      description={description}
+                      error={<FormMessage />}
                       ref={field.ref}
                     />
                   </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
                 </FormItem>
               )
             }}
@@ -450,17 +350,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const checkboxProps = props as Omit<
-                CheckboxFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-              >
+              const checkboxProps = props as CheckBoxProps
               return (
                 <FormItem
                   className={cn(
@@ -468,7 +358,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                     className
                   )}>
                   <FormControl>
-                    <Checkbox
+                    <CheckboxInput
                       {...checkboxProps}
                       checked={field.value as boolean}
                       onCheckedChange={(checked) => {
@@ -476,15 +366,11 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                         handleValueChange(fieldConfig, checked)
                       }}
                       onBlur={() => handleBlur(fieldConfig, field.value)}
+                      error={<FormMessage />}
+                      description={description}
+                      label={label}
                     />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>{label}</FormLabel>
-                    {description && (
-                      <FormDescription>{description}</FormDescription>
-                    )}
-                  </div>
-                  <FormMessage />
                 </FormItem>
               )
             }}
@@ -498,31 +384,15 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const switchProps = props as Omit<
-                SwitchFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-              >
+              const switchProps = props as SwitchFieldConfig
               return (
                 <FormItem
                   className={cn(
                     'flex flex-row items-center justify-between rounded-lg border p-4',
                     className
                   )}>
-                  <div className="space-y-0.5">
-                    <FormLabel>{label}</FormLabel>
-                    {description && (
-                      <FormDescription>{description}</FormDescription>
-                    )}
-                  </div>
                   <FormControl>
-                    <Switch
+                    <SwitchInput
                       {...switchProps}
                       checked={field.value as boolean}
                       onCheckedChange={(checked) => {
@@ -530,6 +400,9 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                         handleValueChange(fieldConfig, checked)
                       }}
                       onBlur={() => handleBlur(fieldConfig, field.value)}
+                      description={description}
+                      error={<FormMessage />}
+                      label={label}
                     />
                   </FormControl>
                   <FormMessage />
@@ -554,7 +427,6 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
               description={description}
               className={className}
               disabled={dateConfig.disabled}
-              // Make fromDate and toDate truly optional - only pass if they exist
               {...(dateConfig.fromDate && { fromDate: dateConfig.fromDate })}
               {...(dateConfig.toDate && { toDate: dateConfig.toDate })}
             />
@@ -585,55 +457,28 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const radioProps = props as Omit<
-                RadioFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-                | 'orientation'
-              >
+              const radioProps = props as RadioFieldConfig
               return (
                 <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
-                    <RadioGroup
+                    <RadioGroupInput
                       {...radioProps}
-                      onValueChange={(value) => {
+                      onChange={(value: any) => {
                         field.onChange(value as PathValue<T, Path<T>>)
                         handleValueChange(fieldConfig, value)
                       }}
-                      defaultValue={field.value as string}
-                      className={cn('flex-row space-x-4 space-y-0', className)}>
-                      {options?.map((option) => (
-                        <div
-                          key={String(option.value)}
-                          className="flex items-center space-x-2">
-                          <RadioGroupItem
-                            value={option.value as string}
-                            id={`${name}-${option.value}`}
-                            disabled={option.disabled}
-                          />
-                          <FormLabel
-                            htmlFor={`${name}-${option.value}`}
-                            className="flex items-center">
-                            {option.icon && (
-                              <option.icon className="mr-2 h-4 w-4" />
-                            )}
-                            {option.label}
-                          </FormLabel>
-                        </div>
-                      ))}
-                    </RadioGroup>
+                      onBlur={() => {
+                        field.onBlur()
+                        handleBlur(fieldConfig, field.value)
+                      }}
+                      options={options}
+                      error={<FormMessage />}
+                      description={description}
+                      value={field.value}
+                      className={cn('flex-row space-x-4 space-y-0', className)}
+                    />
                   </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
                 </FormItem>
               )
             }}
@@ -647,54 +492,27 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const selectProps = props as Omit<
-                SelectFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-              >
+              const selectProps = props as SelectFieldConfig
               return (
                 <FormItem className={cn(className)}>
                   <FormLabel>{label}</FormLabel>
                   <FormControl>
-                    <Select
+                    <SelectInput
                       {...selectProps}
-                      onValueChange={(value) => {
+                      onChange={(value: any) => {
                         field.onChange(value as PathValue<T, Path<T>>)
                         handleValueChange(fieldConfig, value)
                       }}
-                      defaultValue={field.value as string}
-                      value={field.value as string}>
-                      <SelectTrigger
-                        onBlur={() => handleBlur(fieldConfig, field.value)}>
-                        <SelectValue placeholder={fieldConfig.placeholder} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {options?.map((option) => (
-                          <SelectItem
-                            key={String(option.value)}
-                            value={String(option.value)}
-                            disabled={option.disabled}>
-                            <div className="flex items-center">
-                              {option.icon && (
-                                <option.icon className="mr-2 h-4 w-4" />
-                              )}
-                              {option.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      value={field.value}
+                      error={<FormMessage />}
+                      description={description}
+                      options={options}
+                      onBlur={() => {
+                        field.onBlur()
+                        handleBlur(fieldConfig, field.value)
+                      }}
+                    />
                   </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
                 </FormItem>
               )
             }}
@@ -828,9 +646,8 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                           <CommandInput
                             placeholder={
                               commandProps.searchPlaceholder ||
-                              `Search ${label.toLowerCase()}...`
+                              `Search ${label}...`
                             }
-                            className="h-9"
                             onValueChange={(value) =>
                               commandProps.onSearchChange?.(name, value)
                             }

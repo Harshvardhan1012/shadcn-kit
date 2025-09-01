@@ -8,6 +8,7 @@ import './globals.css'
 import { ClientSidebarProvider } from '@/components/NavSideBar/ClientSidebarProvider'
 import { GlobalAlert } from '@/components/Alert/Alert'
 import { ClientAlertProvider } from '@/components/services/AlertService'
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -25,6 +26,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
+        <NuqsAdapter>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -45,6 +47,7 @@ export default async function RootLayout({
             </ClientSidebarProvider>
           </ClientAlertProvider>
         </ThemeProvider>
+        </NuqsAdapter>
       </body>
     </html>
   )

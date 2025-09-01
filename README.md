@@ -4,12 +4,12 @@ A comprehensive React component library for building dynamic forms, charts,sideb
 
 ---
 
-## 📋 Form Component
+## Form Component
 
 The Form component is a flexible, type-safe React form builder that supports multiple field types with built-in validation using React Hook Form and Zod.
 
 <details>
-<summary><strong>🚀 Quick Start</strong></summary>
+<summary><strong>Quick Start</strong></summary>
 
 ```tsx
 import { Form } from 'json-reactify'
@@ -66,7 +66,7 @@ function MyForm() {
 </details>
 
 <details>
-<summary><strong>📝 Field Types</strong></summary>
+<summary><strong>Field Types</strong></summary>
 
 ### Text Input Fields
 
@@ -227,7 +227,7 @@ function MyForm() {
 </details>
 
 <details>
-<summary><strong>⚙️ Advanced Features</strong></summary>
+<summary><strong>Advanced Features</strong></summary>
 
 ### Conditional Fields
 
@@ -299,7 +299,7 @@ Handle field-level events:
 </details>
 
 <details>
-<summary><strong>🛠️ Props Reference</strong></summary>
+<summary><strong>Props Reference</strong></summary>
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
@@ -333,7 +333,7 @@ All field types support these common properties:
 </details>
 
 <details>
-<summary><strong>💡 Complete Example</strong></summary>
+<summary><strong>Complete Example</strong></summary>
 
 ```tsx
 import { Form, FormFieldType, FormOption } from 'json-reactify'
@@ -484,23 +484,23 @@ export default function ProfileForm() {
 
 ---
 
-## 📊 Chart Component
+## Chart Component
 
 A flexible React chart component built with Recharts and shadcn/ui. Supports multiple chart types, zoom, export, and table view.
 
 <details>
-<summary><strong>✨ Features</strong></summary>
+<summary><strong>Features</strong></summary>
 
-- 🎯 **6 Chart Types**: Area, Line, Bar, Pie, Donut, Table
-- 🔍 **Interactive**: Zoom, click handlers, type switching
-- 📱 **Responsive**: Auto-sizing and mobile-friendly
-- 📊 **Export**: CSV download functionality
-- 🎨 **Customizable**: Themes, colors, styling
+- **6 Chart Types**: Area, Line, Bar, Pie, Donut, Table
+- **Interactive**: Zoom, click handlers, type switching
+- **Responsive**: Auto-sizing and mobile-friendly
+- **Export**: CSV download functionality
+- **Customizable**: Themes, colors, styling
 
 </details>
 
 <details>
-<summary><strong>🚀 Quick Start</strong></summary>
+<summary><strong>Quick Start</strong></summary>
 
 ```tsx
 import { Chart } from 'json-reactify'
@@ -523,7 +523,7 @@ const data = [
 </details>
 
 <details>
-<summary><strong>📊 Chart Types</strong></summary>
+<summary><strong>Chart Types</strong></summary>
 
 ```tsx
 // Line Chart
@@ -546,7 +546,7 @@ const data = [
 </details>
 
 <details>
-<summary><strong>🎨 Customization</strong></summary>
+<summary><strong>Customization</strong></summary>
 
 ```tsx
 <Chart
@@ -565,7 +565,14 @@ const data = [
 </details>
 
 <details>
-<summary><strong>�️ Props Reference</strong></summary>
+<summary><strong>Examples</strong></summary>
+/>
+```
+
+</details>
+
+<details>
+<summary><strong>Props Reference</strong></summary>
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -625,7 +632,7 @@ const [chartType, setChartType] = useState('bar')
 </details>
 
 <details>
-<summary><strong>📚 TypeScript Support</strong></summary>
+<summary><strong>TypeScript Support</strong></summary>
 
 ```tsx
 import type { ChartType, ChartDataPoint } from 'json-reactify'
@@ -640,7 +647,7 @@ interface MyData extends ChartDataPoint {
 
 ---
 
-## 🚨 Alert Service
+## Alert Service
 
 A simple alert/notification system with auto-dismiss and TypeScript support.
 
@@ -686,12 +693,12 @@ function MyComponent() {
 
 ---
 
-## 🧭 Sidebar Component
+## Sidebar Component
 
 A flexible, configurable sidebar component system built with React and TypeScript that allows you to create dynamic navigation sidebars from JSON configuration.
 
 <details>
-<summary><strong>⚙️ Installation</strong></summary>
+<summary><strong>Installation</strong></summary>
 
 ```bash
 npm install json-reactify
@@ -700,7 +707,7 @@ npm install json-reactify
 </details>
 
 <details>
-<summary><strong>🚀 Quick Start</strong></summary>
+<summary><strong>Quick Start</strong></summary>
 
 ```tsx
 import { Sidebar, SideBarProvider } from 'json-reactify'
@@ -746,7 +753,7 @@ function App() {
 </details>
 
 <details>
-<summary><strong>🧩 Components</strong></summary>
+<summary><strong>Components</strong></summary>
 
 ### Sidebar
 
@@ -785,7 +792,7 @@ import { SideBarProvider } from 'json-reactify'
 </details>
 
 <details>
-<summary><strong>⚙️ Configuration</strong></summary>
+<summary><strong> Configuration</strong></summary>
 
 ### SidebarConfig
 
@@ -888,7 +895,7 @@ interface SidebarFooterConfig {
 </details>
 
 <details>
-<summary><strong>💡 Examples</strong></summary>
+<summary><strong> Examples</strong></summary>
 
 ### Basic Sidebar
 
@@ -1069,16 +1076,16 @@ When `isLoading` is true, the sidebar displays a skeleton loading state.
 <details>
 <summary><strong>✨ Features</strong></summary>
 
-- **🎨 Fully Customizable** - Configure every aspect through JSON
-- **🔍 Built-in Search** - Automatic search functionality across all menu items
-- **📱 Responsive Design** - Collapsible sidebar with icon-only mode
-- **🎯 TypeScript Support** - Full type safety and IntelliSense
-- **🎪 Flexible Icons** - Support for icon components or custom React nodes
-- **🔒 Conditional Rendering** - Show/hide items based on conditions
-- **🏷️ Badges & Notifications** - Add badges to highlight important items
-- **📂 Nested Menus** - Support for multi-level navigation
-- **⚡ Loading States** - Built-in skeleton loading animation
-- **🎨 Theming** - Works with your existing CSS/Tailwind theme
+- **Fully Customizable** - Configure every aspect through JSON
+- **Built-in Search** - Automatic search functionality across all menu items
+- **Responsive Design** - Collapsible sidebar with icon-only mode
+- **TypeScript Support** - Full type safety and IntelliSense
+- **Flexible Icons** - Support for icon components or custom React nodes
+- **Conditional Rendering** - Show/hide items based on conditions
+- **Badges & Notifications** - Add badges to highlight important items
+- **Nested Menus** - Support for multi-level navigation
+- **Loading States** - Built-in skeleton loading animation
+- **Theming** - Works with your existing CSS/Tailwind theme
 
 </details>
 

@@ -1,3 +1,4 @@
+import { cn } from '@/components/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -30,7 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/components/lib/utils'
 import { Download, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
 import * as React from 'react'
 import {
@@ -454,9 +454,9 @@ function calculateChartDimensions(
 } {
   const {
     minHeight = 200,
-    maxHeight = 800,
+    maxHeight = 300,
     heightPerDataPoint = 40,
-    baseHeight = 400,
+    baseHeight = 300,
     responsiveWidth = true,
     minWidth = 500,
     maxWidth = 2000,

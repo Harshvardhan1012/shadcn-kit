@@ -12,7 +12,7 @@ import * as z from 'zod'
 import DynamicForm from '@/components/form/DynamicForm'
 import { FormFieldConfig } from './../../components/form/DynamicForm'
 import { H3 } from '../../components/ui/Typography'
-import {  FormFieldType } from '@/components'
+import { FormFieldType } from '@/components'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -24,7 +24,6 @@ const formSchema = z.object({
     .min(3, { message: 'Username must be at least 3 characters.' }),
   age: z.number().min(1, { message: 'Age must be at least 1.' }),
   bio: z.string().optional(),
-  profilePicture: z.any().optional(),
   agreeToTerms: z.boolean().refine((val) => val === true, {
     message: 'You must agree to the terms and conditions.',
   }),
@@ -49,7 +48,13 @@ const FormPage = () => {
   const onSubmit = (data: FieldValues) => {
     console.log(data)
     // showAlert('default', 'Form Submitted', 'Your form has been submitted successfully.')
-    console.log('Form submitted!', data.newsletter.getDate(), data.newsletter.getHours(), data.newsletter.getMinutes(), data.newsletter.getSeconds())
+    console.log(
+      'Form submitted!',
+      data.newsletter.getDate(),
+      data.newsletter.getHours(),
+      data.newsletter.getMinutes(),
+      data.newsletter.getSeconds()
+    )
   }
 
   const exampleFormConfig: FormFieldConfig[] = [
@@ -91,18 +96,6 @@ const FormPage = () => {
       hidden: false,
       max: 120,
       min: 10,
-    },
-    {
-      fieldName: 'profilePicture',
-      fieldLabel: 'Profile Picture',
-      fieldType: FormFieldType.FILE,
-      icon: ImageIcon,
-      fileConfig: {
-        accept: 'image/png, image/svg+xml, image/jpeg',
-        multiple: false,
-      },
-      validation: formSchema.shape.profilePicture,
-      description: 'Upload a profile image (png, svg, jpeg, max 5MB).',
     },
     {
       fieldName: 'agreeToTerms',
@@ -192,16 +185,15 @@ const FormPage = () => {
           password: 'dsdsfsdfd',
           age: 18,
           bio: 'dsfsdf',
-          profilePicture: undefined,
           agreeToTerms: false,
           birthDateRange: {
-            from: new Date(2025, 7, 1), // Example date
-            to: new Date(2025, 7, 20), // Example date
+            from: new Date(2025, 7, 1),
+            to: new Date(2025, 7, 20),
           },
           gender: 'male',
-          department: new Date(), // Example date for date input
+          department: new Date(),
           favoriteFruit: 'apple',
-          newsletter: new Date() // Example date for datetime input
+          newsletter: new Date(),
         }}
       />
     </div>

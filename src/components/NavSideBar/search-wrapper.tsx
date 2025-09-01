@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/components/lib/utils'
 import {
   CommandDialog,
   CommandEmpty,
@@ -8,7 +9,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { cn } from '@/components/lib/utils'
 import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'

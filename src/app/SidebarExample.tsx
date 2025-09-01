@@ -15,10 +15,14 @@ import {
   ClockFading,
   GitPullRequest,
   Home,
-  Icon,
   Inbox,
+  FormInput,
   Settings,
   X,
+  ChartScatter,
+  Table,
+  ShowerHeadIcon,
+  Component,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -39,66 +43,34 @@ export function SidebarExample({ children }: MainLayoutProps) {
   const sidebarConfig: SidebarConfig = {
     groups: [
       {
-        id: 'main',
+        id: 'Navigation',
         label: 'Navigation',
         items: [
           {
-            id: 'home',
-            title: 'Home',
-            icon: Home,
-            url: '/',
-          },
-          {
-            id: 'inbox',
-            title: 'Inbox',
-            icon: Inbox,
-            url: '/inbox',
-            badge: 3,
-          },
-          {
-            id: 'calendar',
-            title: 'Calendar',
-            icon: Calendar,
-            url: '/calendar',
-          },
-        ],
-      },
-      {
-        id: 'features',
-        label: 'Features',
-        items: [
-          {
-            id: 'requests',
-            title: 'Requests',
-            icon: GitPullRequest,
+            id: 'Components',
+            title: 'Components',
+            icon: Component,
             defaultOpen: true,
             badge: 6,
             subItems: [
               {
-                id: 'pending',
-                title: 'Pending',
-                icon: ClockFading,
-                url: '/requests/pending',
+                id: 'form',
+                title: 'Form',
+                icon: FormInput,
+                url: '/form',
                 badge: 4,
               },
               {
-                id: 'approved',
-                title: 'Approved',
-                icon: CheckCircle,
-                url: '/requests/approved',
+                id: 'charts',
+                title: 'Charts',
+                icon: ChartScatter,
+                url: '/charts',
               },
               {
-                id: 'rejected',
-                title: 'Rejected',
-                icon: X,
-                url: '/requests/rejected',
-              },
-              {
-                id: 'incoming',
-                title: 'Incoming',
-                icon: BellRing,
-                url: '/requests/incoming',
-                badge: 2,
+                id: 'table',
+                title: 'Table',
+                url: '/table',
+                icon: Table,
               },
             ],
           },
@@ -116,11 +88,10 @@ export function SidebarExample({ children }: MainLayoutProps) {
         id: 'header',
         items: [
           {
-            id: 'privacy',
-            title: 'Privacy Policy',
-            url: '/privacy',
-            icon: Settings,
-            onClick: () => console.log('Privacy Policy clicked'),
+            id: 'JSON',
+            icon: ShowerHeadIcon,
+            title: 'Application',
+            onClick: () => console.log('Application clicked'),
           },
         ],
       },
@@ -147,13 +118,6 @@ export function SidebarExample({ children }: MainLayoutProps) {
       <SidebarInset>
         <nav className="flex items-center justify-between">
           <SidebarTrigger className="mr-2" />
-          <div className="ml-auto">
-            <Input
-              type="text"
-              placeholder="Search..."
-              className="border rounded px-3 py-1 text-sm focus:outline-none focus:ring"
-            />
-          </div>
         </nav>
         <div>{children}</div>
       </SidebarInset>

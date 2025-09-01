@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip'
 
+import { cn } from '@/components/lib/utils'
 import {
   Table,
   TableBody,
@@ -35,7 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/components/lib/utils'
 import React from 'react'
 import { DataTablePagination } from './Pagination'
 
