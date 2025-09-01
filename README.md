@@ -1074,7 +1074,7 @@ When `isLoading` is true, the sidebar displays a skeleton loading state.
 </details>
 
 <details>
-<summary><strong>✨ Features</strong></summary>
+<summary><strong>Features</strong></summary>
 
 - **Fully Customizable** - Configure every aspect through JSON
 - **Built-in Search** - Automatic search functionality across all menu items
