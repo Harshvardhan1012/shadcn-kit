@@ -590,7 +590,7 @@ const data = [
 </details>
 
 <details>
-<summary><strong>💡 Examples</strong></summary>
+<summary><strong>Examples</strong></summary>
 
 ### Dashboard Widget
 ```tsx
