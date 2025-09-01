@@ -1,10 +1,20 @@
-import { CalendarDays } from "lucide-react"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { cn } from "@/components/lib/utils"
+import { cn } from '@/components/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  FormControl,
+  FormDescription,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { format } from 'date-fns/format'
+import { CalendarDays } from 'lucide-react'
 
 interface DateRangePickerProps {
   value?: { from?: Date; to?: Date }
@@ -25,12 +35,12 @@ export function DateRangePicker({
   disabled = false,
   className,
   fromDate,
-  toDate
+  toDate,
 }: DateRangePickerProps) {
   const from = value?.from ? new Date(value.from) : undefined
   const to = value?.to ? new Date(value.to) : undefined
   return (
-    <FormItem  className={cn(className)}>
+    <FormItem className={cn(className)}>
       {label && <FormLabel>{label}</FormLabel>}
       <Popover>
         <PopoverTrigger asChild>
@@ -39,13 +49,12 @@ export function DateRangePicker({
               variant="outline"
               disabled={disabled}
               className={cn(
-                "w-full justify-start text-left font-normal",
-                !value?.from && "text-muted-foreground"
-              )}
-            >
+                'w-full justify-start text-left font-normal',
+                !value?.from && 'text-muted-foreground'
+              )}>
               <CalendarDays className="mr-2 h-4 w-4" />
               {from && to ? (
-                `${format(from, "PPP")} - ${format(to, "PPP")}`
+                `${format(from, 'PPP')} - ${format(to, 'PPP')}`
               ) : (
                 <span>Pick a date range</span>
               )}
@@ -60,7 +69,7 @@ export function DateRangePicker({
               if (range?.from && range?.to) {
                 onChange({
                   from: range.from,
-                  to: range.to
+                  to: range.to,
                 })
               }
             }}

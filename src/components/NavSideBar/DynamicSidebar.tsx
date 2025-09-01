@@ -192,7 +192,9 @@ const renderGroups = (groups: SidebarGroup[]) => (
     {groups &&
       groups.length > 0 &&
       groups.map((group) => (
-        <SidebarGroup key={group.id} className='p-0'>
+        <SidebarGroup
+          key={group.id}
+          className="p-0">
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>

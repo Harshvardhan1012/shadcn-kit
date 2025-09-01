@@ -1,3 +1,4 @@
+import { cn } from '@/components/lib/utils'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,20 +8,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/components/lib/utils";
+} from '@/components/ui/alert-dialog'
 
 interface AlertDialogProps {
-  title: string;
-  description: string;
-  cancelText: string;
-  confirmText: string;
-  onConfirm: () => void;
-  openState: boolean;
-  onCancel: () => void;
-  classNameContent?: string;
-  classNameCancel?: string;
-  classNameConfirm?: string;
+  title: string
+  description: string
+  cancelText: string
+  confirmText: string
+  onConfirm: () => void
+  openState: boolean
+  onCancel: () => void
+  classNameContent?: string
+  classNameCancel?: string
+  classNameConfirm?: string
 }
 
 export function AlertDialogDemo({
@@ -43,12 +43,18 @@ export function AlertDialogDemo({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={cn(classNameCancel)} onClick={onCancel}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className={cn(classNameConfirm)}>
+          <AlertDialogCancel
+            className={cn(classNameCancel)}
+            onClick={onCancel}>
+            {cancelText}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className={cn(classNameConfirm)}>
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
