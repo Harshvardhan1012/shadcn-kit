@@ -1,6 +1,7 @@
 // DateTime Component
 
 import { PopoverTrigger } from '@radix-ui/react-popover'
+import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import { cn } from '../lib/utils'
@@ -12,30 +13,34 @@ import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
 import { BaseComponentProps } from './type'
 
-enum TimeFormat {
+export enum TimeFormat {
   TWELVE_HOUR = '12-hour',
   TWENTY_FOUR_HOUR = '24-hour',
 }
 
-enum TimeStructure {
+export enum TimeStructure {
   HOUR_ONLY = 'hour-only',
   HOUR_MINUTE = 'hour-minute',
   HOUR_MINUTE_SECOND = 'hour-minute-second',
+}
+export enum DateTimeMode {
+  SINGLE = 'single',
+  MULTIPLE = 'multiple',
+  RANGE = 'range',
 }
 
 export type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
   React.ComponentProps<typeof DayPicker> & {
     fieldType: FormFieldType.DATETIME
-    mode?: 'single' | 'multiple' | 'range'
-    timeFormat?: '12' | '24'
-    timeStructure?: 'hh:mm:ss' | 'hh:mm' | 'hh'
+    mode?: DateTimeMode
+    timeFormat?: TimeFormat
+    timeStructure?: TimeStructure
     fromDate?: Date
     toDate?: Date
   }
 
 interface DateTimeInputProps extends BaseComponentProps {
   value?: Date
-  mode?: 'single' | 'multiple' | 'range'
   timeFormat?: TimeFormat
   timeStructure?: TimeStructure
   fromDate?: Date
