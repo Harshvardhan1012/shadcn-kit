@@ -1,8 +1,6 @@
-"use client"
+'use client'
 import { cn } from '@/components/lib/utils'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
 import Image from 'next/image'
 import React, { useState } from 'react'
 import {
@@ -18,17 +16,8 @@ import * as z from 'zod'
 // UI Components (assuming these are properly typed)
 import { SingleDatePicker } from '@/components/DatePicker'
 import { DateRangePicker } from '@/components/DateRangePicker'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command } from '@/components/ui/command'
 import {
   Form,
   FormControl,
@@ -39,20 +28,17 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CalendarIcon, Check, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import {
   CheckboxFieldConfig,
   CheckboxInput,
   CheckBoxProps,
 } from './CheckBoxInput'
-import { DateTimeFieldConfig } from './DateTime'
+import { ComboBox } from './ComboBox'
+import { DateTimeFieldConfig, DateTimeInput } from './DateTime'
+import { MultiSelect } from './MultiSelect'
 import { RadioFieldConfig, RadioGroupInput } from './RadioGroupInput'
 import { SelectFieldConfig, SelectInput } from './SelectInput'
 import { SwitchFieldConfig, SwitchInput } from './SwitchInput'
@@ -602,104 +588,25 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const commandProps = props as Omit<
-                ComboboxFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-                | 'defaultValue'
-              >
-              const selectedValue = field.value
-              const allOptions = options || []
-              const selectedOption = allOptions.find(
-                (opt) => opt.value === selectedValue
-              )
+              const comboboxConfig = fieldConfig as ComboboxFieldConfig
               return (
                 <FormItem className={cn(className)}>
-                  <FormLabel>{label}</FormLabel>
-                  <FormControl>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            'w-full justify-between',
-                            !selectedValue && 'text-muted-foreground'
-                          )}
-                          onBlur={() => handleBlur(fieldConfig, selectedValue)}>
-                          {selectedOption?.label ||
-                            fieldConfig.placeholder ||
-                            `Select ${label.toLowerCase()}`}
-                          <Check
-                            className={cn('ml-2 h-4 w-4 shrink-0 opacity-50')}
-                          />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command {...commandProps}>
-                          <CommandInput
-                            placeholder={
-                              commandProps.searchPlaceholder ||
-                              `Search ${label}...`
-                            }
-                            onValueChange={(value) =>
-                              commandProps.onSearchChange?.(name, value)
-                            }
-                          />
-                          <CommandList>
-                            <CommandEmpty>
-                              {commandProps.emptyMessage || 'No option found.'}
-                            </CommandEmpty>
-                            <CommandGroup>
-                              {allOptions.map((option) => (
-                                <CommandItem
-                                  value={option.label}
-                                  key={String(option.value)}
-                                  disabled={option.disabled}
-                                  onSelect={() => {
-                                    const newValue =
-                                      String(selectedValue) ===
-                                      String(option.value)
-                                        ? ''
-                                        : option.value
-                                    field.onChange(
-                                      newValue as PathValue<T, Path<T>>
-                                    )
-                                    handleValueChange(fieldConfig, newValue)
-                                  }}>
-                                  <div className="flex items-center">
-                                    {option.icon && (
-                                      <option.icon className="mr-2 h-4 w-4" />
-                                    )}
-                                    {option.label}
-                                  </div>
-                                  <Check
-                                    className={cn(
-                                      'ml-auto h-4 w-4',
-                                      String(selectedValue) ===
-                                        String(option.value)
-                                        ? 'opacity-100'
-                                        : 'opacity-0'
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
+                  <ComboBox
+                    label={label}
+                    description={description}
+                    options={options || []}
+                    value={field.value}
+                    onChange={(val) => {
+                      field.onChange(val as PathValue<T, Path<T>>)
+                      handleValueChange(fieldConfig, val)
+                    }}
+                    onBlur={() => handleBlur(fieldConfig, field.value)}
+                    placeholder={comboboxConfig.placeholder}
+                    searchPlaceholder={comboboxConfig.searchPlaceholder}
+                    emptyMessage={comboboxConfig.emptyMessage}
+                    disabled={comboboxConfig.disabled}
+                    error={<FormMessage />}
+                  />
                 </FormItem>
               )
             }}
@@ -714,345 +621,30 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             name={name as Path<T>}
             render={({ field }) => {
               const dateTimeConfig = fieldConfig as DateTimeFieldConfig
-              const selectedDate = field.value
-                ? new Date(field.value)
-                : undefined
-              const is24Hour = dateTimeConfig.timeFormat === '24'
-              const timeStructure = dateTimeConfig.timeStructure || 'hh:mm:ss'
-
-              const formatDateTimeOutput = (date: Date) => {
-                // Create a copy to avoid mutating the original
-                const outputDate = new Date(date)
-
-                // Set default values based on timeStructure
-                if (timeStructure === 'hh') {
-                  outputDate.setMinutes(0)
-                  outputDate.setSeconds(0)
-                } else if (timeStructure === 'hh:mm') {
-                  outputDate.setSeconds(0)
-                }
-
-                // Return the Date object directly (not string)
-                return outputDate
-              }
-
-              const handleTimeChange = (
-                type: 'hour' | 'minute' | 'second' | 'ampm',
-                value: string
-              ) => {
-                const newDate = selectedDate
-                  ? new Date(selectedDate)
-                  : new Date()
-
-                switch (type) {
-                  case 'hour':
-                    const hour = parseInt(value)
-                    newDate.setHours(hour)
-                    break
-                  case 'minute':
-                    newDate.setMinutes(parseInt(value))
-                    break
-                  case 'second':
-                    newDate.setSeconds(parseInt(value))
-                    break
-                  case 'ampm':
-                    const currentHour = newDate.getHours()
-                    if (value === 'AM' && currentHour >= 12) {
-                      newDate.setHours(currentHour - 12)
-                    } else if (value === 'PM' && currentHour < 12) {
-                      newDate.setHours(currentHour + 12)
-                    }
-                    break
-                }
-
-                // Set default values based on timeStructure
-                if (timeStructure === 'hh') {
-                  newDate.setMinutes(0)
-                  newDate.setSeconds(0)
-                } else if (timeStructure === 'hh:mm') {
-                  newDate.setSeconds(0)
-                }
-
-                const formattedOutput = formatDateTimeOutput(newDate)
-                field.onChange(formattedOutput as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, formattedOutput)
-              }
-
-              const handleDateSelect = (date: Date | undefined) => {
-                if (!date) return
-
-                // Preserve existing time if available
-                if (selectedDate) {
-                  date.setHours(
-                    selectedDate.getHours(),
-                    selectedDate.getMinutes(),
-                    timeStructure === 'hh:mm:ss'
-                      ? selectedDate.getSeconds()
-                      : 0,
-                    selectedDate.getMilliseconds()
-                  )
-                } else {
-                  // Default to current time if no time is selected
-                  const now = new Date()
-                  date.setHours(
-                    now.getHours(),
-                    timeStructure === 'hh' ? 0 : now.getMinutes(),
-                    timeStructure === 'hh:mm:ss' ? now.getSeconds() : 0,
-                    0
-                  )
-                }
-
-                // Ensure proper defaults based on timeStructure
-                if (timeStructure === 'hh') {
-                  date.setMinutes(0)
-                  date.setSeconds(0)
-                } else if (timeStructure === 'hh:mm') {
-                  date.setSeconds(0)
-                }
-
-                const formattedOutput = formatDateTimeOutput(date)
-                field.onChange(formattedOutput as PathValue<T, Path<T>>)
-                handleValueChange(fieldConfig, formattedOutput)
-              }
-              const formatDisplay = (date: Date) => {
-                switch (timeStructure) {
-                  case 'hh':
-                    return is24Hour
-                      ? format(date, 'MM/dd/yyyy HH')
-                      : format(date, 'MM/dd/yyyy hh aa')
-                  case 'hh:mm':
-                    return is24Hour
-                      ? format(date, 'MM/dd/yyyy HH:mm')
-                      : format(date, 'MM/dd/yyyy hh:mm aa')
-                  case 'hh:mm:ss':
-                  default:
-                    return is24Hour
-                      ? format(date, 'MM/dd/yyyy HH:mm:ss')
-                      : format(date, 'MM/dd/yyyy hh:mm:ss aa')
-                }
-              }
-
-              const getPlaceholder = () => {
-                if (dateTimeConfig.placeholder)
-                  return dateTimeConfig.placeholder
-
-                switch (timeStructure) {
-                  case 'hh':
-                    return is24Hour ? 'MM/DD/YYYY HH' : 'MM/DD/YYYY hh aa'
-                  case 'hh:mm':
-                    return is24Hour ? 'MM/DD/YYYY HH:mm' : 'MM/DD/YYYY hh:mm aa'
-                  case 'hh:mm:ss':
-                  default:
-                    return is24Hour
-                      ? 'MM/DD/YYYY HH:mm:ss'
-                      : 'MM/DD/YYYY hh:mm:ss aa'
-                }
-              }
-
               return (
                 <FormItem className={cn(className)}>
-                  <FormLabel>{label}</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !selectedDate && 'text-muted-foreground'
-                          )}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? (
-                            formatDisplay(selectedDate)
-                          ) : (
-                            <span>{getPlaceholder()}</span>
-                          )}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0"
-                      align="start">
-                      <div className="flex flex-col sm:flex-row">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={handleDateSelect}
-                          disabled={dateTimeConfig.disabled}
-                          fromDate={dateTimeConfig.fromDate}
-                          toDate={dateTimeConfig.toDate}
-                          initialFocus
-                        />
-
-                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                          {/* Hours Selector */}
-                          <ScrollArea className="w-64 sm:w-auto">
-                            <div className="flex sm:flex-col p-2 gap-1">
-                              {Array.from(
-                                { length: is24Hour ? 24 : 12 },
-                                (_, i) => (is24Hour ? i : i + 1)
-                              ).map((hour) => {
-                                const isSelected = selectedDate
-                                  ? is24Hour
-                                    ? selectedDate.getHours() === hour
-                                    : (selectedDate.getHours() % 12 || 12) ===
-                                      hour
-                                  : false
-
-                                return (
-                                  <Button
-                                    key={hour}
-                                    size="sm"
-                                    variant={isSelected ? 'default' : 'ghost'}
-                                    className="sm:w-full justify-center"
-                                    onClick={() => {
-                                      if (is24Hour) {
-                                        handleTimeChange(
-                                          'hour',
-                                          hour.toString()
-                                        )
-                                      } else {
-                                        // For 12-hour format, convert display hour to 24-hour
-                                        const currentDate =
-                                          selectedDate || new Date()
-                                        const isPM =
-                                          currentDate.getHours() >= 12
-
-                                        let hourValue: number
-                                        if (hour === 12) {
-                                          // 12 AM = 0, 12 PM = 12
-                                          hourValue = isPM ? 12 : 0
-                                        } else {
-                                          // 1-11 AM = 1-11, 1-11 PM = 13-23
-                                          hourValue = isPM ? hour + 12 : hour
-                                        }
-
-                                        handleTimeChange(
-                                          'hour',
-                                          hourValue.toString()
-                                        )
-                                      }
-                                    }}>
-                                    {hour}
-                                  </Button>
-                                )
-                              })}
-                            </div>
-                            <ScrollBar
-                              orientation="horizontal"
-                              className="sm:hidden"
-                            />
-                          </ScrollArea>
-                          {/* Minutes Selector */}
-                          {(timeStructure === 'hh:mm' ||
-                            timeStructure === 'hh:mm:ss') && (
-                            <ScrollArea className="w-64 sm:w-auto">
-                              <div className="flex sm:flex-col p-2 gap-1">
-                                {Array.from(
-                                  { length: 60 },
-                                  (_, i) => i * 1
-                                ).map((minute) => {
-                                  const isSelected =
-                                    selectedDate?.getMinutes() === minute
-                                  return (
-                                    <Button
-                                      key={minute}
-                                      size="sm"
-                                      variant={isSelected ? 'default' : 'ghost'}
-                                      className="sm:w-full justify-center"
-                                      onClick={() =>
-                                        handleTimeChange(
-                                          'minute',
-                                          minute.toString()
-                                        )
-                                      }>
-                                      {minute.toString().padStart(2, '0')}
-                                    </Button>
-                                  )
-                                })}
-                              </div>
-                              <ScrollBar
-                                orientation="horizontal"
-                                className="sm:hidden"
-                              />
-                            </ScrollArea>
-                          )}
-                          {/* Seconds Selector */}
-                          {timeStructure === 'hh:mm:ss' && (
-                            <ScrollArea className="w-64 sm:w-auto">
-                              <div className="flex sm:flex-col p-2 gap-1">
-                                {Array.from(
-                                  { length: 60 },
-                                  (_, i) => i * 1
-                                ).map((second) => {
-                                  const isSelected =
-                                    selectedDate?.getSeconds() === second
-                                  return (
-                                    <Button
-                                      key={second}
-                                      size="sm"
-                                      variant={isSelected ? 'default' : 'ghost'}
-                                      className="sm:w-full justify-center"
-                                      onClick={() =>
-                                        handleTimeChange(
-                                          'second',
-                                          second.toString()
-                                        )
-                                      }>
-                                      {second.toString().padStart(2, '0')}
-                                    </Button>
-                                  )
-                                })}
-                              </div>
-                              <ScrollBar
-                                orientation="horizontal"
-                                className="sm:hidden"
-                              />
-                            </ScrollArea>
-                          )}
-                          {/* AM/PM Selector */}
-                          {!is24Hour && (
-                            <ScrollArea>
-                              <div className="flex sm:flex-col p-2 gap-1">
-                                {['AM', 'PM'].map((ampm) => {
-                                  const isSelected = selectedDate
-                                    ? (ampm === 'AM' &&
-                                        selectedDate.getHours() < 12) ||
-                                      (ampm === 'PM' &&
-                                        selectedDate.getHours() >= 12)
-                                    : false
-
-                                  return (
-                                    <Button
-                                      key={ampm}
-                                      size="sm"
-                                      variant={isSelected ? 'default' : 'ghost'}
-                                      className="sm:w-full justify-center"
-                                      onClick={() =>
-                                        handleTimeChange('ampm', ampm)
-                                      }>
-                                      {ampm}
-                                    </Button>
-                                  )
-                                })}
-                              </div>
-                            </ScrollArea>
-                          )}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
-                  <FormMessage />
+                  <DateTimeInput
+                    label={label}
+                    description={description}
+                    value={field.value}
+                    onChange={(date) => {
+                      field.onChange(date as PathValue<T, Path<T>>)
+                      handleValueChange(fieldConfig, date)
+                    }}
+                    onBlur={() => handleBlur(fieldConfig, field.value)}
+                    timeFormat={dateTimeConfig.timeFormat}
+                    timeStructure={dateTimeConfig.timeStructure}
+                    fromDate={dateTimeConfig.fromDate}
+                    toDate={dateTimeConfig.toDate}
+                    placeholder={dateTimeConfig.placeholder}
+                    disabled={dateTimeConfig.disabled}
+                    error={<FormMessage />}
+                  />
                 </FormItem>
               )
             }}
           />
         )
-
-      // ...existing code...
 
       case FormFieldType.MULTISELECT:
         return (
@@ -1061,142 +653,35 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
             control={form.control}
             name={name as Path<T>}
             render={({ field }) => {
-              const commandProps = props as Omit<
-                MultiselectFieldConfig,
-                | 'fieldName'
-                | 'fieldLabel'
-                | 'fieldType'
-                | 'options'
-                | 'icon'
-                | 'fileConfig'
-                | 'showIf'
-                | 'dependsOn'
-                | 'maxSelectedDisplay'
-                | 'defaultValue'
-                | 'value'
-              >
-              const selectedValues = Array.isArray(field.value)
-                ? field.value
-                : field.value
-                ? [field.value]
-                : []
-              const allOptions = options || []
-              const maxDisplay =
-                (props as MultiselectFieldConfig).maxSelectedDisplay || 5
+              const multiselectConfig = fieldConfig as MultiselectFieldConfig
               return (
                 <FormItem className={cn(className)}>
-                  <FormLabel>{label}</FormLabel>
-                  <FormControl>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            'w-full justify-between',
-                            selectedValues.length === 0 &&
-                              'text-muted-foreground'
-                          )}
-                          onBlur={() =>
-                            handleBlur(fieldConfig, selectedValues)
-                          }>
-                          {selectedValues.length === 0 ? (
-                            fieldConfig.placeholder ||
-                            `Select ${label.toLowerCase()}`
-                          ) : (
-                            <div className="flex flex-wrap gap-1">
-                              {selectedValues
-                                .slice(0, maxDisplay)
-                                .map((val) => {
-                                  const option = allOptions.find(
-                                    (opt) => opt.value === val
-                                  )
-                                  return (
-                                    <Badge
-                                      variant="outline"
-                                      key={String(val)}
-                                      className="text-xs">
-                                      {option?.label || val}
-                                    </Badge>
-                                  )
-                                })}
-                              {selectedValues.length > maxDisplay && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs">
-                                  +{selectedValues.length - maxDisplay} more
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command {...commandProps}>
-                          <CommandInput
-                            placeholder={
-                              commandProps.searchPlaceholder ||
-                              `Search ${label.toLowerCase()}...`
-                            }
-                            className="h-9"
-                            onValueChange={(value) =>
-                              commandProps.onSearchChange?.(name, value)
-                            }
-                          />
-                          <CommandList>
-                            <CommandEmpty>
-                              {commandProps.emptyMessage || 'No option found.'}
-                            </CommandEmpty>
-                            <CommandGroup>
-                              {allOptions.map((option) => (
-                                <CommandItem
-                                  value={option.label}
-                                  key={String(option.value)}
-                                  disabled={option.disabled}
-                                  onSelect={() => {
-                                    const isSelected = selectedValues.some(
-                                      (v) => String(v) === String(option.value)
-                                    )
-                                    const newValues = isSelected
-                                      ? selectedValues.filter(
-                                          (v) =>
-                                            String(v) !== String(option.value)
-                                        )
-                                      : [...selectedValues, option.value]
-
-                                    field.onChange(
-                                      newValues as PathValue<T, Path<T>>
-                                    )
-                                    handleValueChange(fieldConfig, newValues)
-                                  }}>
-                                  <div className="flex items-center">
-                                    {option.icon && (
-                                      <option.icon className="mr-2 h-4 w-4" />
-                                    )}
-                                    {option.label}
-                                  </div>
-                                  <Check
-                                    className={cn(
-                                      'ml-auto h-4 w-4',
-                                      selectedValues.some(
-                                        (v) =>
-                                          String(v) === String(option.value)
-                                      )
-                                        ? 'opacity-100'
-                                        : 'opacity-0'
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </FormControl>
-                  {description && (
-                    <FormDescription>{description}</FormDescription>
-                  )}
+                  <MultiSelect
+                    label={label}
+                    description={description}
+                    options={options || []}
+                    value={field.value}
+                    onChange={(values) => {
+                      field.onChange(values as PathValue<T, Path<T>>)
+                      handleValueChange(fieldConfig, values)
+                    }}
+                    onBlur={() => handleBlur(fieldConfig, field.value)}
+                    placeholder={multiselectConfig.placeholder}
+                    searchPlaceholder={multiselectConfig.searchPlaceholder}
+                    emptyMessage={multiselectConfig.emptyMessage}
+                    maxSelectedDisplay={multiselectConfig.maxSelectedDisplay}
+                    disabled={multiselectConfig.disabled}
+                    error={
+                      form.formState.errors[name as Path<T>]?.message ? (
+                        <span className="text-sm text-destructive">
+                          {
+                            form.formState.errors[name as Path<T>]
+                              ?.message as string
+                          }
+                        </span>
+                      ) : null
+                    }
+                  />
                   <FormMessage />
                 </FormItem>
               )
