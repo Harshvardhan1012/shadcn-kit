@@ -1,4 +1,6 @@
 'use client'
+import { FormFieldType } from '@/components'
+import { TimeFormat, TimeStructure } from '@/components/form/DateTime'
 import {
   CalendarDays,
   FileText,
@@ -9,10 +11,9 @@ import {
 } from 'lucide-react' // Import appropriate icons
 import { FieldValues } from 'react-hook-form'
 import * as z from 'zod'
-import DynamicForm from '@/components/form/DynamicForm'
-import { FormFieldConfig } from './../../components/form/DynamicForm'
 import { H3 } from '../../components/ui/Typography'
-import { FormFieldType } from '@/components'
+import { FormFieldConfig } from './../../components/form/DynamicForm'
+import { Form } from 'json-reactify'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -40,6 +41,7 @@ const formSchema = z.object({
     errorMap: () => ({ message: 'Please select a fruit.' }),
   }),
   newsletter: z.date().optional(), // Changed to date type for datetime input
+  items: z.array(z.string()).optional(),
 })
 
 // Define form configuration as a function to accept variables
@@ -142,6 +144,8 @@ const FormPage = () => {
       fieldLabel: 'Department',
       fieldType: FormFieldType.DATE,
       mode: 'single',
+      minDate: new Date(2025, 8, 1), // September 1, 2025 (month is 0-indexed)
+      maxDate: new Date(2025, 11, 31), // December 31, 2025
       // validation: formSchema.shape.department,
       description: 'Select your department.',
     },
@@ -158,15 +162,45 @@ const FormPage = () => {
       description: 'Pick your favorite fruit.',
     },
     {
+      fieldType: FormFieldType.MULTISELECT,
+      fieldName: 'itemss',
+      fieldLabel: 'Items',
+      enableSearch: false, // Disables search completely
+      emptyMessage: 'No items found',
+      options: [
+        { value: 'apple', label: 'Apple' },
+        { value: 'banana', label: 'Banana' },
+        { value: 'orange', label: 'Orange' },
+      ],
+    },
+    {
+      fieldType: FormFieldType.MULTISELECT,
+      fieldName: 'items',
+      fieldLabel: 'Items',
+      placeholder: 'Select items',
+      enableSearch: true, // Disables search completely
+      searchPlaceholder: 'Search items...',
+      emptyMessage: 'No items found',
+      options: [
+        { value: 'apple', label: 'Apple' },
+        { value: 'banana', label: 'Banana' },
+        { value: 'orange', label: 'Orange' },
+      ],
+    },
+    {
       fieldName: 'newsletter',
-      fieldLabel: 'Subscribe to newsletter',
+      fieldLabel: 'Newsletter Subscription',
       fieldType: FormFieldType.DATETIME,
-      timeStructure: 'hh:mm:ss',
-      timeFormat: '12',
+      description: 'Select date and time for newsletter.',
+      icon: ImageIcon,
+      validation: formSchema.shape.newsletter,
       onChangeField(value) {
-        console.log('Newsletter subscription time changed:', value)
+        console.log('Newsletter datetime changed:', value)
       },
-      description: 'Get updates in your inbox.',
+      timeFormat: TimeFormat.TWELVE_HOUR,
+      timeStructure: TimeStructure.HOUR_ONLY,
+      minDate: new Date(2025, 8, 1), // September 1, 2025 (month is 0-indexed)
+      maxDate: new Date(2025, 11, 31), // December 31, 2025
     },
   ]
 
@@ -174,9 +208,9 @@ const FormPage = () => {
   return (
     <div className="container mx-auto max-w-2xl py-12">
       <H3 className="mb-8">Dynamic Form Example</H3>
-      <DynamicForm
+      <Form
         formConfig={exampleFormConfig}
-        onSubmit={(data) => onSubmit(data)}
+        onSubmit={(data: any) => onSubmit(data)}
         schema={formSchema}
         loading={false}
         defaultValues={{
@@ -194,6 +228,7 @@ const FormPage = () => {
           department: new Date(),
           favoriteFruit: 'apple',
           newsletter: new Date(),
+          items: ['orange', 'apple'],
         }}
       />
     </div>

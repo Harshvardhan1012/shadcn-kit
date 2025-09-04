@@ -1,5 +1,5 @@
 'use client'
-import { cn } from '@/components/lib/utils'
+import { cn } from './../lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -13,11 +13,11 @@ import {
 } from 'react-hook-form'
 import * as z from 'zod'
 
-// UI Components (assuming these are properly typed)
-import { SingleDatePicker } from '@/components/DatePicker'
-import { DateRangePicker } from '@/components/DateRangePicker'
-import { Button } from '@/components/ui/button'
-import { Command } from '@/components/ui/command'
+// (assuming these are properly typed)
+import { SingleDatePicker } from './../form/DatePicker'
+import { DateRangePicker } from './../form/DateRangePicker'
+import { Button } from './../ui/button'
+import { Command } from './../ui/command'
 import {
   Form,
   FormControl,
@@ -26,9 +26,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
+} from './../ui/form'
+import { Input } from './../ui/input'
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from './../ui/multi-select'
+import { Skeleton } from './../ui/skeleton'
 import { FileText } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import {
@@ -38,7 +45,6 @@ import {
 } from './CheckBoxInput'
 import { ComboBox } from './ComboBox'
 import { DateTimeFieldConfig, DateTimeInput } from './DateTime'
-import { MultiSelect } from './MultiSelect'
 import { RadioFieldConfig, RadioGroupInput } from './RadioGroupInput'
 import { SelectFieldConfig, SelectInput } from './SelectInput'
 import { SwitchFieldConfig, SwitchInput } from './SwitchInput'
@@ -107,8 +113,8 @@ type DateFieldConfig = BaseFormFieldConfig<FormFieldType.DATE> &
   React.ComponentProps<typeof DayPicker> & {
     fieldType: FormFieldType.DATE
     mode?: 'single' | 'multiple' | 'range'
-    fromDate?: Date
-    toDate?: Date
+    minDate?: Date
+    maxDate?: Date
   }
 
 interface ComboboxFieldConfig
@@ -139,6 +145,8 @@ interface MultiselectFieldConfig
   value?: string[]
   defaultValue?: string[]
   placeholder?: string
+  overflowBehavior?: 'wrap' | 'wrap-when-open' | 'cutoff'
+  enableSearch?: boolean
 }
 
 interface FileFieldConfig
@@ -311,12 +319,12 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                       {...textareaProps}
                       value={field.value as string}
                       onChange={(e) => {
-                        field.onChange(e.target.value)
-                        handleValueChange(fieldConfig, e.target.value)
+                        field.onChange(e)
+                        handleValueChange(fieldConfig, e)
                       }}
                       onBlur={(e) => {
                         field.onBlur()
-                        handleBlur(fieldConfig, e.target.value)
+                        handleBlur(fieldConfig, e)
                       }}
                       description={description}
                       error={<FormMessage />}
@@ -413,8 +421,8 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
               description={description}
               className={className}
               disabled={dateConfig.disabled}
-              {...(dateConfig.fromDate && { fromDate: dateConfig.fromDate })}
-              {...(dateConfig.toDate && { toDate: dateConfig.toDate })}
+              {...(dateConfig.minDate && { minDate: dateConfig.minDate })}
+              {...(dateConfig.maxDate && { maxDate: dateConfig.maxDate })}
             />
           )
         if (dateConfig.mode === 'single')
@@ -430,9 +438,8 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
               description={description}
               className={className}
               disabled={dateConfig.disabled}
-              // Make fromDate and toDate truly optional - only pass if they exist
-              {...(dateConfig.fromDate && { fromDate: dateConfig.fromDate })}
-              {...(dateConfig.toDate && { toDate: dateConfig.toDate })}
+              {...(dateConfig.minDate && { minDate: dateConfig.minDate })}
+              {...(dateConfig.maxDate && { maxDate: dateConfig.maxDate })}
             />
           )
 
@@ -450,7 +457,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                   <FormControl>
                     <RadioGroupInput
                       {...radioProps}
-                      onChange={(value: any) => {
+                      onChange={(value) => {
                         field.onChange(value as PathValue<T, Path<T>>)
                         handleValueChange(fieldConfig, value)
                       }}
@@ -485,7 +492,7 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                   <FormControl>
                     <SelectInput
                       {...selectProps}
-                      onChange={(value: any) => {
+                      onChange={(value) => {
                         field.onChange(value as PathValue<T, Path<T>>)
                         handleValueChange(fieldConfig, value)
                       }}
@@ -634,8 +641,8 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
                     onBlur={() => handleBlur(fieldConfig, field.value)}
                     timeFormat={dateTimeConfig.timeFormat}
                     timeStructure={dateTimeConfig.timeStructure}
-                    fromDate={dateTimeConfig.fromDate}
-                    toDate={dateTimeConfig.toDate}
+                    minDate={dateTimeConfig.minDate}
+                    maxDate={dateTimeConfig.maxDate}
                     placeholder={dateTimeConfig.placeholder}
                     disabled={dateTimeConfig.disabled}
                     error={<FormMessage />}
@@ -656,32 +663,46 @@ const DynamicForm = <T extends FieldValues = FieldValues>({
               const multiselectConfig = fieldConfig as MultiselectFieldConfig
               return (
                 <FormItem className={cn(className)}>
-                  <MultiSelect
-                    label={label}
-                    description={description}
-                    options={options || []}
-                    value={field.value}
-                    onChange={(values) => {
-                      field.onChange(values as PathValue<T, Path<T>>)
-                      handleValueChange(fieldConfig, values)
-                    }}
-                    onBlur={() => handleBlur(fieldConfig, field.value)}
-                    placeholder={multiselectConfig.placeholder}
-                    searchPlaceholder={multiselectConfig.searchPlaceholder}
-                    emptyMessage={multiselectConfig.emptyMessage}
-                    maxSelectedDisplay={multiselectConfig.maxSelectedDisplay}
-                    disabled={multiselectConfig.disabled}
-                    error={
-                      form.formState.errors[name as Path<T>]?.message ? (
-                        <span className="text-sm text-destructive">
-                          {
-                            form.formState.errors[name as Path<T>]
-                              ?.message as string
+                  <FormLabel>{label}</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      values={field.value}
+                      onValuesChange={(values: string[]) => {
+                        field.onChange(values as PathValue<T, Path<T>>)
+                        handleValueChange(fieldConfig, values)
+                      }}>
+                      <MultiSelectTrigger className="w-full">
+                        <MultiSelectValue
+                          placeholder={multiselectConfig.placeholder}
+                          overflowBehavior={
+                            multiselectConfig.overflowBehavior ||
+                            'wrap-when-open'
                           }
-                        </span>
-                      ) : null
-                    }
-                  />
+                        />
+                      </MultiSelectTrigger>
+                      <MultiSelectContent
+                        search={
+                          multiselectConfig.enableSearch !== false
+                            ? {
+                                placeholder:
+                                  multiselectConfig.searchPlaceholder,
+                                emptyMessage: multiselectConfig.emptyMessage,
+                              }
+                            : false
+                        }>
+                        {options?.map((option) => (
+                          <MultiSelectItem
+                            key={option.value.toString()}
+                            value={option.value.toString()}>
+                            {option.label}
+                          </MultiSelectItem>
+                        ))}
+                      </MultiSelectContent>
+                    </MultiSelect>
+                  </FormControl>
+                  {description && (
+                    <FormDescription>{description}</FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )

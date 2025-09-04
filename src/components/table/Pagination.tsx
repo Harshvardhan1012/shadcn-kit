@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button'
+import { Button } from './../ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
+} from './../ui/select'
+import { Skeleton } from './../ui/skeleton'
 import {
   ChevronLeft,
   ChevronRight,

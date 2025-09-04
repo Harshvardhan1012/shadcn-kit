@@ -3,7 +3,7 @@ import { cn } from '../lib/utils'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { StringOrNumberComponentProps } from './type'
 
 // Component-specific configurations
 export interface InputFieldConfig
@@ -22,20 +22,15 @@ export interface InputFieldConfig
   ref?: React.Ref<HTMLInputElement>
 }
 
-export type TextInputProps = Omit<
-  InputFieldConfig,
-  | 'fieldName'
-  | 'fieldLabel'
-  | 'fieldType'
-  | 'options'
-  | 'fileConfig'
-  | 'showIf'
-  | 'dependsOn'
-  | 'onBlur'
-  | 'onChange'
->
+export interface TextInputProps
+  extends Omit<
+    React.ComponentProps<typeof Input>,
+    'onFocus' | 'onBlur' | 'onChange'
+  > {
+  icon?: React.ElementType
+}
 
-interface ITextInputType extends BaseComponentProps, TextInputProps {
+interface ITextInputType extends StringOrNumberComponentProps, TextInputProps {
   type?: 'text' | 'password' | 'email' | 'number'
   value?: string | number
   placeholder?: string

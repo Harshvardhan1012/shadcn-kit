@@ -12,7 +12,7 @@ export interface SwitchFieldConfig
 }
 
 export interface ISwitchInputProps
-  extends BaseComponentProps,
+  extends BaseComponentProps<boolean>,
     SwitchFieldConfig {
   checked?: boolean
 }
@@ -47,7 +47,7 @@ export const SwitchInput: React.FC<ISwitchInputProps> = ({
         onBlur={() => onBlur?.(checked)}
         {...props}
       />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error}
     </div>
   )
 }

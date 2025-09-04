@@ -24,7 +24,7 @@ export type TextAreaProps = Omit<
   | 'onChange'
 >
 
-interface ITextareaInput extends BaseComponentProps, TextAreaProps {
+interface ITextareaInput extends BaseComponentProps<string>, TextAreaProps {
   value?: string
   placeholder?: string
   rows?: number

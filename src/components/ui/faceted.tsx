@@ -3,8 +3,8 @@
 import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 
-import { cn } from '@/components/lib/utils'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '../lib/utils'
+import { Badge } from './badge'
 import {
   Command,
   CommandEmpty,
@@ -13,12 +13,8 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+} from './command'
+import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 type FacetedValue<Multiple extends boolean> = Multiple extends true
   ? string[]
@@ -238,7 +234,7 @@ function FacetedItem(props: FacetedItemProps) {
         context.onItemSelect(currentValue)
       }
     },
-    [onSelect, context.onItemSelect]
+    [onSelect, context]
   )
 
   return (

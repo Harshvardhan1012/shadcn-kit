@@ -1,9 +1,15 @@
-interface FileInputProps extends BaseComponentProps {
+import Image from 'next/image'
+import React, { useState } from 'react'
+import { cn } from '../lib/utils'
+import { FileTextIcon } from '../ui/icons'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { BaseComponentProps } from './type'
+
+interface FileInputProps extends BaseComponentProps<File | null> {
   value?: File | null
   accept?: string
   multiple?: boolean
-  buttonText?: string
-  buttonVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   icon?: React.ElementType
 }
 
@@ -15,8 +21,6 @@ export const FileInput: React.FC<FileInputProps> = ({
   value,
   accept,
   multiple,
-  buttonText,
-  buttonVariant = 'outline',
   icon,
   onChange,
   onBlur,
@@ -28,7 +32,7 @@ export const FileInput: React.FC<FileInputProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
     onChange?.(file)
-    
+
     // Handle preview
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader()
@@ -56,7 +60,7 @@ export const FileInput: React.FC<FileInputProps> = ({
             className: 'h-10 w-10 text-gray-400',
           })
         ) : (
-          <FileText className="h-10 w-10 text-gray-400" />
+          <FileTextIcon className="h-10 w-10 text-gray-400" />
         )}
         <Input
           type="file"
@@ -70,10 +74,14 @@ export const FileInput: React.FC<FileInputProps> = ({
         />
       </div>
       {value && !multiple && (
-        <p className="text-sm text-muted-foreground">Selected file: {value.name}</p>
+        <p className="text-sm text-muted-foreground">
+          Selected file: {value.name}
+        </p>
       )}
-      {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {description && (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      )}
+      {error}
     </div>
   )
 }

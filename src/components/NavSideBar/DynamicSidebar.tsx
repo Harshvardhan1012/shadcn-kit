@@ -1,11 +1,11 @@
 'use client'
-import { cn } from '@/components/lib/utils'
-import { Button } from '@/components/ui/button'
+import { cn } from './../lib/utils'
+import { Button } from './../ui/button'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from './../ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
@@ -22,8 +22,8 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { Skeleton } from '@/components/ui/skeleton'
+} from './../ui/sidebar'
+import { Skeleton } from './../ui/skeleton'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { ReactNode, useState } from 'react'

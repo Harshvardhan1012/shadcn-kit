@@ -1,18 +1,18 @@
-import { cn } from '@/components/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { cn } from './../lib/utils'
+import { Button } from './../ui/button'
+import { Calendar } from './../ui/calendar'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from './../ui/form'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from './../ui/popover'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 
@@ -23,8 +23,8 @@ interface SingleDatePickerProps {
   description?: string
   disabled?: boolean
   className?: string
-  fromDate?: Date
-  toDate?: Date
+  minDate?: Date
+  maxDate?: Date
 }
 
 export function SingleDatePicker({
@@ -34,15 +34,13 @@ export function SingleDatePicker({
   description,
   disabled = false,
   className,
-  fromDate,
-  toDate,
+  minDate,
+  maxDate,
 }: SingleDatePickerProps) {
-  // Convert string value to Date for display and calendar selection
   const selectedDate = value ? new Date(value) : undefined
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      // Return the Date object directly (not string)
       onChange(date)
     }
   }
@@ -70,9 +68,12 @@ export function SingleDatePicker({
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
-            disabled={disabled}
-            fromDate={fromDate}
-            toDate={toDate}
+            disabled={(date) => {
+              if (disabled) return true
+              if (minDate && date < minDate) return true
+              if (maxDate && date > maxDate) return true
+              return false
+            }}
             initialFocus
           />
         </PopoverContent>
