@@ -1,4 +1,4 @@
-import { cn } from '@/components/lib/utils'
+import { cn } from './../lib/utils'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,7 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from './../ui/alert-dialog'
 
 interface AlertDialogProps {
   title: string

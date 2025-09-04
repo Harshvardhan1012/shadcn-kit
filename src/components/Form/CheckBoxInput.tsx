@@ -25,7 +25,9 @@ export type CheckBoxProps = Omit<
   | 'onChange'
 >
 
-interface ICheckboxInputProps extends BaseComponentProps, CheckBoxProps {
+interface ICheckboxInputProps
+  extends BaseComponentProps<boolean>,
+    CheckBoxProps {
   checked?: boolean
 }
 export const CheckboxInput: React.FC<ICheckboxInputProps> = ({
@@ -48,7 +50,7 @@ export const CheckboxInput: React.FC<ICheckboxInputProps> = ({
       <Checkbox
         checked={checked}
         disabled={disabled}
-        onCheckedChange={(value) => onChange?.(value)}
+        onCheckedChange={(value) => onChange?.(Boolean(value))}
         onBlur={() => onBlur?.(checked)}
         {...props}
       />

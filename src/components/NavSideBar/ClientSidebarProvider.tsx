@@ -1,6 +1,6 @@
 'use client'
 
-import { SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarProvider } from './../ui/sidebar'
 import { ReactNode } from 'react'
 
 interface ClientSidebarProviderProps {

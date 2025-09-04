@@ -15,7 +15,7 @@ export interface RadioFieldConfig
 }
 
 export interface IRadioGroupInputProps
-  extends BaseComponentProps,
+  extends BaseComponentProps<string>,
     RadioFieldConfig {
   options?: FormOption[]
   value?: string

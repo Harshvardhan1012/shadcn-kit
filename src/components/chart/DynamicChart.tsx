@@ -1,5 +1,5 @@
-import { cn } from '@/components/lib/utils'
-import { Button } from '@/components/ui/button'
+import { cn } from './../lib/utils'
+import { Button } from './../ui/button'
 import {
   Card,
   CardContent,
@@ -7,7 +7,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from './../ui/card'
 import {
   ChartContainer,
   ChartLegend,
@@ -15,14 +15,14 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart'
+} from './../ui/chart'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from './../ui/select'
 import {
   Table,
   TableBody,
@@ -30,7 +30,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from './../ui/table'
 import { Download, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
 import * as React from 'react'
 import {

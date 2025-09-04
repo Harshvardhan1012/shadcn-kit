@@ -6,23 +6,13 @@ import {
   SidebarConfig,
 } from '@/components/NavSideBar/DynamicSidebar'
 import { useAlert } from '@/components/services/AlertService'
-import { Input } from '@/components/ui/input'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import {
-  BellRing,
-  Calendar,
-  CheckCircle,
-  ClockFading,
-  GitPullRequest,
-  Home,
-  Inbox,
   FormInput,
-  Settings,
-  X,
-  ChartScatter,
+  Settings, ChartScatter,
   Table,
   ShowerHeadIcon,
-  Component,
+  Component
 } from 'lucide-react'
 import { useState } from 'react'
 

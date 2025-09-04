@@ -1,9 +1,9 @@
 'use client'
 
-import { cn } from '@/components/lib/utils'
-import { ModeToggle } from '@/components/theme/mode-toggle'
-import { Separator } from '@/components/ui/separator'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { cn } from './../lib/utils'
+import { ModeToggle } from './../theme/mode-toggle'
+import { Separator } from './../ui/separator'
+import { SidebarTrigger } from './../ui/sidebar'
 
 interface NavbarProps {
   className?: string

@@ -3,6 +3,7 @@
 import { PopoverTrigger } from '@radix-ui/react-popover'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
+import React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { cn } from '../lib/utils'
 import { Button } from '../ui/button'
@@ -11,7 +12,7 @@ import { Label } from '../ui/label'
 import { Popover, PopoverContent } from '../ui/popover'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { DateComponentProps } from './type'
 
 export enum TimeFormat {
   TWELVE_HOUR = '12-hour',
@@ -35,16 +36,16 @@ export type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
     mode?: DateTimeMode
     timeFormat?: TimeFormat
     timeStructure?: TimeStructure
-    fromDate?: Date
-    toDate?: Date
+    minDate?: Date
+    maxDate?: Date
   }
 
-interface DateTimeInputProps extends BaseComponentProps {
+interface DateTimeInputProps extends DateComponentProps {
   value?: Date
   timeFormat?: TimeFormat
   timeStructure?: TimeStructure
-  fromDate?: Date
-  toDate?: Date
+  minDate?: Date
+  maxDate?: Date
   placeholder?: string
 }
 
@@ -56,8 +57,8 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   value,
   timeFormat = TimeFormat.TWENTY_FOUR_HOUR,
   timeStructure = TimeStructure.HOUR_MINUTE_SECOND,
-  fromDate,
-  toDate,
+  minDate,
+  maxDate,
   placeholder,
   onChange,
   onBlur,
@@ -66,6 +67,10 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
 }) => {
   const selectedDate = value ? new Date(value) : undefined
   const is24Hour = timeFormat === TimeFormat.TWENTY_FOUR_HOUR
+
+  // Use minDate/maxDate for date restrictions
+  const effectiveMinDate = minDate
+  const effectiveMaxDate = maxDate
 
   const formatDateTimeOutput = (date: Date) => {
     const outputDate = new Date(date)
@@ -216,14 +221,17 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
-              disabled={disabled}
-              fromDate={fromDate}
-              toDate={toDate}
+              disabled={(date) => {
+                if (disabled) return true
+                if (effectiveMinDate && date < effectiveMinDate) return true
+                if (effectiveMaxDate && date > effectiveMaxDate) return true
+                return false
+              }}
               initialFocus
+              {...props}
             />
 
             <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-              {/* Hours Selector */}
               <ScrollArea className="w-64 sm:w-auto">
                 <div className="flex sm:flex-col p-2 gap-1">
                   {Array.from({ length: is24Hour ? 24 : 12 }, (_, i) =>
@@ -264,7 +272,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                   })}
                 </div>
                 <ScrollBar
-                  orientation="horizontal"
+                  orientation="vertical"
                   className="sm:hidden"
                 />
               </ScrollArea>
@@ -291,7 +299,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                     })}
                   </div>
                   <ScrollBar
-                    orientation="horizontal"
+                    orientation="vertical"
                     className="sm:hidden"
                   />
                 </ScrollArea>
@@ -318,7 +326,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                     })}
                   </div>
                   <ScrollBar
-                    orientation="horizontal"
+                    orientation="vertical"
                     className="sm:hidden"
                   />
                 </ScrollArea>
@@ -355,7 +363,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
       {description && (
         <p className="text-sm text-muted-foreground">{description}</p>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error}
     </div>
   )
 }

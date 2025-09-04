@@ -1,18 +1,18 @@
-import { cn } from '@/components/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { cn } from './../lib/utils'
+import { Button } from './../ui/button'
+import { Calendar } from './../ui/calendar'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from './../ui/form'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from './../ui/popover'
 import { format } from 'date-fns/format'
 import { CalendarDays } from 'lucide-react'
 
@@ -23,8 +23,8 @@ interface DateRangePickerProps {
   description?: string
   disabled?: boolean
   className?: string
-  fromDate?: Date
-  toDate?: Date
+  minDate?: Date
+  maxDate?: Date
 }
 
 export function DateRangePicker({
@@ -34,8 +34,8 @@ export function DateRangePicker({
   description,
   disabled = false,
   className,
-  fromDate,
-  toDate,
+  minDate,
+  maxDate,
 }: DateRangePickerProps) {
   const from = value?.from ? new Date(value.from) : undefined
   const to = value?.to ? new Date(value.to) : undefined
@@ -73,9 +73,12 @@ export function DateRangePicker({
                 })
               }
             }}
-            disabled={disabled}
-            fromDate={fromDate}
-            toDate={toDate}
+            disabled={(date) => {
+              if (disabled) return true
+              if (minDate && date < minDate) return true
+              if (maxDate && date > maxDate) return true
+              return false
+            }}
             initialFocus
             numberOfMonths={2}
           />

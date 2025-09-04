@@ -16,7 +16,9 @@ export interface SelectFieldConfig
   fieldType: FormFieldType.SELECT
 }
 
-interface ISelectInputProps extends BaseComponentProps, SelectFieldConfig {
+interface ISelectInputProps
+  extends BaseComponentProps<string>,
+    SelectFieldConfig {
   options?: FormOption[]
   value?: string
   placeholder?: string

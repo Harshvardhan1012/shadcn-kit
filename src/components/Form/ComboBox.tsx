@@ -15,9 +15,9 @@ import {
 import { Label } from '../ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { FormOption } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { StringComponentProps } from './type'
 
-interface ComboBoxProps extends BaseComponentProps {
+interface ComboBoxProps extends StringComponentProps {
   options: FormOption[]
   value?: string
   placeholder?: string
