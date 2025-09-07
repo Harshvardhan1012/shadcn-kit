@@ -24,8 +24,7 @@ import {
   useSidebar,
 } from './../ui/sidebar'
 import { Skeleton } from './../ui/skeleton'
-import Image from 'next/image'
-import Link from 'next/link'
+import { Link } from 'react-router-dom'
 import React, { ReactNode, useState } from 'react'
 import { SearchResult, SearchWrapper } from './search-wrapper'
 
@@ -208,7 +207,7 @@ const renderGroups = (groups: SidebarGroup[]) => (
                       tooltip={item.title}
                       disabled={item.disabled}>
                       {item.url ? (
-                        <Link href={item.url}>
+                        <Link to={item.url}>
                           {item.icon && renderIcon(item.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {item.title}
@@ -245,10 +244,9 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
         <div className="flex items-center gap-2">
           {config.logo.iconUrl && (
             <div className="relative h-6 w-6">
-              <Image
+              <img
                 src={config.logo.iconUrl}
                 alt="Logo"
-                fill
                 className="object-contain"
               />
             </div>
@@ -268,10 +266,9 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
         <div className="flex flex-col items-center gap-2 w-full">
           <div className="relative h-10 w-10 rounded-full overflow-hidden">
             {config.user.avatarUrl ? (
-              <Image
+              <img
                 src={config.user.avatarUrl}
                 alt={config.user.name || 'User'}
-                fill
                 className="object-cover"
               />
             ) : (

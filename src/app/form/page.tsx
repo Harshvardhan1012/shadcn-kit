@@ -1,5 +1,5 @@
 'use client'
-import { FormFieldType } from '@/components'
+import { type DynamicFormRef, Form, FormFieldType } from 'json-reactify'
 import { TimeFormat, TimeStructure } from '@/components/form/DateTime'
 import {
   CalendarDays,
@@ -9,11 +9,11 @@ import {
   Mail,
   User,
 } from 'lucide-react' // Import appropriate icons
+import { useRef } from 'react'
 import { FieldValues } from 'react-hook-form'
 import * as z from 'zod'
 import { H3 } from '../../components/ui/Typography'
 import { FormFieldConfig } from './../../components/form/DynamicForm'
-import { Form } from 'json-reactify'
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -47,6 +47,8 @@ const formSchema = z.object({
 // Define form configuration as a function to accept variables
 
 const FormPage = () => {
+  const formRef = useRef<DynamicFormRef>(null)
+
   const onSubmit = (data: FieldValues) => {
     console.log(data)
     // showAlert('default', 'Form Submitted', 'Your form has been submitted successfully.')
@@ -167,6 +169,7 @@ const FormPage = () => {
       fieldLabel: 'Items',
       enableSearch: false, // Disables search completely
       emptyMessage: 'No items found',
+      value: ['orange'],
       options: [
         { value: 'apple', label: 'Apple' },
         { value: 'banana', label: 'Banana' },
@@ -181,6 +184,9 @@ const FormPage = () => {
       enableSearch: true, // Disables search completely
       searchPlaceholder: 'Search items...',
       emptyMessage: 'No items found',
+      onChangeField(value: unknown) {
+        console.log(value)
+      },
       options: [
         { value: 'apple', label: 'Apple' },
         { value: 'banana', label: 'Banana' },
@@ -196,6 +202,7 @@ const FormPage = () => {
       validation: formSchema.shape.newsletter,
       onChangeField(value) {
         console.log('Newsletter datetime changed:', value)
+        handleItemsChange(value)
       },
       timeFormat: TimeFormat.TWELVE_HOUR,
       timeStructure: TimeStructure.HOUR_ONLY,
@@ -205,10 +212,22 @@ const FormPage = () => {
   ]
 
   // const { showAlert } = useAlert()
+  const handleItemsChange = (value: unknown) => {
+    console.log(formRef.current?.getFieldValue('items'))
+    console.log(formRef.current?.getFieldValue('itemss'))
+    console.log(formRef.current?.getFieldValue('newsletter'))
+    if (Array.isArray(value)) {
+      // When items changes, update itemss using formRef
+      formRef.current?.setFieldValue('itemss', value)
+      console.log('Items changed:', value)
+    }
+  }
+
   return (
     <div className="container mx-auto max-w-2xl py-12">
       <H3 className="mb-8">Dynamic Form Example</H3>
       <Form
+        ref={formRef}
         formConfig={exampleFormConfig}
         onSubmit={(data: any) => onSubmit(data)}
         schema={formSchema}
@@ -229,6 +248,7 @@ const FormPage = () => {
           favoriteFruit: 'apple',
           newsletter: new Date(),
           items: ['orange', 'apple'],
+          itemss: ['orange'],
         }}
       />
     </div>
