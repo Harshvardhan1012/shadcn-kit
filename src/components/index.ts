@@ -10,7 +10,11 @@ export { AlertDialogDemo as AlertDialog } from "./Alert/AlertDialog"
 export { DynamicChart as Chart } from "./chart/DynamicChart"
 
 // Form Components - Main Form
-export { default as Form, FormFieldType } from "./form/DynamicForm"
+export {
+  default as Form,
+  FormFieldType,
+  type DynamicFormRef,
+} from "./form/DynamicForm"
 
 // Form Components - Individual Input Components
 export { CheckboxInput } from "./form/CheckBoxInput"

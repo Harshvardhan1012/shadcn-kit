@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import React, { useState } from 'react'
 import { cn } from '../lib/utils'
 import { FileTextIcon } from '../ui/icons'
@@ -48,7 +47,7 @@ export const FileInput: React.FC<FileInputProps> = ({
       {label && <Label>{label}</Label>}
       <div className="flex items-center space-x-2">
         {preview ? (
-          <Image
+          <img
             width={40}
             height={40}
             src={preview}

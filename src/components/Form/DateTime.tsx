@@ -1,5 +1,4 @@
-// DateTime Component
-
+'use client'
 import { PopoverTrigger } from '@radix-ui/react-popover'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
@@ -231,9 +230,10 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
               {...props}
             />
 
-            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-              <ScrollArea className="w-64 sm:w-auto">
-                <div className="flex sm:flex-col p-2 gap-1">
+            <div className="flex flex-row h-[300px] divide-x border-l">
+              {/* Hours Selector */}
+              <div className="flex-1 overflow-y-auto max-h-full">
+                <div className="flex flex-col p-2 gap-1 min-h-max">
                   {Array.from({ length: is24Hour ? 24 : 12 }, (_, i) =>
                     is24Hour ? i : i + 1
                   ).map((hour) => {
@@ -248,7 +248,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                         key={hour}
                         size="sm"
                         variant={isSelected ? 'default' : 'ghost'}
-                        className="sm:w-full justify-center"
+                        className="w-full justify-center flex-shrink-0 min-h-[32px]"
                         onClick={() => {
                           if (is24Hour) {
                             handleTimeChange('hour', hour.toString())
@@ -271,17 +271,13 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                     )
                   })}
                 </div>
-                <ScrollBar
-                  orientation="vertical"
-                  className="sm:hidden"
-                />
-              </ScrollArea>
+              </div>
 
               {/* Minutes Selector */}
               {(timeStructure === TimeStructure.HOUR_MINUTE ||
                 timeStructure === TimeStructure.HOUR_MINUTE_SECOND) && (
-                <ScrollArea className="w-64 sm:w-auto">
-                  <div className="flex sm:flex-col p-2 gap-1">
+                <div className="flex-1 overflow-y-auto max-h-full">
+                  <div className="flex flex-col p-2 gap-1 min-h-max">
                     {Array.from({ length: 60 }, (_, i) => i).map((minute) => {
                       const isSelected = selectedDate?.getMinutes() === minute
                       return (
@@ -289,7 +285,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                           key={minute}
                           size="sm"
                           variant={isSelected ? 'default' : 'ghost'}
-                          className="sm:w-full justify-center"
+                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
                           onClick={() =>
                             handleTimeChange('minute', minute.toString())
                           }>
@@ -298,17 +294,13 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                       )
                     })}
                   </div>
-                  <ScrollBar
-                    orientation="vertical"
-                    className="sm:hidden"
-                  />
-                </ScrollArea>
+                </div>
               )}
 
               {/* Seconds Selector */}
               {timeStructure === TimeStructure.HOUR_MINUTE_SECOND && (
-                <ScrollArea className="w-64 sm:w-auto">
-                  <div className="flex sm:flex-col p-2 gap-1">
+                <div className="flex-1 overflow-y-auto max-h-full">
+                  <div className="flex flex-col p-2 gap-1 min-h-max">
                     {Array.from({ length: 60 }, (_, i) => i).map((second) => {
                       const isSelected = selectedDate?.getSeconds() === second
                       return (
@@ -316,7 +308,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                           key={second}
                           size="sm"
                           variant={isSelected ? 'default' : 'ghost'}
-                          className="sm:w-full justify-center"
+                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
                           onClick={() =>
                             handleTimeChange('second', second.toString())
                           }>
@@ -325,17 +317,13 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                       )
                     })}
                   </div>
-                  <ScrollBar
-                    orientation="vertical"
-                    className="sm:hidden"
-                  />
-                </ScrollArea>
+                </div>
               )}
 
               {/* AM/PM Selector */}
               {!is24Hour && (
-                <ScrollArea>
-                  <div className="flex sm:flex-col p-2 gap-1">
+                <div className="flex-1 overflow-y-auto h-[300px]">
+                  <div className="flex flex-col p-2 gap-1">
                     {['AM', 'PM'].map((ampm) => {
                       const isSelected = selectedDate
                         ? (ampm === 'AM' && selectedDate.getHours() < 12) ||
@@ -347,14 +335,14 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                           key={ampm}
                           size="sm"
                           variant={isSelected ? 'default' : 'ghost'}
-                          className="sm:w-full justify-center"
+                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
                           onClick={() => handleTimeChange('ampm', ampm)}>
                           {ampm}
                         </Button>
                       )
                     })}
                   </div>
-                </ScrollArea>
+                </div>
               )}
             </div>
           </div>
