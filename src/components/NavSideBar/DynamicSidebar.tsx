@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from './../ui/sidebar'
 import { Skeleton } from './../ui/skeleton'
-import { Link } from 'react-router-dom'
+import  Link  from 'next/link'
 import React, { ReactNode, useState } from 'react'
 import { SearchResult, SearchWrapper } from './search-wrapper'
 
@@ -207,7 +207,7 @@ const renderGroups = (groups: SidebarGroup[]) => (
                       tooltip={item.title}
                       disabled={item.disabled}>
                       {item.url ? (
-                        <Link to={item.url}>
+                        <Link href={item.url}>
                           {item.icon && renderIcon(item.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {item.title}
