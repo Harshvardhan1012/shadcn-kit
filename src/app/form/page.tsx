@@ -1,9 +1,9 @@
 'use client'
-import { type DynamicFormRef, Form } from 'json-reactify'
 import { useRef } from 'react'
 import { FieldValues } from 'react-hook-form'
 import { H3 } from '../../components/ui/Typography'
 import { exampleFormConfig, formSchema } from './form_config'
+import { DynamicFormRef, Form } from '@/components'
 
 // Define form configuration as a function to accept variables
 

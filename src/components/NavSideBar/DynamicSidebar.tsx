@@ -38,19 +38,15 @@ export interface SidebarSubItem {
   badge?: ReactNode | string | number
   disabled?: boolean
   showIf?: boolean | (() => boolean)
+
+  //route specific properties
+  component?: React.LazyExoticComponent<React.ComponentType<any>>;
+  isProtected?: boolean;
 }
 
-export interface SidebarItem {
-  id: string | number
-  title: string
-  icon?: React.ElementType | React.ReactNode
-  url?: string
-  onClick?: () => void
-  badge?: ReactNode | string | number
+export interface SidebarItem extends SidebarSubItem {
   subItems?: SidebarSubItem[]
-  disabled?: boolean
   defaultOpen?: boolean
-  showIf?: boolean | (() => boolean)
 }
 
 export interface SidebarGroup {
