@@ -1,5 +1,5 @@
 'use client'
-import { cn } from './../lib/utils'
+import { cn } from '@/lib/utils'
 import { Button } from './../ui/button'
 import {
   Collapsible,
@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from './../ui/sidebar'
 import { Skeleton } from './../ui/skeleton'
-import { Link } from 'react-router-dom'
+import  Link  from 'next/link'
 import React, { ReactNode, useState } from 'react'
 import { SearchResult, SearchWrapper } from './search-wrapper'
 
@@ -38,19 +38,15 @@ export interface SidebarSubItem {
   badge?: ReactNode | string | number
   disabled?: boolean
   showIf?: boolean | (() => boolean)
+
+  //route specific properties
+  component?: React.LazyExoticComponent<React.ComponentType<any>>;
+  isProtected?: boolean;
 }
 
-export interface SidebarItem {
-  id: string | number
-  title: string
-  icon?: React.ElementType | React.ReactNode
-  url?: string
-  onClick?: () => void
-  badge?: ReactNode | string | number
+export interface SidebarItem extends SidebarSubItem {
   subItems?: SidebarSubItem[]
-  disabled?: boolean
   defaultOpen?: boolean
-  showIf?: boolean | (() => boolean)
 }
 
 export interface SidebarGroup {
@@ -207,7 +203,7 @@ const renderGroups = (groups: SidebarGroup[]) => (
                       tooltip={item.title}
                       disabled={item.disabled}>
                       {item.url ? (
-                        <Link to={item.url}>
+                        <Link href={item.url}>
                           {item.icon && renderIcon(item.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {item.title}

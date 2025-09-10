@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from './../lib/utils'
+import { cn } from '@/lib/utils'
 import { ModeToggle } from './../theme/mode-toggle'
 import { Separator } from './../ui/separator'
 import { SidebarTrigger } from './../ui/sidebar'

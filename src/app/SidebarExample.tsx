@@ -1,5 +1,8 @@
 'use client'
 
+const Form = lazy(() =>
+  import('@/components').then(module => ({ default: module.Form }))
+);
 import { AlertDialogDemo } from '@/components/Alert/AlertDialog'
 import {
   DynamicSidebar,
@@ -14,11 +17,12 @@ import {
   ShowerHeadIcon,
   Component
 } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, useState } from 'react'
 
 interface MainLayoutProps {
   children: React.ReactNode
 }
+
 
 export function SidebarExample({ children }: MainLayoutProps) {
   const [open, setOpen] = useState(false)
@@ -47,6 +51,7 @@ export function SidebarExample({ children }: MainLayoutProps) {
                 id: 'form',
                 title: 'Form',
                 icon: FormInput,
+                component: Form,
                 url: '/form',
                 badge: 4,
               },
@@ -96,6 +101,10 @@ export function SidebarExample({ children }: MainLayoutProps) {
             icon: Settings,
             url: '/terms',
             onClick: () => console.log('Terms of Service clicked'),
+            showIf:() => {
+              //function that will be return true or false might be async from context 
+              return true
+            }
           },
         ],
       },
