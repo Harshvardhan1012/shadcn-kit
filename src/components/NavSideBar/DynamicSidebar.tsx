@@ -1,5 +1,5 @@
 'use client'
-import { cn } from './../lib/utils'
+import { cn } from '@/lib/utils'
 import { Button } from './../ui/button'
 import {
   Collapsible,

@@ -18,7 +18,6 @@ import {
   Component
 } from 'lucide-react'
 import { lazy, useState } from 'react'
-import Folazy, rmPage from './form/page'
 
 interface MainLayoutProps {
   children: React.ReactNode

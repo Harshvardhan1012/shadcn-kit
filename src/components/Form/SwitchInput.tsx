@@ -1,4 +1,4 @@
-import { cn } from '../lib/utils'
+import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'

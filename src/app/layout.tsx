@@ -1,4 +1,3 @@
-import { SidebarExample } from '@/app/SidebarExample'
 import { ModeToggle } from '@/components/theme/mode-toggle'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { ThemeSelector } from '@/components/theme/theme-selector'
@@ -9,6 +8,7 @@ import { ClientSidebarProvider } from '@/components/NavSideBar/ClientSidebarProv
 import { GlobalAlert } from '@/components/Alert/Alert'
 import { ClientAlertProvider } from '@/components/services/AlertService'
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { SidebarExample } from './SidebarExample'
 
 export const metadata: Metadata = {
   title: 'Create Next App',

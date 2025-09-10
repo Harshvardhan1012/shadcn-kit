@@ -1,4 +1,4 @@
-import { cn } from '../lib/utils'
+import { cn } from '@/lib/utils'
 import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
 import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
