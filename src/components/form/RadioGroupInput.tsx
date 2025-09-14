@@ -1,4 +1,4 @@
-import { cn } from '../lib/utils'
+import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
 import { type BaseFormFieldConfig, FormFieldType, type FormOption } from './DynamicForm'

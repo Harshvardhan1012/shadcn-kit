@@ -1,4 +1,4 @@
-import { cn } from '../lib/utils'
+import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
 import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
