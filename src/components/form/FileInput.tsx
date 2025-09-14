@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { FileTextIcon } from '../ui/icons'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { type BaseComponentProps } from './type'
+import type { BaseComponentProps } from './type'
+import { FileTextIcon } from 'lucide-react'
 
 interface FileInputProps extends BaseComponentProps<File | null> {
   value?: File | null

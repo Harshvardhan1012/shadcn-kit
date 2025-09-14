@@ -31,7 +31,7 @@ export const SwitchInput: React.FC<ISwitchInputProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-row items-center justify-between rounded-lg border p-4',
+        'flex flex-row items-center w-full justify-between',
         className
       )}>
       <div className="space-y-0.5">
