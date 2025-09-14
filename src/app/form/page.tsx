@@ -1,8 +1,8 @@
+import DynamicForm from '@/components/Form/DynamicForm'
+import type { FormContextType } from '@/components/Form/FormContext'
 import { useRef } from 'react'
 import type { FieldValues } from 'react-hook-form'
 import { exampleFormConfig, formSchema } from './form_config'
-import DynamicForm from '@/components/form/DynamicForm'
-import type { FormContextType } from '@/components/form/FormContext'
 
 // Define form configuration as a function to accept variables
 

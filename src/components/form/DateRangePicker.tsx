@@ -1,20 +1,16 @@
 import { cn } from '@/lib/utils'
-import { Button } from './../ui/button'
-import { Calendar } from './../ui/calendar'
+import { format } from 'date-fns/format'
+import { CalendarDays } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Calendar } from '../ui/calendar'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from './../ui/form'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from './../ui/popover'
-import { format } from 'date-fns/format'
-import { CalendarDays } from 'lucide-react'
+} from '../ui/form'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 
 interface DateRangePickerProps {
   value?: { from?: Date; to?: Date }

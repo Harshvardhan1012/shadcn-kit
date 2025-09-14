@@ -14,25 +14,25 @@ export {
   default as Form,
   FormFieldType,
   type DynamicFormRef,
-} from "./form/DynamicForm"
+} from "./Form/DynamicForm"
 
 // Form Components - Individual Input Components
-export { CheckboxInput } from "./form/CheckBoxInput"
-export { ComboBox } from "./form/ComboBox"
-export { SingleDatePicker } from "./form/DatePicker"
-export { DateRangePicker } from "./form/DateRangePicker"
+export { CheckboxInput } from "./Form/CheckBoxInput"
+export { ComboBox } from "./Form/ComboBox"
+export { SingleDatePicker } from "./Form/DatePicker"
+export { DateRangePicker } from "./Form/DateRangePicker"
 export {
   DateTimeInput,
   DateTimeMode,
   TimeFormat,
   TimeStructure,
-} from "./form/DateTime"
-export { FileInput } from "./form/FileInput"
-export { RadioGroupInput } from "./form/RadioGroupInput"
-export { SelectInput } from "./form/SelectInput"
-export { SwitchInput } from "./form/SwitchInput"
-export { TextareaInput } from "./form/TextAreaInput"
-export { TextInput } from "./form/TextInput"
+} from "./Form/DateTime"
+export { FileInput } from "./Form/FileInput"
+export { RadioGroupInput } from "./Form/RadioGroupInput"
+export { SelectInput } from "./Form/SelectInput"
+export { SwitchInput } from "./Form/SwitchInput"
+export { TextareaInput } from "./Form/TextAreaInput"
+export { TextInput } from "./Form/TextInput"
 
 // Sidebar and Navigation Components
 export { ClientSidebarProvider as SideBarProvider } from "./NavSideBar/ClientSidebarProvider"
@@ -52,7 +52,7 @@ export {
 export type { ChartDataPoint, ChartType } from "./chart/DynamicChart"
 
 // Form Types - Core
-export type { FormFieldConfig, FormOption } from "./form/DynamicForm"
+export type { FormFieldConfig, FormOption } from "./Form/DynamicForm"
 export type {
   BaseComponentProps,
   BooleanComponentProps,
@@ -63,13 +63,13 @@ export type {
   StringArrayComponentProps,
   StringComponentProps,
   StringOrNumberComponentProps,
-} from "./form/type"
+} from "./Form/type"
 
 // Form Types - Component Specific
-export type { CheckBoxProps } from "./form/CheckBoxInput"
-export type { DateTimeFieldConfig } from "./form/DateTime"
-export type { TextareaFieldConfig, TextAreaProps } from "./form/TextAreaInput"
-export type { InputFieldConfig, TextInputProps } from "./form/TextInput"
+export type { CheckBoxProps } from "./Form/CheckBoxInput"
+export type { DateTimeFieldConfig } from "./Form/DateTime"
+export type { TextAreaProps, TextareaFieldConfig } from "./Form/TextAreaInput"
+export type { InputFieldConfig, TextInputProps } from "./Form/TextInput"
 
 // Sidebar Types
 export type {
