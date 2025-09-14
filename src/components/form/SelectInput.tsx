@@ -7,8 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { type BaseFormFieldConfig, FormFieldType, type FormOption } from './DynamicForm'
-import type { BaseComponentProps } from './type'
+import { BaseFormFieldConfig, FormFieldType, FormOption } from './DynamicForm'
+import { BaseComponentProps } from './type'
 
 export interface SelectFieldConfig
   extends BaseFormFieldConfig<FormFieldType.SELECT>,

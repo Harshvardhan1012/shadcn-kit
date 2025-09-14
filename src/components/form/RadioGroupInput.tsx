@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
-import { type BaseFormFieldConfig, FormFieldType, type FormOption } from './DynamicForm'
-import type { BaseComponentProps } from './type'
+import { BaseFormFieldConfig, FormFieldType, FormOption } from './DynamicForm'
+import { BaseComponentProps } from './type'
 
 export interface RadioFieldConfig
   extends BaseFormFieldConfig<FormFieldType.RADIO>,

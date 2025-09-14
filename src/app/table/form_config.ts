@@ -1,7 +1,7 @@
 import {
   FormFieldType,
   type FormFieldConfig,
-} from "@/components/Form/DynamicForm"
+} from "@/components/form/DynamicForm"
 import { z } from "zod"
 
 export const formSchema = z.object({

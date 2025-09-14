@@ -2,8 +2,8 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import type { StringOrNumberComponentProps } from './type'
+import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import { StringOrNumberComponentProps } from './type'
 
 // Component-specific configurations
 export interface InputFieldConfig
@@ -55,13 +55,11 @@ export const TextInput: React.FC<ITextInputType> = ({
     <div className={cn('space-y-2', className)}>
       {label && <Label>{label}</Label>}
       <div className="relative">
-        {icon && (
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            {React.createElement(icon, {
-              className: 'h-4 w-4 text-muted-foreground',
-            })}
-          </div>
-        )}
+        {icon &&
+          React.createElement(icon, {
+            className:
+              'absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400',
+          })}
         <Input
           type={type}
           value={value}

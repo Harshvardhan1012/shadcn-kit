@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
-import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import type { BaseComponentProps } from './type'
+import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import { BaseComponentProps } from './type'
 
 export interface CheckboxFieldConfig
   extends BaseFormFieldConfig<FormFieldType.CHECKBOX>,

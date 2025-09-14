@@ -1,6 +1,6 @@
 import type { ColumnDef, RowData } from '@tanstack/react-table'
 import * as React from 'react'
-import DynamicForm from '../Form/DynamicForm'
+import DynamicForm from '../form/DynamicForm'
 import { DataTableSkeleton } from './../data-table/data-table-skeleton'
 import SheetDemo from './../sheet/page'
 import { FeatureFlagsProvider } from './feature-flags-provider'

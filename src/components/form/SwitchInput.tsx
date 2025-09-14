@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
-import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import type { BaseComponentProps } from './type'
+import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import { BaseComponentProps } from './type'
 
 export interface SwitchFieldConfig
   extends BaseFormFieldConfig<FormFieldType.SWITCH>,
