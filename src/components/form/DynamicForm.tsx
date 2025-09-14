@@ -1,23 +1,29 @@
-'use client'
-import { cn } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React, { forwardRef, JSX, useImperativeHandle, useState } from 'react'
+import React, {
+  forwardRef,
+  type JSX,
+  useImperativeHandle,
+  useState,
+} from 'react'
 import {
-  DefaultValues,
-  FieldValues,
-  Path,
-  PathValue,
-  SubmitHandler,
+  type DefaultValues,
+  type FieldValues,
+  type Path,
+  type PathValue,
+  type SubmitHandler,
   useForm,
 } from 'react-hook-form'
 import * as z from 'zod'
-import { FormContext, FormContextType } from './FormContext'
+import { cn } from './../lib/utils'
+import { FormContext, type FormContextType } from './FormContext'
 
 // (assuming these are properly typed)
 import { FileText } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
-import { Button } from '../ui/button'
-import { Command } from '../ui/command'
+import { SingleDatePicker } from './../form/DatePicker'
+import { DateRangePicker } from './../form/DateRangePicker'
+import { Button } from './../ui/button'
+import { Command } from './../ui/command'
 import {
   Form,
   FormControl,
@@ -26,34 +32,36 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../ui/form'
-import { Input } from '../ui/input'
+} from './../ui/form'
+import { Input } from './../ui/input'
 import {
   MultiSelect,
   MultiSelectContent,
   MultiSelectItem,
   MultiSelectTrigger,
   MultiSelectValue,
-} from '../ui/multi-select'
-import { Skeleton } from '../ui/skeleton'
+} from './../ui/multi-select'
+import { Skeleton } from './../ui/skeleton'
 import {
-  CheckboxFieldConfig,
+  type CheckboxFieldConfig,
   CheckboxInput,
-  CheckBoxProps,
+  type CheckBoxProps,
 } from './CheckBoxInput'
 import { ComboBox } from './ComboBox'
-import { SingleDatePicker } from './DatePicker'
-import { DateRangePicker } from './DateRangePicker'
-import { DateTimeFieldConfig, DateTimeInput } from './DateTime'
-import { RadioFieldConfig, RadioGroupInput } from './RadioGroupInput'
-import { SelectFieldConfig, SelectInput } from './SelectInput'
-import { SwitchFieldConfig, SwitchInput } from './SwitchInput'
+import { type DateTimeFieldConfig, DateTimeInput } from './DateTime'
+import { type RadioFieldConfig, RadioGroupInput } from './RadioGroupInput'
+import { type SelectFieldConfig, SelectInput } from './SelectInput'
+import { type SwitchFieldConfig, SwitchInput } from './SwitchInput'
 import {
-  TextareaFieldConfig,
+  type TextareaFieldConfig,
   TextareaInput,
-  TextAreaProps,
+  type TextAreaProps,
 } from './TextAreaInput'
-import { InputFieldConfig, TextInput, TextInputProps } from './TextInput'
+import {
+  type InputFieldConfig,
+  TextInput,
+  type TextInputProps,
+} from './TextInput'
 
 // Form field types enum
 export enum FormFieldType {
@@ -92,6 +100,7 @@ export interface FileConfig {
 export interface BaseFormFieldConfig<T extends FormFieldType = FormFieldType> {
   fieldName: string
   fieldLabel: string
+  fieldType: T
   description?: string
   validation?: z.ZodTypeAny
   options?: FormOption[]
@@ -102,7 +111,7 @@ export interface BaseFormFieldConfig<T extends FormFieldType = FormFieldType> {
   dependsOn?: string[]
   disabled?: boolean
   placeholder?: string
-
+  className?: string
   // Event callbacks
   onChangeField?: (value: unknown) => void
   onBlurField?: (value?: unknown) => void
@@ -186,21 +195,15 @@ interface DynamicFormProps<T extends FieldValues = FieldValues> {
   formConfig: FormFieldConfig[]
   onSubmit: SubmitHandler<T>
   defaultValues?: DefaultValues<T>
-  schema: z.ZodSchema<T>
+  schema: any
   customSubmitButton?: React.ReactNode
   className?: string
   loading?: boolean
   submitButtonText?: string
+  showResetButton?: boolean
 }
 
-export interface DynamicFormRef {
-  setFieldValue: (fieldName: string, value: unknown) => void
-  getFieldValue: (fieldName: string) => unknown
-  resetField: (fieldName: string) => void
-  resetForm: () => void
-}
-
-const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
+const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
   <T extends FieldValues = FieldValues>(
     {
       formConfig,
@@ -211,6 +214,7 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       className,
       loading = false,
       submitButtonText,
+      showResetButton = false,
     }: DynamicFormProps<T>,
     ref: React.Ref<unknown> | undefined
   ) => {
@@ -219,8 +223,9 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       defaultValues,
     })
 
-    // Expose form methods via ref
-    useImperativeHandle(ref, () => ({
+    // Create form context helper function
+    const createFormContext = (): FormContextType => ({
+      form,
       setFieldValue: (fieldName: string, value: unknown) => {
         form.setValue(fieldName as Path<T>, value as PathValue<T, Path<T>>)
       },
@@ -233,7 +238,89 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       resetForm: () => {
         form.reset()
       },
-    }))
+      hasErrors: () => {
+        return Object.keys(form.formState.errors).length > 0
+      },
+      getErrors: () => {
+        const errors = form.formState.errors
+        const errorMessages: Record<string, string> = {}
+        Object.keys(errors).forEach((key) => {
+          const error = errors[key]
+          if (error?.message) {
+            errorMessages[key] = error.message as string
+          }
+        })
+        return errorMessages
+      },
+      getFieldError: (fieldName: string) => {
+        const error = form.formState.errors[fieldName]
+        return error?.message as string | undefined
+      },
+      clearErrors: () => {
+        form.clearErrors()
+      },
+      clearFieldError: (fieldName: string) => {
+        form.clearErrors(fieldName as Path<T>)
+      },
+      validateField: async (fieldName: string) => {
+        const result = await form.trigger(fieldName as Path<T>)
+        return result
+      },
+      validateForm: async () => {
+        const result = await form.trigger()
+        return result
+      },
+      isDirty: () => {
+        return form.formState.isDirty
+      },
+      isFieldDirty: (fieldName: string) => {
+        const dirtyFields = form.formState.dirtyFields as Record<
+          string,
+          boolean
+        >
+        return !!(dirtyFields && dirtyFields[fieldName])
+      },
+      getTouchedFields: () => {
+        const touchedFields = form.formState.touchedFields as Record<
+          string,
+          boolean
+        >
+        return Object.keys(touchedFields || {})
+      },
+      isFieldTouched: (fieldName: string) => {
+        const touchedFields = form.formState.touchedFields as Record<
+          string,
+          boolean
+        >
+        return !!(touchedFields && touchedFields[fieldName])
+      },
+      getFormValues: () => {
+        return form.getValues()
+      },
+      setFormValues: (values: Partial<T>) => {
+        Object.entries(values).forEach(([key, value]) => {
+          form.setValue(key as Path<T>, value as PathValue<T, Path<T>>)
+        })
+      },
+      isValid: () => {
+        return form.formState.isValid
+      },
+      isSubmitting: () => {
+        return form.formState.isSubmitting
+      },
+      submitCount: () => {
+        return form.formState.submitCount
+      },
+      watchField: (fieldName: string) => {
+        return form.watch(fieldName as Path<T>)
+      },
+      watchAllFields: () => {
+        return form.watch()
+      },
+    })
+
+    // Expose form methods via ref using FormContextType interface
+    useImperativeHandle(ref, () => createFormContext())
 
     const [filePreviews, setFilePreviews] = useState<Record<string, string>>({})
     const formValues = form.watch()
@@ -286,6 +373,7 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         showIf,
         fieldName: name,
         options,
+        className,
         ...props
       } = fieldConfig
 
@@ -474,7 +562,7 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
                 {...(dateConfig.maxDate && { maxDate: dateConfig.maxDate })}
               />
             )
-
+          break
         case FormFieldType.RADIO:
           return (
             <FormField
@@ -773,37 +861,35 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       )
     }
 
-    // Create form context value
-    const formContextValue: FormContextType = {
-      form,
-      setFieldValue: (fieldName: string, value: unknown) => {
-        form.setValue(fieldName as Path<T>, value as PathValue<T, Path<T>>)
-      },
-      getFieldValue: (fieldName: string) => {
-        return form.getValues(fieldName as Path<T>)
-      },
-      resetField: (fieldName: string) => {
-        form.resetField(fieldName as Path<T>)
-      },
-      resetForm: () => {
-        form.reset()
-      },
-    }
+    // Create form context value using helper
+    const formContextValue = createFormContext()
 
     return (
       <FormContext.Provider value={formContextValue}>
         <Form {...form}>
           <form
+            id="dynamic-form"
             onSubmit={form.handleSubmit(onSubmit)}
             className={cn('space-y-6', className)}>
             {formConfig.map(renderField)}
             {customSubmitButton || (
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                loading={form.formState.isSubmitting}>
-                {submitButtonText || 'Submit'}
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  loading={form.formState.isSubmitting}>
+                  {submitButtonText || 'Submit'}
+                </Button>
+                {showResetButton && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => form.reset()}
+                    disabled={form.formState.isSubmitting}>
+                    Reset to Default
+                  </Button>
+                )}
+              </div>
             )}
           </form>
         </Form>
@@ -813,5 +899,5 @@ const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
 )
 
 export default DynamicForm as unknown as <T extends FieldValues>(
-  props: DynamicFormProps<T> & { ref?: React.ForwardedRef<DynamicFormRef> }
+  props: DynamicFormProps<T> & { ref?: React.ForwardedRef<FormContextType> }
 ) => JSX.Element

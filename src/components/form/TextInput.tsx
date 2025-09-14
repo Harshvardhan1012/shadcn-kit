@@ -1,9 +1,9 @@
 import React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { StringOrNumberComponentProps } from './type'
+import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import type { StringOrNumberComponentProps } from './type'
 
 // Component-specific configurations
 export interface InputFieldConfig

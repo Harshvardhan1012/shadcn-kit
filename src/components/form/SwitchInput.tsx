@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
-import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import type { BaseComponentProps } from './type'
 
 export interface SwitchFieldConfig
   extends BaseFormFieldConfig<FormFieldType.SWITCH>,
@@ -31,7 +31,7 @@ export const SwitchInput: React.FC<ISwitchInputProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-row items-center justify-between rounded-lg border p-4',
+        'flex flex-row items-center w-full justify-between',
         className
       )}>
       <div className="space-y-0.5">

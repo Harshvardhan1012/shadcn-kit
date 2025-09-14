@@ -1,8 +1,8 @@
+import { TimeFormat } from "@/components"
 import {
   FormFieldType,
   type FormFieldConfig,
 } from "@/components/form/DynamicForm"
-import { TimeFormat } from "@/components/form/type"
 import { CalendarDays, FileText, Lock, Mail } from "lucide-react"
 import { z } from "zod"
 

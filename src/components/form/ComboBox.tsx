@@ -2,7 +2,7 @@
 
 import { Check, ChevronsUpDown } from 'lucide-react'
 import React, { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Button } from '../ui/button'
 import {
   Command,
@@ -14,8 +14,8 @@ import {
 } from '../ui/command'
 import { Label } from '../ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { FormOption } from './DynamicForm'
-import { StringComponentProps } from './type'
+import type { FormOption } from './DynamicForm'
+import type { StringComponentProps } from './type'
 
 interface ComboBoxProps extends StringComponentProps {
   options: FormOption[]

@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Label } from '../ui/label'
 import { Textarea } from '../ui/textarea'
-import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import type { BaseComponentProps } from './type'
 
 export interface TextareaFieldConfig
   extends BaseFormFieldConfig<FormFieldType.TEXTAREA>,

@@ -4,30 +4,35 @@ import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import React from 'react'
 import { DayPicker } from 'react-day-picker'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Button } from '../ui/button'
 import { Calendar } from '../ui/calendar'
 import { Label } from '../ui/label'
 import { Popover, PopoverContent } from '../ui/popover'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
-import { BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import { DateComponentProps } from './type'
+import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
+import type { DateComponentProps } from './type'
 
-export enum TimeFormat {
-  TWELVE_HOUR = '12-hour',
-  TWENTY_FOUR_HOUR = '24-hour',
+export type TimeFormat = '12-hour' | '24-hour'
+export const TimeFormat = {
+  TWELVE_HOUR: '12-hour' as TimeFormat,
+  TWENTY_FOUR_HOUR: '24-hour' as TimeFormat,
 }
 
-export enum TimeStructure {
-  HOUR_ONLY = 'hour-only',
-  HOUR_MINUTE = 'hour-minute',
-  HOUR_MINUTE_SECOND = 'hour-minute-second',
-}
-export enum DateTimeMode {
-  SINGLE = 'single',
-  MULTIPLE = 'multiple',
-  RANGE = 'range',
-}
+export const TimeStructure = {
+  HOUR_ONLY: 'hour-only',
+  HOUR_MINUTE: 'hour-minute',
+  HOUR_MINUTE_SECOND: 'hour-minute-second',
+} as const
+
+export type TimeStructure = (typeof TimeStructure)[keyof typeof TimeStructure]
+export const DateTimeMode = {
+  SINGLE: 'single',
+  MULTIPLE: 'multiple',
+  RANGE: 'range',
+} as const
+
+export type DateTimeMode = (typeof DateTimeMode)[keyof typeof DateTimeMode]
 
 export type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
   React.ComponentProps<typeof DayPicker> & {
@@ -40,12 +45,42 @@ export type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
   }
 
 interface DateTimeInputProps extends DateComponentProps {
-  value?: Date
+  value?: Date | string
   timeFormat?: TimeFormat
   timeStructure?: TimeStructure
   minDate?: Date
   maxDate?: Date
   placeholder?: string
+}
+
+// Helper function to parse UTC string correctly
+const parseUTCString = (utcString: string): Date => {
+  const utcDate = new Date(utcString)
+  // Create a new date using UTC components as local time
+  return new Date(
+    utcDate.getUTCFullYear(),
+    utcDate.getUTCMonth(),
+    utcDate.getUTCDate(),
+    utcDate.getUTCHours(),
+    utcDate.getUTCMinutes(),
+    utcDate.getUTCSeconds(),
+    utcDate.getUTCMilliseconds()
+  )
+}
+
+// Helper function to convert local date back to UTC string
+const toUTCString = (date: Date): Date => {
+  return new Date(
+    Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds()
+    )
+  )
 }
 
 export const DateTimeInput: React.FC<DateTimeInputProps> = ({
@@ -64,21 +99,37 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   disabled,
   ...props
 }) => {
-  const selectedDate = value ? new Date(value) : undefined
-  const is24Hour = timeFormat === TimeFormat.TWENTY_FOUR_HOUR
+  // Check if input is UTC string
+  const isUTCInput =
+    typeof value === 'string' && value.includes('T') && value.endsWith('Z')
 
-  // Use minDate/maxDate for date restrictions
+  // Parse the input value correctly
+  const selectedDate = React.useMemo(() => {
+    if (!value) return undefined
+
+    if (isUTCInput) {
+      return parseUTCString(value as string)
+    }
+
+    return new Date(value)
+  }, [value, isUTCInput])
+
+  const is24Hour = timeFormat === TimeFormat.TWENTY_FOUR_HOUR
   const effectiveMinDate = minDate
   const effectiveMaxDate = maxDate
 
   const formatDateTimeOutput = (date: Date) => {
     const outputDate = new Date(date)
-
     if (timeStructure === TimeStructure.HOUR_ONLY) {
       outputDate.setMinutes(0)
       outputDate.setSeconds(0)
     } else if (timeStructure === TimeStructure.HOUR_MINUTE) {
       outputDate.setSeconds(0)
+    }
+
+    // If original input was UTC, convert back to UTC
+    if (isUTCInput) {
+      return toUTCString(outputDate)
     }
 
     return outputDate
@@ -88,7 +139,11 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     type: 'hour' | 'minute' | 'second' | 'ampm',
     timeValue: string
   ) => {
-    const newDate = selectedDate ? new Date(selectedDate) : new Date()
+    const baseDate = selectedDate ? new Date(selectedDate) : new Date()
+    if (!selectedDate) {
+      baseDate.setHours(0, 0, 0, 0)
+    }
+    const newDate = new Date(baseDate)
 
     switch (type) {
       case 'hour':
@@ -111,13 +166,6 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
         break
     }
 
-    if (timeStructure === TimeStructure.HOUR_ONLY) {
-      newDate.setMinutes(0)
-      newDate.setSeconds(0)
-    } else if (timeStructure === TimeStructure.HOUR_MINUTE) {
-      newDate.setSeconds(0)
-    }
-
     const formattedOutput = formatDateTimeOutput(newDate)
     onChange?.(formattedOutput)
   }
@@ -126,6 +174,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     if (!date) return
 
     if (selectedDate) {
+      // Preserve existing time
       date.setHours(
         selectedDate.getHours(),
         selectedDate.getMinutes(),
@@ -135,22 +184,8 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
         selectedDate.getMilliseconds()
       )
     } else {
-      const now = new Date()
-      date.setHours(
-        now.getHours(),
-        timeStructure === TimeStructure.HOUR_ONLY ? 0 : now.getMinutes(),
-        timeStructure === TimeStructure.HOUR_MINUTE_SECOND
-          ? now.getSeconds()
-          : 0,
-        0
-      )
-    }
-
-    if (timeStructure === TimeStructure.HOUR_ONLY) {
-      date.setMinutes(0)
-      date.setSeconds(0)
-    } else if (timeStructure === TimeStructure.HOUR_MINUTE) {
-      date.setSeconds(0)
+      // Set to beginning of day
+      date.setHours(0, 0, 0, 0)
     }
 
     const formattedOutput = formatDateTimeOutput(date)
@@ -158,8 +193,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   }
 
   const formatDisplay = (date: Date) => {
-    const dateStr = format(date, 'dd MMMM yyyy') // This gives "24 August 2025" format
-
+    const dateStr = format(date, 'dd MMMM yyyy')
     switch (timeStructure) {
       case TimeStructure.HOUR_ONLY:
         return `${dateStr} ${
@@ -179,7 +213,6 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
 
   const getPlaceholder = () => {
     if (placeholder) return placeholder
-
     switch (timeStructure) {
       case TimeStructure.HOUR_ONLY:
         return is24Hour ? 'DD MMMM YYYY HH' : 'DD MMMM YYYY hh aa'
@@ -222,8 +255,16 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
               onSelect={handleDateSelect}
               disabled={(date) => {
                 if (disabled) return true
-                if (effectiveMinDate && date < effectiveMinDate) return true
-                if (effectiveMaxDate && date > effectiveMaxDate) return true
+                if (
+                  effectiveMinDate &&
+                  date < new Date(effectiveMinDate.setHours(0, 0, 0, 0))
+                )
+                  return true
+                if (
+                  effectiveMaxDate &&
+                  date > new Date(effectiveMaxDate.setHours(23, 59, 59, 999))
+                )
+                  return true
                 return false
               }}
               initialFocus
@@ -231,9 +272,8 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
             />
 
             <div className="flex flex-row h-[300px] divide-x border-l">
-              {/* Hours Selector */}
-              <div className="flex-1 overflow-y-auto max-h-full">
-                <div className="flex flex-col p-2 gap-1 min-h-max">
+              <ScrollArea className="flex-1">
+                <div className="flex sm:flex-col p-2 gap-1">
                   {Array.from({ length: is24Hour ? 24 : 12 }, (_, i) =>
                     is24Hour ? i : i + 1
                   ).map((hour) => {
@@ -246,15 +286,21 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                     return (
                       <Button
                         key={hour}
-                        size="sm"
+                        size="icon"
                         variant={isSelected ? 'default' : 'ghost'}
-                        className="w-full justify-center flex-shrink-0 min-h-[32px]"
+                        className="sm:w-full shrink-0 aspect-square"
                         onClick={() => {
                           if (is24Hour) {
                             handleTimeChange('hour', hour.toString())
                           } else {
-                            const currentDate = selectedDate || new Date()
-                            const isPM = currentDate.getHours() >= 12
+                            const baseDate =
+                              selectedDate ||
+                              (() => {
+                                const d = new Date()
+                                d.setHours(0, 0, 0, 0)
+                                return d
+                              })()
+                            const isPM = baseDate.getHours() >= 12
 
                             let hourValue: number
                             if (hour === 12) {
@@ -262,7 +308,6 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                             } else {
                               hourValue = isPM ? hour + 12 : hour
                             }
-
                             handleTimeChange('hour', hourValue.toString())
                           }
                         }}>
@@ -271,78 +316,92 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                     )
                   })}
                 </div>
-              </div>
+                <ScrollBar
+                  orientation="horizontal"
+                  className="sm:hidden"
+                />
+              </ScrollArea>
 
-              {/* Minutes Selector */}
               {(timeStructure === TimeStructure.HOUR_MINUTE ||
                 timeStructure === TimeStructure.HOUR_MINUTE_SECOND) && (
-                <div className="flex-1 overflow-y-auto max-h-full">
-                  <div className="flex flex-col p-2 gap-1 min-h-max">
-                    {Array.from({ length: 60 }, (_, i) => i).map((minute) => {
-                      const isSelected = selectedDate?.getMinutes() === minute
-                      return (
-                        <Button
-                          key={minute}
-                          size="sm"
-                          variant={isSelected ? 'default' : 'ghost'}
-                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
-                          onClick={() =>
-                            handleTimeChange('minute', minute.toString())
-                          }>
-                          {minute.toString().padStart(2, '0')}
-                        </Button>
-                      )
-                    })}
+                <ScrollArea className="flex-1">
+                  <div className="flex sm:flex-col p-2 gap-1">
+                    {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
+                      <Button
+                        key={minute}
+                        size="icon"
+                        variant={
+                          selectedDate?.getMinutes() === minute
+                            ? 'default'
+                            : 'ghost'
+                        }
+                        className="sm:w-full shrink-0 aspect-square"
+                        onClick={() =>
+                          handleTimeChange('minute', minute.toString())
+                        }>
+                        {minute.toString().padStart(2, '0')}
+                      </Button>
+                    ))}
                   </div>
-                </div>
+                  <ScrollBar
+                    orientation="horizontal"
+                    className="sm:hidden"
+                  />
+                </ScrollArea>
               )}
 
-              {/* Seconds Selector */}
               {timeStructure === TimeStructure.HOUR_MINUTE_SECOND && (
-                <div className="flex-1 overflow-y-auto max-h-full">
-                  <div className="flex flex-col p-2 gap-1 min-h-max">
-                    {Array.from({ length: 60 }, (_, i) => i).map((second) => {
-                      const isSelected = selectedDate?.getSeconds() === second
-                      return (
-                        <Button
-                          key={second}
-                          size="sm"
-                          variant={isSelected ? 'default' : 'ghost'}
-                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
-                          onClick={() =>
-                            handleTimeChange('second', second.toString())
-                          }>
-                          {second.toString().padStart(2, '0')}
-                        </Button>
-                      )
-                    })}
+                <ScrollArea className="flex-1">
+                  <div className="flex sm:flex-col p-2 gap-1">
+                    {Array.from({ length: 60 }, (_, i) => i).map((second) => (
+                      <Button
+                        key={second}
+                        size="icon"
+                        variant={
+                          selectedDate?.getSeconds() === second
+                            ? 'default'
+                            : 'ghost'
+                        }
+                        className="sm:w-full shrink-0 aspect-square"
+                        onClick={() =>
+                          handleTimeChange('second', second.toString())
+                        }>
+                        {second.toString().padStart(2, '0')}
+                      </Button>
+                    ))}
                   </div>
-                </div>
+                  <ScrollBar
+                    orientation="horizontal"
+                    className="sm:hidden"
+                  />
+                </ScrollArea>
               )}
 
-              {/* AM/PM Selector */}
               {!is24Hour && (
-                <div className="flex-1 overflow-y-auto h-[300px]">
-                  <div className="flex flex-col p-2 gap-1">
-                    {['AM', 'PM'].map((ampm) => {
-                      const isSelected = selectedDate
-                        ? (ampm === 'AM' && selectedDate.getHours() < 12) ||
-                          (ampm === 'PM' && selectedDate.getHours() >= 12)
-                        : false
-
-                      return (
-                        <Button
-                          key={ampm}
-                          size="sm"
-                          variant={isSelected ? 'default' : 'ghost'}
-                          className="w-full justify-center flex-shrink-0 min-h-[32px]"
-                          onClick={() => handleTimeChange('ampm', ampm)}>
-                          {ampm}
-                        </Button>
-                      )
-                    })}
+                <ScrollArea className="flex-1">
+                  <div className="flex sm:flex-col p-2 gap-1">
+                    {['AM', 'PM'].map((ampm) => (
+                      <Button
+                        key={ampm}
+                        size="icon"
+                        variant={
+                          selectedDate &&
+                          ((ampm === 'AM' && selectedDate.getHours() < 12) ||
+                            (ampm === 'PM' && selectedDate.getHours() >= 12))
+                            ? 'default'
+                            : 'ghost'
+                        }
+                        className="sm:w-full shrink-0 aspect-square"
+                        onClick={() => handleTimeChange('ampm', ampm)}>
+                        {ampm}
+                      </Button>
+                    ))}
                   </div>
-                </div>
+                  <ScrollBar
+                    orientation="horizontal"
+                    className="sm:hidden"
+                  />
+                </ScrollArea>
               )}
             </div>
           </div>

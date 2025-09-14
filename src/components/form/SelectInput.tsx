@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 import { Label } from '../ui/label'
 import {
   Select,
@@ -7,8 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { BaseFormFieldConfig, FormFieldType, FormOption } from './DynamicForm'
-import { BaseComponentProps } from './type'
+import { type BaseFormFieldConfig, FormFieldType, type FormOption } from './DynamicForm'
+import type { BaseComponentProps } from './type'
 
 export interface SelectFieldConfig
   extends BaseFormFieldConfig<FormFieldType.SELECT>,
