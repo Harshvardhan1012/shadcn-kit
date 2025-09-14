@@ -1,5 +1,6 @@
-'use client'
 import { cn } from '@/lib/utils'
+import React, { type ReactNode, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from './../ui/button'
 import {
   Collapsible,
@@ -24,15 +25,13 @@ import {
   useSidebar,
 } from './../ui/sidebar'
 import { Skeleton } from './../ui/skeleton'
-import  Link  from 'next/link'
-import React, { ReactNode, useState } from 'react'
-import { SearchResult, SearchWrapper } from './search-wrapper'
+import { type SearchResult, SearchWrapper } from './search-wrapper'
 
 // Types for the sidebar items
 export interface SidebarSubItem {
   id: string | number
   title: string
-  icon?: React.ElementType | React.ReactNode
+  icon?: React.ElementType
   url?: string
   onClick?: () => void
   badge?: ReactNode | string | number
@@ -40,8 +39,8 @@ export interface SidebarSubItem {
   showIf?: boolean | (() => boolean)
 
   //route specific properties
-  component?: React.LazyExoticComponent<React.ComponentType<any>>;
-  isProtected?: boolean;
+  component?: React.LazyExoticComponent<React.ComponentType<any>>
+  isProtected?: boolean
 }
 
 export interface SidebarItem extends SidebarSubItem {
@@ -175,7 +174,7 @@ const renderHeaderAndFooter = (
   return renderFooterFromConfig(header as SidebarFooterConfig)
 }
 
-const renderIcon = (icon?: React.ElementType | React.ReactNode) => {
+const renderIcon = (icon: React.ElementType | React.ReactNode) => {
   if (!icon) return null
   if (React.isValidElement(icon)) return icon
   const IconComponent = icon as React.ElementType
@@ -203,7 +202,7 @@ const renderGroups = (groups: SidebarGroup[]) => (
                       tooltip={item.title}
                       disabled={item.disabled}>
                       {item.url ? (
-                        <Link href={item.url}>
+                        <Link to={item.url}>
                           {item.icon && renderIcon(item.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {item.title}
@@ -411,7 +410,7 @@ export function DynamicSidebar({
           onOpenChange={() => toggleCollapsible(item.id)}
           className="w-full">
           <SidebarMenuItem>
-            <CollapsibleTrigger asChild>
+            <CollapsibleTrigger>
               <SidebarMenuButton tooltip={item.title}>
                 {menuButtonContent}
               </SidebarMenuButton>
@@ -420,11 +419,9 @@ export function DynamicSidebar({
               <SidebarMenuSub>
                 {visibleSubItems.map((subItem) => (
                   <SidebarMenuSubItem key={subItem.id}>
-                    <SidebarMenuSubButton
-                      asChild={!!subItem.url}
-                      onClick={subItem.onClick}>
-                      {subItem.url ? (
-                        <a href={subItem.url}>
+                    {subItem.url ? (
+                      <Link to={subItem.url}>
+                        <SidebarMenuSubButton onClick={subItem.onClick}>
                           {renderIcon(subItem.icon)}
                           <span className="group-data-[collapsible=icon]:hidden">
                             {subItem.title}
@@ -432,19 +429,19 @@ export function DynamicSidebar({
                           {subItem.badge && (
                             <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
                           )}
-                        </a>
-                      ) : (
-                        <>
-                          {renderIcon(subItem.icon)}
-                          <span className="group-data-[collapsible=icon]:hidden">
-                            {subItem.title}
-                          </span>
-                          {subItem.badge && (
-                            <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
-                          )}
-                        </>
-                      )}
-                    </SidebarMenuSubButton>
+                        </SidebarMenuSubButton>
+                      </Link>
+                    ) : (
+                      <SidebarMenuSubButton onClick={subItem.onClick}>
+                        {renderIcon(subItem.icon)}
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {subItem.title}
+                        </span>
+                        {subItem.badge && (
+                          <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
+                        )}
+                      </SidebarMenuSubButton>
+                    )}
                   </SidebarMenuSubItem>
                 ))}
               </SidebarMenuSub>
@@ -456,16 +453,21 @@ export function DynamicSidebar({
 
     return (
       <SidebarMenuItem key={item.id}>
-        <SidebarMenuButton
-          asChild={!!item.url}
-          onClick={item.onClick}
-          tooltip={item.title}>
-          {item.url ? (
-            <a href={item.url}>{menuButtonContent}</a>
-          ) : (
-            menuButtonContent
-          )}
-        </SidebarMenuButton>
+        {item.url ? (
+          <Link to={item.url}>
+            <SidebarMenuButton
+              onClick={item.onClick}
+              tooltip={item.title}>
+              {menuButtonContent}
+            </SidebarMenuButton>
+          </Link>
+        ) : (
+          <SidebarMenuButton
+            onClick={item.onClick}
+            tooltip={item.title}>
+            {menuButtonContent}
+          </SidebarMenuButton>
+        )}
       </SidebarMenuItem>
     )
   }

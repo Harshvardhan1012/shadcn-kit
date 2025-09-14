@@ -1,16 +1,23 @@
 'use client'
-import { DataTable } from '@/components/data-table/data-table'
-import { DataTableActionBar } from '@/components/data-table/data-table-action-bar'
-import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { DataTableSortList } from '@/components/data-table/data-table-sort-list'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useDataTable } from '@/hooks/use-data-table'
-import { Column, ColumnDef } from '@tanstack/react-table'
+import type { Column, ColumnDef } from '@tanstack/react-table'
 import { TouchpadOff } from 'lucide-react'
 import { todos } from './data'
+import DynamicMaster from '@/components/master-table/master-table'
+import datatableConfig from './table_config'
+import { exampleFormConfig, formSchema } from './form_config'
+import { useEffect, useState } from 'react'
+import {
+  setActionClickHandler,
+  setButtonClickHandler,
+  setCheckedClickHandler,
+  setFormFieldOnChangeHandler,
+  setSheetOpen,
+  setTableActionHandler,
+  setupMasterPageHandlersAuto,
+  updateFormFieldConfig,
+} from '@/lib/utils'
 
 interface Todos {
   id: number
@@ -19,31 +26,8 @@ interface Todos {
   userId: number
 }
 
-const Table = () => {
+const TableExample = () => {
   const columns: ColumnDef<Todos>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      size: 32,
-      enableSorting: false,
-      enableHiding: false,
-    },
     {
       accessorKey: 'id',
       header: ({ column }: { column: Column<Todos, unknown> }) => (
@@ -53,6 +37,11 @@ const Table = () => {
         />
       ),
       enableColumnFilter: true,
+      meta: {
+        label: 'ID',
+        placeholder: 'Enter ID...',
+        variant: 'number',
+      },
     },
     {
       accessorKey: 'todo',
@@ -98,6 +87,7 @@ const Table = () => {
     },
     {
       accessorKey: 'userId',
+      accessorFn: (row) => row.userId,
       header: ({ column }: { column: Column<Todos, unknown> }) => (
         <DataTableColumnHeader
           column={column}
@@ -114,74 +104,130 @@ const Table = () => {
       },
     },
   ]
+  console.log(columns)
 
-  const { table } = useDataTable({
-    data: todos,
-    columns,
-    rowCount: todos.length,
-    getRowId: (row) => row.id.toString(),
-    enableMultiRowSelection: true,
-    enableRowSelection: true,
-    debounceMs: 0, // Set to 0 for immediate filtering (no debounce)
-    pageCount: -1, // Use -1 for client-side filtering, sorting, and pagination
-    enableAdvancedFilter: false, // Use simple column filters instead
-    initialState: {
-      pagination: {
-        pageSize: 10,
-        pageIndex: 0, // Changed back to 0 (0-indexed)
-      },
-      sorting: [{ id: 'id', desc: true }],
-      columnPinning: { right: ['completed'] },
-    },
-    enableColumnFilters: true,
-    enableGlobalFilter: true,
-  })
+  const [config, setConfig] = useState(exampleFormConfig)
+
+  useEffect(() => {
+    setButtonClickHandler((id, isValid, values, form) => {
+      console.log('🔁 GLOBAL handler')
+      console.log({ id, isValid, values, form })
+      if (id === 'submit') {
+        // Do submission
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    setTableActionHandler((actionId, value, row) => {
+      debugger
+    })
+  }, [])
+
+  useEffect(() => {
+    setupMasterPageHandlersAuto(config, setConfig, (values) => {
+      console.log('Custom submit logic:', values)
+      // Add any custom submission logic here (API calls, etc.)
+    })
+  }, [])
+
+  useEffect(() => {
+    setActionClickHandler((action, row) => {
+      debugger
+      if (action == 'edit') {
+        setDefaultFormValues({
+          ...row,
+          edit: true
+        })
+        console.log(defaultFormValues)
+        setSheetOpen(true)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    setCheckedClickHandler((action, value, rows) => {
+      debugger
+    })
+  }, [])
+
+  useEffect(() => {
+    setFormFieldOnChangeHandler((field, value, form_value) => {
+      debugger
+      updateFormFieldConfig
+
+      if (field === 'is_active' && value === false) {
+        const updated = updateFormFieldConfig(
+          config,
+          'main',
+          'milestone_sequence',
+          {
+            disabled: true,
+            description:
+              '** Please active the header for Add/Edit the sequences',
+          }
+        )
+        setConfig(updated)
+      } else if (field === 'is_active' && value === true) {
+        const updated = updateFormFieldConfig(
+          config,
+          'main',
+          'milestone_sequence',
+          {
+            disabled: false,
+            description: null,
+          }
+        )
+        setConfig(updated)
+      }
+
+      if (field === 'is_sequence_active' && value === false) {
+        const updated = updateFormFieldConfig(
+          config,
+          'milestone_sequence',
+          'mandatory',
+          {
+            disabled: true,
+            config: { hint: 'Please active the field to modify this' },
+          }
+        )
+        setConfig(updated)
+      } else if (field === 'is_sequence_active' && value === true) {
+        const updated = updateFormFieldConfig(
+          config,
+          'milestone_sequence',
+          'mandatory',
+          { disabled: false, config: { hint: null } }
+        )
+        setConfig(updated)
+      }
+    })
+  }, [config])
+
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [defaultFormValues, setDefaultFormValues] = useState<any>()
 
   return (
-    <div className="p-4">
-      <div className="space-y-4">
-        {/* Simple Filter Inputs */}
-        <div className="flex gap-2 flex-wrap">
-          <Input
-            placeholder="Filter todos..."
-            value={(table.getColumn('todo')?.getFilterValue() as string) ?? ''}
-            onChange={(event) =>
-              table.getColumn('todo')?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-          <select
-            value={(table.getColumn('completed')?.getFilterValue() as string) ?? ''}
-            onChange={(event) =>
-              table.getColumn('completed')?.setFilterValue(
-                event.target.value === 'all' ? '' : event.target.value === 'true'
-              )
-            }
-            className="px-3 py-2 border rounded"
-          >
-            <option value="all">All Status</option>
-            <option value="true">Completed</option>
-            <option value="false">Pending</option>
-          </select>
-          <Input
-            placeholder="Filter by User ID..."
-            value={(table.getColumn('userId')?.getFilterValue() as string) ?? ''}
-            onChange={(event) =>
-              table.getColumn('userId')?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-            type="number"
-          />
-        </div>
-        
-        <DataTable
-          table={table}
-          actionBar={<DataTableActionBar table={table}>Actions</DataTableActionBar>}>
-          <DataTableToolbar table={table} />
-        </DataTable>
-      </div>
-    </div>
+    <>
+      {columns && columns.length && todos && todos.length > 0 && (
+        <DynamicMaster<Todos>
+          data={todos}
+          datatableConfig={{
+            ...datatableConfig,
+            columnsConfig: columns,
+          }}
+          formConfig={exampleFormConfig}
+          formSchema={formSchema}
+          sheetOpen={sheetOpen}
+          onSheetOpenChange={setSheetOpen}
+          defaultFormValues={defaultFormValues}
+          // onFormConfigChange={(config) =>
+          // addItem={add}
+          // ref={}
+        />
+      )}
+    </>
   )
 }
 
-export default Table
+export default TableExample

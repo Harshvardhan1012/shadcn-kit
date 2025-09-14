@@ -1,8 +1,10 @@
-import { FormFieldConfig, TimeFormat } from "@/components"
-import { FormFieldType } from "json-reactify"
-import { CalendarDays, FileText } from "lucide-react"
+import {
+  FormFieldType,
+  type FormFieldConfig,
+} from "@/components/Form/DynamicForm"
+import { TimeFormat } from "@/components/Form/type"
+import { CalendarDays, FileText, Lock, Mail } from "lucide-react"
 import { z } from "zod"
-
 
 export const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -32,7 +34,6 @@ export const formSchema = z.object({
   newsletter: z.date().optional(), // Changed to date type for datetime input
   items: z.array(z.string()).optional(),
 })
-
 
 export const exampleFormConfig: FormFieldConfig[] = [
   {

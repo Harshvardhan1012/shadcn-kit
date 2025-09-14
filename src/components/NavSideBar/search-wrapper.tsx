@@ -10,10 +10,10 @@ import {
   CommandList,
 } from './../ui/command'
 import { Search } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useNavigate, useNavigation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/button'
-
+  
 export interface SearchResult {
   id: string | number
   title: string
@@ -39,7 +39,7 @@ export function SearchWrapper({
   const [searchValue, setSearchValue] = useState('')
   const [localResults, setLocalResults] =
     useState<SearchResult[]>(searchResults)
-  const router = useRouter()
+  const router = useNavigate()
 
   // Update local results when search results prop changes
   useEffect(() => {
@@ -71,7 +71,7 @@ export function SearchWrapper({
 
   const handleSelect = (result: SearchResult) => {
     if (result.url) {
-      router.push(result.url)
+      router(result.url)
     }
     setIsCentered(false)
   }

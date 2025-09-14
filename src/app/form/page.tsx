@@ -1,9 +1,8 @@
-'use client'
+import DynamicForm from '@/components/Form/DynamicForm'
+import type { FormContextType } from '@/components/Form/FormContext'
 import { useRef } from 'react'
-import { FieldValues } from 'react-hook-form'
-import { H3 } from '../../components/ui/Typography'
+import type { FieldValues } from 'react-hook-form'
 import { exampleFormConfig, formSchema } from './form_config'
-import { DynamicFormRef, Form } from '@/components'
 
 // Define form configuration as a function to accept variables
 
@@ -22,41 +21,37 @@ const parseUTCToLocal = (utcString: string) => {
 }
 
 const FormPage = () => {
-  const formRef = useRef<DynamicFormRef>(null)
+  const formRef = useRef<FormContextType>(null)
 
   const onSubmit = (data: FieldValues) => {
     console.log(data)
   }
-
   return (
-    <div className="container mx-auto max-w-2xl py-12">
-      <H3 className="mb-8">Dynamic Form Example</H3>
-      <Form
-        ref={formRef}
-        formConfig={exampleFormConfig}
-        onSubmit={(data: any) => onSubmit(data)}
-        schema={formSchema}
-        loading={false}
-        defaultValues={{
-          username: 'dsfdsf',
-          email: 'dsfds@gmail.com',
-          password: 'dsdsfsdfd',
-          age: 18,
-          bio: 'dsfsdf',
-          agreeToTerms: false,
-          birthDateRange: {
-            from: new Date(2025, 7, 1),
-            to: new Date(2025, 7, 20),
-          },
-          gender: 'male',
-          department: new Date(),
-          favoriteFruit: 'apple',
-          newsletter: parseUTCToLocal('2025-08-09T10:10:10.000Z'),
-          items: ['orange', 'apple'],
-          itemss: ['orange'],
-        }}
-      />
-    </div>
+    <DynamicForm
+      ref={formRef}
+      formConfig={exampleFormConfig}
+      onSubmit={(data: any) => onSubmit(data)}
+      schema={formSchema}
+      loading={false}
+      defaultValues={{
+        username: 'dsfdsf',
+        email: 'dsfds@gmail.com',
+        password: 'dsdsfsdfd',
+        age: 18,
+        bio: 'dsfsdf',
+        agreeToTerms: false,
+        birthDateRange: {
+          from: new Date(2025, 7, 1),
+          to: new Date(2025, 7, 20),
+        },
+        gender: 'male',
+        department: new Date(),
+        favoriteFruit: 'apple',
+        newsletter: parseUTCToLocal('2025-08-09T10:10:10.000Z'),
+        items: ['orange', 'apple'],
+        itemss: ['orange'],
+      }}
+    />
   )
 }
 
