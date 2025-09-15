@@ -1,7 +1,5 @@
-'use client'
-
 import { SidebarProvider } from './../ui/sidebar'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 interface ClientSidebarProviderProps {
   defaultOpen?: boolean

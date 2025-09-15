@@ -2,7 +2,10 @@ import { Suspense, type JSX } from 'react'
 import { Route } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import ProtectedRoute from './ProtectedRoute'
-import type { SidebarConfig, SidebarItem } from '../components'
+import type {
+  SidebarConfig,
+  SidebarItem,
+} from '@/components/NavSideBar/DynamicSidebar'
 
 export const generateRoutesFromSidebar = (config: SidebarConfig) => {
   const allRoutes: JSX.Element[] = []
@@ -19,7 +22,7 @@ export const generateRoutesFromSidebar = (config: SidebarConfig) => {
             element={
               <Suspense
                 fallback={
-                  <div className="flex justify-center items-center h-full">
+                  <div>
                     <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 }>
@@ -45,12 +48,18 @@ export const generateRoutesFromSidebar = (config: SidebarConfig) => {
   }
 
   // Process all groups
-  config.groups.forEach((group) => processItems(group.items))
+  config.groups.forEach((group: { items: SidebarItem[] }) =>
+    processItems(group.items)
+  )
   if (config.header && Array.isArray(config.header)) {
-    config.header.forEach((group) => processItems(group.items))
+    config.header.forEach((group: { items: SidebarItem[] }) =>
+      processItems(group.items)
+    )
   }
   if (config.footer && Array.isArray(config.footer)) {
-    config.footer.forEach((group) => processItems(group.items))
+    config.footer.forEach((group: { items: SidebarItem[] }) =>
+      processItems(group.items)
+    )
   }
 
   return allRoutes

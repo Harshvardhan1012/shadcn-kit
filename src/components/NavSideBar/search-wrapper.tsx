@@ -10,7 +10,7 @@ import {
   CommandList,
 } from './../ui/command'
 import { Search } from 'lucide-react'
-import { useNavigate, useNavigation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/button'
   

@@ -5,17 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// --- Global Sheet State ---
-let sheetOpen: boolean = false
-
-export function setSheetOpen(open: boolean) {
-  sheetOpen = open
-}
-
-export function getSheetOpen() {
-  return sheetOpen
-}
-
 let buttonClickHandler:
   | ((id: string, isValid: boolean, values: any, form: any) => void)
   | null = null

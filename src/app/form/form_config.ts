@@ -1,4 +1,4 @@
-import { TimeFormat } from "@/components"
+import { TimeFormat } from "@/components/form/type"
 import {
   FormFieldType,
   type FormFieldConfig,

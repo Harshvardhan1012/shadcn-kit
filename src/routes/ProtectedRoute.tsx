@@ -1,6 +1,8 @@
+import { AppRoutes } from '@/routes/routeUtils'
 import React, { useContext } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { AuthContext } from './AuthContext'
+import { AuthContext } from '../context/AuthContext'
+import { Loader2 } from 'lucide-react'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -12,18 +14,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   showIf = true,
 }) => {
   const { user, isAuthenticated, loading } = useContext(AuthContext)
-  console.log(user, isAuthenticated, loading)
   const location = useLocation()
 
   if (loading) {
-    return <div>Loading...</div>
+    return <Loader2 />
   }
 
   if (!isAuthenticated) {
-    debugger
     return (
       <Navigate
-        to="/login"
+        to={AppRoutes.LOGIN}
         state={{ from: location }}
         replace
       />
@@ -32,10 +32,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   const showIfResult = typeof showIf === 'function' ? showIf() : showIf
   if (!showIfResult || !user) {
-    debugger
     return (
       <Navigate
-        to="/unauthorized"
+        to={AppRoutes.UNAUTHORIZED}
         replace
       />
     )

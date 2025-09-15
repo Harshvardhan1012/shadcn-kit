@@ -31,14 +31,14 @@ export const actionConfig = [
     values: [
       {
         key: true,
-        value: "Active",
+        value: "Yes",
         onClick: (data: any) => {
           console.log(data)
         },
       },
       {
         key: false,
-        value: "Deactive",
+        value: "No",
       },
     ],
   },

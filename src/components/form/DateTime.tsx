@@ -11,28 +11,7 @@ import { Label } from '../ui/label'
 import { Popover, PopoverContent } from '../ui/popover'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import { type BaseFormFieldConfig, FormFieldType } from './DynamicForm'
-import type { DateComponentProps } from './type'
-
-export type TimeFormat = '12-hour' | '24-hour'
-export const TimeFormat = {
-  TWELVE_HOUR: '12-hour' as TimeFormat,
-  TWENTY_FOUR_HOUR: '24-hour' as TimeFormat,
-}
-
-export const TimeStructure = {
-  HOUR_ONLY: 'hour-only',
-  HOUR_MINUTE: 'hour-minute',
-  HOUR_MINUTE_SECOND: 'hour-minute-second',
-} as const
-
-export type TimeStructure = (typeof TimeStructure)[keyof typeof TimeStructure]
-export const DateTimeMode = {
-  SINGLE: 'single',
-  MULTIPLE: 'multiple',
-  RANGE: 'range',
-} as const
-
-export type DateTimeMode = (typeof DateTimeMode)[keyof typeof DateTimeMode]
+import { type DateComponentProps, DateTimeMode, TimeFormat, TimeStructure } from './type'
 
 export type DateTimeFieldConfig = BaseFormFieldConfig<FormFieldType.DATETIME> &
   React.ComponentProps<typeof DayPicker> & {

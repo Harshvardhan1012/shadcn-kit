@@ -1,17 +1,23 @@
-import { lazy } from "react"
-import type { SidebarConfig } from "../components"
+import type { SidebarConfig } from "@/components/NavSideBar/DynamicSidebar"
 import {
-    ChartScatter,
-    FormInput,
-    Settings,
-    ShowerHeadIcon,
-    Table,
+  ChartScatter,
+  FormInput,
+  Settings,
+  ShowerHeadIcon,
+  Table2,
 } from "lucide-react"
+import { lazy } from "react"
+import { AppRoutes } from "../routes/routeUtils"
 const Form = lazy(() =>
-  import("./form/page").then((module) => ({ default: module.default }))
+  import("../app/form/page").then((module) => ({ default: module.default }))
 )
 const Chart = lazy(() =>
-  import("./charts/page").then((module) => ({ default: module.default }))
+  import("../app/charts/page").then((module) => ({ default: module.default }))
+)
+const Table = lazy(() =>
+  import("../app/table/page").then((module) => ({
+    default: module.default,
+  }))
 )
 
 export const sidebarConfig: SidebarConfig = {
@@ -31,8 +37,9 @@ export const sidebarConfig: SidebarConfig = {
               title: "Form",
               icon: FormInput,
               component: Form,
-              url: "/form",
+              url: AppRoutes.FORM,
               showIf: () => {
+                //custom logic to show or hide item use Auth Context
                 return true
               },
             },
@@ -41,7 +48,7 @@ export const sidebarConfig: SidebarConfig = {
               title: "Charts",
               icon: ChartScatter,
               component: Chart,
-              url: "/charts",
+              url: AppRoutes.CHARTS,
               isProtected: true,
               showIf() {
                 return false
@@ -50,11 +57,9 @@ export const sidebarConfig: SidebarConfig = {
             {
               id: "table",
               title: "Table",
-              url: "/table",
-              component: lazy(() =>
-                import("./table/page").then((module) => ({ default: module.default }))
-              ),
-              icon: Table,
+              url: AppRoutes.TABLE,
+              component: Table,
+              icon: Table2,
             },
           ],
         },
@@ -62,7 +67,7 @@ export const sidebarConfig: SidebarConfig = {
           id: "settings",
           title: "Settings",
           icon: Settings,
-          url: "/settings",
+          url: AppRoutes.SETTINGS,
         },
       ],
     },
@@ -88,7 +93,7 @@ export const sidebarConfig: SidebarConfig = {
           id: "terms",
           title: "Terms of Service",
           icon: Settings,
-          url: "/terms",
+          url: "/terms", // Not in enum, keep as is or add to enum if needed
           onClick: () => console.log("Terms of Service clicked"),
           showIf: () => {
             //function that will be return true or false might be async from context

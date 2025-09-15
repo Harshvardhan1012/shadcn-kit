@@ -9,7 +9,22 @@ export interface BaseComponentProps<T = unknown> {
   onBlur?: (value?: T) => void
 }
 
+export enum TimeFormat {
+  TWELVE_HOUR = "12-hour",
+  TWENTY_FOUR_HOUR = "24-hour",
+}
 
+export enum TimeStructure {
+  HOUR_ONLY = "hour-only",
+  HOUR_MINUTE = "hour-minute",
+  HOUR_MINUTE_SECOND = "hour-minute-second",
+}
+
+export enum DateTimeMode {
+  SINGLE = "single",
+  MULTIPLE = "multiple",
+  RANGE = "range",
+}
 
 // Common form value types
 export type FormValue =

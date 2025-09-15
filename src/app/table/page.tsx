@@ -13,7 +13,6 @@ import {
   setButtonClickHandler,
   setCheckedClickHandler,
   setFormFieldOnChangeHandler,
-  setSheetOpen,
   setTableActionHandler,
   setupMasterPageHandlersAuto,
   updateFormFieldConfig,
@@ -137,7 +136,7 @@ const TableExample = () => {
       if (action == 'edit') {
         setDefaultFormValues({
           ...row,
-          edit: true
+          edit: true,
         })
         console.log(defaultFormValues)
         setSheetOpen(true)
@@ -148,8 +147,28 @@ const TableExample = () => {
   useEffect(() => {
     setCheckedClickHandler((action, value, rows) => {
       debugger
+      if (action === 'change_is_active') {
+        setData((data) =>
+          data.map((item) => {
+            if (rows.some((r: any) => r.id === item.id)) {
+              return { ...item, completed: value }
+            }
+            return item
+          })
+        )
+        console.log(data)
+        return
+      }
+      if (action === 'delete') {
+        setData((data) =>
+          data.filter((item) => rows.every((r: any) => r.id !== item.id))
+        )
+        console.log(data)
+      }
+      debugger
     })
   }, [])
+  const [data, setData] = useState<Todos[]>(todos)
 
   useEffect(() => {
     setFormFieldOnChangeHandler((field, value, form_value) => {
@@ -206,26 +225,23 @@ const TableExample = () => {
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [defaultFormValues, setDefaultFormValues] = useState<any>()
-
   return (
     <>
-      {columns && columns.length && todos && todos.length > 0 && (
-        <DynamicMaster<Todos>
-          data={todos}
-          datatableConfig={{
-            ...datatableConfig,
-            columnsConfig: columns,
-          }}
-          formConfig={exampleFormConfig}
-          formSchema={formSchema}
-          sheetOpen={sheetOpen}
-          onSheetOpenChange={setSheetOpen}
-          defaultFormValues={defaultFormValues}
-          // onFormConfigChange={(config) =>
-          // addItem={add}
-          // ref={}
-        />
-      )}
+      <DynamicMaster<Todos>
+        data={data}
+        datatableConfig={{
+          ...datatableConfig,
+          columnsConfig: columns,
+        }}
+        formConfig={exampleFormConfig}
+        formSchema={formSchema}
+        sheetOpen={sheetOpen}
+        onSheetOpenChange={setSheetOpen}
+        defaultFormValues={defaultFormValues}
+        // onFormConfigChange={(config) =>
+        // addItem={add}
+        // ref={}
+      />
     </>
   )
 }

@@ -1,8 +1,6 @@
 import { AlertDialogDemo } from '@/components/Alert/AlertDialog'
-import {
-  DynamicSidebar
-} from '@/components/NavSideBar/DynamicSidebar'
-import { useAlert } from '@/components/services/AlertService'
+import { DynamicSidebar } from '@/components/NavSideBar/DynamicSidebar'
+import { useAlert } from '@/components/services/toastService'
 import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { useState } from 'react'
 import { sidebarConfig } from './sidebarConfig'

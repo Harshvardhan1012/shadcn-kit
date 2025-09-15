@@ -44,7 +44,6 @@ export const Table = React.forwardRef(({
   const [fullscreen, setFullscreen] = React.useState(false);
 
   const addvanceTableFilterRef = React.useRef<any>(null);
-
   const onExpandChange = () => {
     setFullscreen((value) => !value);
   }
