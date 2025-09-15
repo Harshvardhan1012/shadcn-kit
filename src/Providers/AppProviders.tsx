@@ -23,14 +23,14 @@ function AppProvider() {
   return (
     <Router>
       <NuqsAdapter>
-        <QueryClientWrapper>
-          <FeatureFlagsProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange>
-              <AlertProvider>
+        <FeatureFlagsProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange>
+            <AlertProvider>
+              <QueryClientWrapper>
                 <ClientSidebarProvider>
                   <div className="flex flex-col h-screen w-full">
                     <div className="absolute right-4 top-4 z-50 flex items-center gap-4">
@@ -55,10 +55,10 @@ function AppProvider() {
                     </div>
                   </div>
                 </ClientSidebarProvider>
-              </AlertProvider>
-            </ThemeProvider>
-          </FeatureFlagsProvider>
-        </QueryClientWrapper>
+              </QueryClientWrapper>
+            </AlertProvider>
+          </ThemeProvider>
+        </FeatureFlagsProvider>
       </NuqsAdapter>
     </Router>
   )

@@ -161,7 +161,7 @@ const TableExample = () => {
       }
       if (action === 'delete') {
         setData((data) =>
-          data.filter((item) => rows.every((r: any) => r.id !== item.id))
+          data.filter((item) => rows.selectedIds.every((r: any) => r !== item.id))
         )
         console.log(data)
       }

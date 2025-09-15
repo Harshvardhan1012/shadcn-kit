@@ -20,70 +20,6 @@ export const queryKeys = {
     preferences: (userId: string | number) =>
       [...queryKeys.users.detail(userId), "preferences"] as const,
   },
-
-  // Posts-related queries
-  posts: {
-    all: ["posts"] as const,
-    lists: () => [...queryKeys.posts.all, "list"] as const,
-    list: (filters: Record<string, any>) =>
-      [...queryKeys.posts.lists(), { filters }] as const,
-    details: () => [...queryKeys.posts.all, "detail"] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.posts.details(), id] as const,
-    comments: (postId: string | number) =>
-      [...queryKeys.posts.detail(postId), "comments"] as const,
-  },
-
-  // Auth-related queries
-  auth: {
-    all: ["auth"] as const,
-    user: () => [...queryKeys.auth.all, "user"] as const,
-    permissions: () => [...queryKeys.auth.all, "permissions"] as const,
-    session: () => [...queryKeys.auth.all, "session"] as const,
-  },
-
-  // Analytics and reports
-  analytics: {
-    all: ["analytics"] as const,
-    dashboard: () => [...queryKeys.analytics.all, "dashboard"] as const,
-    reports: () => [...queryKeys.analytics.all, "reports"] as const,
-    report: (reportId: string, params?: Record<string, any>) =>
-      [
-        ...queryKeys.analytics.reports(),
-        reportId,
-        ...(params ? [params] : []),
-      ] as const,
-  },
-
-  // Settings and configuration
-  settings: {
-    all: ["settings"] as const,
-    app: () => [...queryKeys.settings.all, "app"] as const,
-    user: (userId: string | number) =>
-      [...queryKeys.settings.all, "user", userId] as const,
-    theme: () => [...queryKeys.settings.all, "theme"] as const,
-  },
-
-  // Search and filters
-  search: {
-    all: ["search"] as const,
-    global: (query: string) =>
-      [...queryKeys.search.all, "global", query] as const,
-    users: (query: string, filters?: Record<string, any>) =>
-      [
-        ...queryKeys.search.all,
-        "users",
-        query,
-        ...(filters ? [filters] : []),
-      ] as const,
-    posts: (query: string, filters?: Record<string, any>) =>
-      [
-        ...queryKeys.search.all,
-        "posts",
-        query,
-        ...(filters ? [filters] : []),
-      ] as const,
-  },
 } as const
 
 /**
@@ -93,11 +29,6 @@ export const queryKeys = {
 // Function to invalidate all queries for a specific entity
 export const invalidateKeys = {
   users: queryKeys.users.all,
-  posts: queryKeys.posts.all,
-  auth: queryKeys.auth.all,
-  analytics: queryKeys.analytics.all,
-  settings: queryKeys.settings.all,
-  search: queryKeys.search.all,
 }
 
 /**
@@ -131,5 +62,3 @@ export const invalidateKeys = {
  */
 export type QueryKeyType = typeof queryKeys
 export type UserQueryKeys = typeof queryKeys.users
-export type PostQueryKeys = typeof queryKeys.posts
-export type AuthQueryKeys = typeof queryKeys.auth
