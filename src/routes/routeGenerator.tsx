@@ -22,8 +22,8 @@ export const generateRoutesFromSidebar = (config: SidebarConfig) => {
             element={
               <Suspense
                 fallback={
-                  <div>
-                    <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <div className="flex justify-center items-center h-screen w-full">
+                    <Loader className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 }>
                 {item.isProtected ? (

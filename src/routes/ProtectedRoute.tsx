@@ -15,12 +15,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, isAuthenticated, loading } = useContext(AuthContext)
   const location = useLocation()
-
   if (loading) {
     return <Loader2 />
   }
-
+  
   if (!isAuthenticated) {
+    debugger
     return (
       <Navigate
         to={AppRoutes.LOGIN}

@@ -216,7 +216,7 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
       submitButtonText,
       showResetButton = false,
     }: DynamicFormProps<T>,
-    ref: React.Ref<unknown> | undefined
+    ref?: React.Ref<FormContextType>
   ) => {
     const form = useForm<T>({
       resolver: zodResolver(schema),

@@ -1,4 +1,4 @@
-import { useApiNotification } from '@/components/api/apiHandler'
+import { useApiNotification } from '@/api/apiHandler'
 import {
   MutationCache,
   QueryCache,

@@ -1,5 +1,5 @@
 import { AxiosError } from "axios"
-import { useAlert } from "../services/toastService"
+import { useAlert } from "../components/services/toastService"
 
 export const useApiNotification = () => {
   const { showAlert, showError, showSuccess } = useAlert()

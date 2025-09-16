@@ -9,7 +9,9 @@ import {
 import { lazy } from "react"
 import { AppRoutes } from "../routes/routeUtils"
 const Form = lazy(() =>
-  import("../app/form/page").then((module) => ({ default: module.default }))
+  import("../app/sectionedForm/page").then((module) => ({
+    default: module.default,
+  }))
 )
 const Chart = lazy(() =>
   import("../app/charts/page").then((module) => ({ default: module.default }))
@@ -51,7 +53,7 @@ export const sidebarConfig: SidebarConfig = {
               url: AppRoutes.CHARTS,
               isProtected: true,
               showIf() {
-                return false
+                return true
               },
             },
             {
