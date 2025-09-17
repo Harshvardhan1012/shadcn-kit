@@ -6,8 +6,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios"
 import { AuthTokenManager } from "./authTokenManager"
-import { useContext } from "react"
-import { AuthContext } from "@/context/AuthContext"
+import { type ApiError } from "@/types/response"
 
 // Types and Interfaces
 interface ApiCallOptions {
@@ -31,15 +30,6 @@ interface ApiCallOptions {
   onDownloadProgress?: (progressEvent: any) => void
 }
 
-interface ApiError {
-  status?: number
-  statusText?: string
-  data?: any
-  headers?: Record<string, string>
-  message: string
-  type: "server_error" | "network_error" | "request_error"
-  originalError?: any
-}
 
 let baseUrl = window.location.origin
 if (baseUrl.includes("localhost")) {
@@ -77,7 +67,7 @@ apiClient.interceptors.response.use(
     return response
   },
   async (error: AxiosError): Promise<never> => {
-    const { logout } = useContext(AuthContext)
+    // const { logout } = useContext(AuthContext)
     // Handle 401 Unauthorized - attempt token refresh
     if (error.response?.status === 401) {
       // Uncomment and implement token refresh logic as needed
@@ -105,7 +95,7 @@ apiClient.interceptors.response.use(
       //     AuthTokenManager.clearTokens()
       //   }
       // }
-      logout()
+      // logout()
     }
     return Promise.reject(error)
   }
@@ -258,10 +248,3 @@ class API {
 // Export everything
 export default API
 export { apiCall, AuthTokenManager, type ApiCallOptions, type ApiError }
-
-// Auth utility functions
-export const auth = {
-  getToken: AuthTokenManager.getToken,
-  setToken: AuthTokenManager.setToken,
-  clearTokens: AuthTokenManager.clearTokens,
-}

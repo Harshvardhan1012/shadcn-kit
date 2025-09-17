@@ -7,6 +7,7 @@ import { FeatureFlagsProvider } from './feature-flags-provider'
 import { get_columns } from './get-columns'
 import { Shell } from './shell'
 import { Table } from './table'
+import type { FormContextType } from '../form/FormContext'
 
 interface TableRefType {
   handleSheet: (value: boolean) => void
@@ -27,14 +28,14 @@ interface DatatableConfig<TData extends RowData = RowData> {
 
 interface DynamicMasterProps<TData extends RowData = RowData> {
   datatableConfig: DatatableConfig<TData>
-  data: any[]
+  data?: any[]
   formConfig: any
-  onFormConfigChange?: (config: any) => void
   serverSideFiltering?: boolean
   formSchema?: any
   defaultFormValues?: any
   sheetOpen?: boolean
   onSheetOpenChange?: (open: boolean) => void
+  isLoading?: boolean
   //   columns: ColumnDef<TData, unknown>[]
 }
 
@@ -42,23 +43,21 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   datatableConfig,
   data,
   formConfig,
-  onFormConfigChange,
   serverSideFiltering = false,
   formSchema,
   defaultFormValues,
-  sheetOpen = false,
+  sheetOpen,
   onSheetOpenChange,
+  isLoading = false,
 }: DynamicMasterProps<TData>) {
   // Allow controlling the open state from parent or use internal state
-  const [internalOpen, setInternalOpen] = React.useState(sheetOpen)
-  const open = onSheetOpenChange ? sheetOpen : internalOpen
+  const [open, setOpenSheet] = React.useState(sheetOpen)
   const setOpen = (value: boolean) => {
-    setInternalOpen(value)
+    setOpenSheet(value)
     if (onSheetOpenChange) onSheetOpenChange(value)
   }
 
-  const tableRef = React.useRef<TableRefType>(null)
-
+  const formRef = React.useRef<FormContextType>(null)
   const {
     columnsConfig,
     columnActions,
@@ -80,6 +79,35 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     }
   }, [formConfig?.type, onSheetOpenChange])
 
+  // Show skeleton when loading
+  if (isLoading) {
+    return (
+      <div className="relative flex flex-col w-full">
+        <Shell className="w-full">
+          <FeatureFlagsProvider>
+            <DataTableSkeleton
+              columnCount={10}
+              filterCount={2}
+              cellWidths={[
+                '8rem',
+                '12rem',
+                '10rem',
+                '8rem',
+                '10rem',
+                '8rem',
+                '6rem',
+                '6rem',
+                '6rem',
+                '6rem',
+              ]}
+              shrinkZero
+            />
+          </FeatureFlagsProvider>
+        </Shell>
+      </div>
+    )
+  }
+
   if (!data) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -87,60 +115,38 @@ export default function DynamicMaster<TData extends RowData = RowData>({
       </div>
     )
   }
-
-  const handleAddItem = () => {
-    setOpen(true)
+  const tableRef = React.useRef<TableRefType>(null)
+  const itemData: ActionConfig = {
+    title: addItemData.title,
+    onClick: () => {
+      setOpen(true)
+      tableRef.current?.handleSheet(false)
+    },
   }
-  // console.log()
-
-  const itemData: ActionConfig = React.useMemo(
-    () => ({
-      title: addItemData.title,
-      onClick: handleAddItem,
-    }),
-    [handleAddItem]
-  )
 
   return (
     <div className="relative flex flex-col w-full">
       <Shell
+        variant="sidebar"
         className={`transition-all duration-300 w-full ${
           open ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
-          <React.Suspense
-            fallback={
-              <DataTableSkeleton
-                columnCount={7}
-                filterCount={2}
-                cellWidths={[
-                  '10rem',
-                  '30rem',
-                  '10rem',
-                  '10rem',
-                  '6rem',
-                  '6rem',
-                  '6rem',
-                ]}
-                shrinkZero
-              />
-            }>
-            <Table
-              data={data}
-              columns={columns}
-              actionConfig={actionConfig}
-              addItem={itemData}
-              ref={tableRef}
-              serverSideFiltering={serverSideFiltering}
-              onFiltersChange={(filters, joinOperator) => {
-                console.log('Filters changed:', filters, joinOperator)
-              }}
-              onPaginationChange={(page, perPage) => {
-                // Make API call with pagination
-                console.log('Pagination changed:', page, perPage)
-              }}
-            />
-          </React.Suspense>
+          <Table
+            data={data}
+            columns={columns}
+            actionConfig={actionConfig}
+            ref={tableRef}
+            addItem={itemData}
+            serverSideFiltering={serverSideFiltering}
+            onFiltersChange={(filters, joinOperator) => {
+              console.log('Filters changed:', filters, joinOperator)
+            }}
+            onPaginationChange={(page, perPage) => {
+              // Make API call with pagination
+              console.log('Pagination changed:', page, perPage)
+            }}
+          />
         </FeatureFlagsProvider>
       </Shell>
 
@@ -151,17 +157,18 @@ export default function DynamicMaster<TData extends RowData = RowData>({
             setOpen(false)
           }}>
           <DynamicForm
+            ref={formRef}
             formConfig={formConfig}
             schema={formSchema}
             onSubmit={(formData) => {
+              debugger
               console.log('✅ Sheet form submitted:', formData)
-              setOpen(false)
+              debugger
               //   handleSheetOpenChange(false)
             }}
             defaultValues={defaultFormValues}
             showResetButton
-            className="w-full"
-            // onCancel={() => handleSheetOpenChange(false)}
+            // className={formClassName}
           />
         </SheetDemo>
       )}

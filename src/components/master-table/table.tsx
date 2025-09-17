@@ -31,19 +31,16 @@ type TableProps = {
 }
 
 export const Table = React.forwardRef(
-  (
-    {
-      data,
-      columns,
-      pageCount = -1,
-      actionConfig,
-      addItem,
-      serverSideFiltering = false, // Default to client-side filtering
-      onFiltersChange,
-      onPaginationChange,
-    }: TableProps,
-    ref
-  ) => {
+  ({
+    data,
+    columns,
+    pageCount = -1,
+    actionConfig,
+    addItem,
+    serverSideFiltering = false, // Default to client-side filtering
+    onFiltersChange,
+    onPaginationChange,
+  }: TableProps) => {
     const { enableAdvancedFilter } = useFeatureFlags()
     const [fullscreen, setFullscreen] = React.useState(false)
 
@@ -51,14 +48,6 @@ export const Table = React.forwardRef(
     const onExpandChange = () => {
       setFullscreen((value) => !value)
     }
-
-    const handleSheet = (value) => {
-      addvanceTableFilterRef?.current?.onSheetClose(value)
-    }
-
-    React.useImperativeHandle(ref, () => ({
-      handleSheet,
-    }))
 
     const filterColumns = getFilterFields(columns)
     const [filters] = useQueryState(

@@ -1,15 +1,16 @@
+import type { IAPIResponse } from "@/types/response"
 import {
-    useInfiniteQuery,
-    useMutation,
-    useQueries,
-    useQuery,
-    useQueryClient,
-    type MutationFunction,
-    type QueryFunction,
-    type QueryKey,
-    type UseInfiniteQueryOptions,
-    type UseMutationOptions,
-    type UseQueryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type MutationFunction,
+  type QueryFunction,
+  type QueryKey,
+  type UseInfiniteQueryOptions,
+  type UseMutationOptions,
+  type UseQueryOptions,
 } from "@tanstack/react-query"
 import API, { type ApiCallOptions } from "./apiClient"
 
@@ -168,12 +169,20 @@ export function useGenericMutations<TData = unknown, TError = unknown>(
 export function useApiQuery<TData = unknown, TError = unknown>(
   queryKey: QueryKey,
   apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" },
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<IAPIResponse<TData>, TError>,
+    "queryKey" | "queryFn"
+  >
 ) {
   return useQuery({
     queryKey,
     queryFn: async () => {
-      const response = await API.get<TData>(apiOptions.url, apiOptions)
+      const response = await API.get<IAPIResponse<TData>>(
+        apiOptions.url,
+        apiOptions
+      )
+
+      // Return the full IAPIResponse to preserve metadata
       return response.data
     },
     ...options,
@@ -185,14 +194,22 @@ export function useApiQueries<TData = unknown, TError = unknown>(
   queries: Array<{
     queryKey: QueryKey
     apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" }
-    options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
+    options?: Omit<
+      UseQueryOptions<IAPIResponse<TData>, TError>,
+      "queryKey" | "queryFn"
+    >
   }>
 ) {
   return useQueries({
     queries: queries.map(({ queryKey, apiOptions, options = {} }) => ({
       queryKey,
       queryFn: async () => {
-        const response = await API.get<TData>(apiOptions.url, apiOptions)
+        const response = await API.get<IAPIResponse<TData>>(
+          apiOptions.url,
+          apiOptions
+        )
+
+        // Return the full IAPIResponse to preserve metadata
         return response.data
       },
       ...options,
@@ -205,22 +222,27 @@ export function useApiInfiniteQuery<TData = unknown, TError = unknown>(
   queryKey: QueryKey,
   apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" },
   options: Omit<
-    UseInfiniteQueryOptions<TData, TError>,
+    UseInfiniteQueryOptions<IAPIResponse<TData>, TError>,
     "queryKey" | "queryFn"
   > & {
-    getNextPageParam: (lastPage: TData, allPages: TData[]) => unknown
+    getNextPageParam: (
+      lastPage: IAPIResponse<TData>,
+      allPages: IAPIResponse<TData>[]
+    ) => unknown
   }
 ) {
   return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await API.get<TData>(apiOptions.url, {
+      const response = await API.get<IAPIResponse<TData>>(apiOptions.url, {
         ...apiOptions,
         params: {
           ...apiOptions.params,
           page: pageParam,
         },
       })
+
+      // Return the full IAPIResponse to preserve metadata
       return response.data
     },
     ...options,
@@ -234,7 +256,10 @@ export function useApiMutation<
   TVariables = unknown
 >(
   apiOptions: Omit<ApiCallOptions, "data">,
-  options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationFn">
+  options?: Omit<
+    UseMutationOptions<IAPIResponse<TData>, TError, TVariables>,
+    "mutationFn"
+  >
 ) {
   return useMutation({
     mutationFn: async (variables: TVariables) => {
@@ -243,21 +268,34 @@ export function useApiMutation<
       let response
       switch (method.toUpperCase()) {
         case "POST":
-          response = await API.post<TData>(url, variables, restOptions)
+          response = await API.post<IAPIResponse<TData>>(
+            url,
+            variables,
+            restOptions
+          )
           break
         case "PUT":
-          response = await API.put<TData>(url, variables, restOptions)
+          response = await API.put<IAPIResponse<TData>>(
+            url,
+            variables,
+            restOptions
+          )
           break
         case "PATCH":
-          response = await API.patch<TData>(url, variables, restOptions)
+          response = await API.patch<IAPIResponse<TData>>(
+            url,
+            variables,
+            restOptions
+          )
           break
         case "DELETE":
-          response = await API.delete<TData>(url, restOptions)
+          response = await API.delete<IAPIResponse<TData>>(url, restOptions)
           break
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
 
+      // Return the full IAPIResponse to preserve metadata
       return response.data
     },
     ...options,
@@ -270,7 +308,7 @@ export function useApiMutations<TData = unknown, TError = unknown>(
     mutationKey?: readonly string[]
     apiOptions: Omit<ApiCallOptions, "data">
     options?: Omit<
-      UseMutationOptions<TData, TError, any, unknown>,
+      UseMutationOptions<IAPIResponse<TData>, TError, any, unknown>,
       "mutationKey" | "mutationFn"
     >
   }>
@@ -285,21 +323,34 @@ export function useApiMutations<TData = unknown, TError = unknown>(
         let response
         switch (method.toUpperCase()) {
           case "POST":
-            response = await API.post<TData>(url, variables, restOptions)
+            response = await API.post<IAPIResponse<TData>>(
+              url,
+              variables,
+              restOptions
+            )
             break
           case "PUT":
-            response = await API.put<TData>(url, variables, restOptions)
+            response = await API.put<IAPIResponse<TData>>(
+              url,
+              variables,
+              restOptions
+            )
             break
           case "PATCH":
-            response = await API.patch<TData>(url, variables, restOptions)
+            response = await API.patch<IAPIResponse<TData>>(
+              url,
+              variables,
+              restOptions
+            )
             break
           case "DELETE":
-            response = await API.delete<TData>(url, restOptions)
+            response = await API.delete<IAPIResponse<TData>>(url, restOptions)
             break
           default:
             throw new Error(`Unsupported method: ${method}`)
         }
 
+        // Return the full IAPIResponse to preserve metadata
         return response.data
       },
       ...options,
@@ -312,7 +363,10 @@ export function useApiGet<TData = unknown, TError = unknown>(
   queryKey: QueryKey,
   url: string,
   apiOptions?: Omit<ApiCallOptions, "url" | "method">,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
+  options?: Omit<
+    UseQueryOptions<IAPIResponse<TData>, TError>,
+    "queryKey" | "queryFn"
+  >
 ) {
   return useApiQuery<TData, TError>(
     queryKey,
@@ -329,7 +383,10 @@ export function useApiPost<
   url: string,
   invalidateKeys?: QueryKey | QueryKey[],
   apiOptions?: Omit<ApiCallOptions, "url" | "method" | "data">,
-  options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationFn">
+  options?: Omit<
+    UseMutationOptions<IAPIResponse<TData>, TError, TVariables>,
+    "mutationFn"
+  >
 ) {
   const queryClient = useQueryClient()
 
@@ -368,7 +425,10 @@ export function useApiPut<
   url: string,
   invalidateKeys?: QueryKey | QueryKey[], // Keys to invalidate on success
   apiOptions?: Omit<ApiCallOptions, "url" | "method" | "data">,
-  options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationFn">
+  options?: Omit<
+    UseMutationOptions<IAPIResponse<TData>, TError, TVariables>,
+    "mutationFn"
+  >
 ) {
   const queryClient = useQueryClient()
 
@@ -407,7 +467,10 @@ export function useApiPatch<
   url: string,
   invalidateKeys?: QueryKey | QueryKey[], // Keys to invalidate on success
   apiOptions?: Omit<ApiCallOptions, "url" | "method" | "data">,
-  options?: Omit<UseMutationOptions<TData, TError, TVariables>, "mutationFn">
+  options?: Omit<
+    UseMutationOptions<IAPIResponse<TData>, TError, TVariables>,
+    "mutationFn"
+  >
 ) {
   const queryClient = useQueryClient()
 
@@ -442,7 +505,10 @@ export function useApiDelete<TData = unknown, TError = unknown>(
   url: string,
   invalidateKeys?: QueryKey | QueryKey[], // Keys to invalidate on success
   apiOptions?: Omit<ApiCallOptions, "url" | "method" | "data">,
-  options?: Omit<UseMutationOptions<TData, TError, void>, "mutationFn">
+  options?: Omit<
+    UseMutationOptions<IAPIResponse<TData>, TError, void>,
+    "mutationFn"
+  >
 ) {
   const queryClient = useQueryClient()
 
@@ -476,57 +542,63 @@ export function useApiDelete<TData = unknown, TError = unknown>(
 /**
  * Usage Examples:
  *
- * // Basic GET request
- * const { data, isLoading, error } = useApiGet(['users'], '/api/users')
+ * // Basic GET request - returns IAPIResponse<UserData>
+ * const { data, isLoading, error } = useApiGet<UserData[]>(['users'], '/api/users')
+ * // Access actual data: data.data
+ * // Access metadata: data.meta, data.success, data.message
  *
  * // GET with params
- * const { data } = useApiGet(
+ * const { data } = useApiGet<UserData[]>(
  *   ['users', 'filtered'],
  *   '/api/users',
  *   { params: { status: 'active', page: 1 } }
  * )
  *
  * // POST mutation with auto-invalidation
- * const createUser = useApiPost(
+ * const createUser = useApiPost<UserData>(
  *   '/api/users',
+ *   ['users'], // Invalidate users list after successful creation
  *   {},
  *   {
- *     onSuccess: (data) => console.log('User created:', data),
+ *     onSuccess: (response) => {
+ *       console.log('User created:', response.data) // Actual user data
+ *       console.log('Success message:', response.message) // API message
+ *       console.log('Metadata:', response.meta) // Additional metadata
+ *     },
  *     onError: (error) => console.error('Error:', error)
- *   },
- *   ['users'] // Invalidate users list after successful creation
+ *   }
  * )
  *
  * // PUT mutation with multiple invalidations
- * const updateUser = useApiPut(
+ * const updateUser = useApiPut<UserData>(
  *   '/api/users/123',
+ *   [['users'], ['users', 'detail', 123]], // Invalidate both users list and specific user
  *   {},
  *   {
- *     onSuccess: (data) => console.log('User updated:', data),
- *   },
- *   [['users'], ['users', 'detail', 123]] // Invalidate both users list and specific user
+ *     onSuccess: (response) => console.log('User updated:', response.data),
+ *   }
  * )
  *
  * // DELETE with invalidation
  * const deleteUser = useApiDelete(
  *   '/api/users/123',
+ *   ['users'], // Refresh users list after deletion
  *   {},
  *   {
- *     onSuccess: () => console.log('User deleted'),
- *   },
- *   ['users'] // Refresh users list after deletion
+ *     onSuccess: (response) => console.log('User deleted:', response.message),
+ *   }
  * )
  *
  * // Usage with query keys from your queryKeys factory
  * import { queryKeys } from './queryKey'
  *
- * const createPost = useApiPost(
+ * const createPost = useApiPost<PostData>(
  *   apiPaths.posts.create,
+ *   [queryKeys.posts.lists(), queryKeys.posts.all], // Multiple invalidations
  *   {},
  *   {
- *     onSuccess: (data) => toast.success('Post created!'),
- *   },
- *   [queryKeys.posts.lists(), queryKeys.posts.all] // Multiple invalidations
+ *     onSuccess: (response) => toast.success(response.message),
+ *   }
  * )
  *
  * // Multiple queries
@@ -534,13 +606,14 @@ export function useApiDelete<TData = unknown, TError = unknown>(
  *   { queryKey: ['users'], apiOptions: { url: '/api/users' } },
  *   { queryKey: ['posts'], apiOptions: { url: '/api/posts' } }
  * ])
+ * // Each result.data will be an IAPIResponse
  *
  * // Infinite query with pagination
- * const { data, fetchNextPage, hasNextPage } = useApiInfiniteQuery(
+ * const { data, fetchNextPage, hasNextPage } = useApiInfiniteQuery<PostData[]>(
  *   ['posts'],
  *   { url: '/api/posts' },
  *   {
- *     getNextPageParam: (lastPage: any) => lastPage.nextPage,
+ *     getNextPageParam: (lastPage: IAPIResponse<PostData[]>) => lastPage.meta?.nextPage,
  *   }
  * )
  */
