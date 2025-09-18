@@ -126,10 +126,14 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-
 /* Dark mode variables */
-[data-theme='dark'], 
-.dark,.dark-red,.dark-rose,.dark-orange,.dark-green,.dark-blue {
+[data-theme='dark'],
+.dark,
+.dark-red,
+.dark-rose,
+.dark-orange,
+.dark-green,
+.dark-blue {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -164,7 +168,7 @@
 }
 
 /* Red theme - Light mode */
-/* [data-theme='light-red'],
+[data-theme='light-red'],
 .light-red {
   --primary: oklch(0.65 0.25 25);
   --primary-foreground: oklch(0.985 0 0);
@@ -172,7 +176,7 @@
   --sidebar-primary: oklch(0.65 0.25 25);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-ring: oklch(0.65 0.25 25 / 30%);
-} */
+}
 
 /* Red theme - Dark mode */
 [data-theme='dark-red'],

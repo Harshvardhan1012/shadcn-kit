@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react'
 import {
   createContext,
@@ -12,7 +13,6 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from 'react'
-import { cn } from '@/lib/utils'
 import { Badge } from './badge'
 import { Button } from './button'
 import {
@@ -33,6 +33,7 @@ type MultiSelectContextType = {
   toggleValue: (value: string) => void
   items: Map<string, ReactNode>
   onItemAdded: (value: string, label: ReactNode) => void
+  onSearchChange?: (searchValue: string) => void
 }
 const MultiSelectContext = createContext<MultiSelectContextType | null>(null)
 
@@ -41,11 +42,13 @@ export function MultiSelect({
   values,
   defaultValues,
   onValuesChange,
+  onSearchChange,
 }: {
   children: ReactNode
   values?: string[]
   defaultValues?: string[]
   onValuesChange?: (values: string[]) => void
+  onSearchChange?: (searchValue: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [selectedValues, setSelectedValues] = useState(
@@ -83,6 +86,7 @@ export function MultiSelect({
         toggleValue,
         items,
         onItemAdded,
+        onSearchChange,
       }}>
       <Popover
         open={open}
@@ -243,6 +247,7 @@ export function MultiSelectContent({
   search?: boolean | { placeholder?: string; emptyMessage?: string }
   children: ReactNode
 } & Omit<ComponentPropsWithoutRef<typeof Command>, 'children'>) {
+  const { onSearchChange } = useMultiSelectContext()
   const canSearch = typeof search === 'object' ? true : search
 
   return (
@@ -259,6 +264,7 @@ export function MultiSelectContent({
               placeholder={
                 typeof search === 'object' ? search.placeholder : undefined
               }
+              onValueChange={onSearchChange}
             />
           ) : (
             <button

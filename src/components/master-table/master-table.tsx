@@ -1,13 +1,13 @@
 import type { ColumnDef, RowData } from '@tanstack/react-table'
 import * as React from 'react'
 import DynamicForm from '../form/DynamicForm'
+import type { FormContextType } from '../form/FormContext'
 import { DataTableSkeleton } from './../data-table/data-table-skeleton'
 import SheetDemo from './../sheet/page'
 import { FeatureFlagsProvider } from './feature-flags-provider'
 import { get_columns } from './get-columns'
 import { Shell } from './shell'
 import { Table } from './table'
-import type { FormContextType } from '../form/FormContext'
 
 interface TableRefType {
   handleSheet: (value: boolean) => void
@@ -36,6 +36,11 @@ interface DynamicMasterProps<TData extends RowData = RowData> {
   sheetOpen?: boolean
   onSheetOpenChange?: (open: boolean) => void
   isLoading?: boolean
+  formRef?: React.RefObject<FormContextType | null>
+  formClassName?: string
+  onSubmit?: (formData: any) => void
+  errorMessage?: string
+  onClickAddItem?: () => void
   //   columns: ColumnDef<TData, unknown>[]
 }
 
@@ -46,18 +51,28 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   serverSideFiltering = false,
   formSchema,
   defaultFormValues,
-  sheetOpen,
+  sheetOpen = false,
   onSheetOpenChange,
   isLoading = false,
+  formRef,
+  formClassName,
+  onSubmit,
+  errorMessage,
+  onClickAddItem = () => {},
 }: DynamicMasterProps<TData>) {
-  // Allow controlling the open state from parent or use internal state
-  const [open, setOpenSheet] = React.useState(sheetOpen)
-  const setOpen = (value: boolean) => {
-    setOpenSheet(value)
-    if (onSheetOpenChange) onSheetOpenChange(value)
+  React.useEffect(() => {
+    if (onSheetOpenChange) {
+      onSheetOpenChange(sheetOpen)
+    }
+  }, [sheetOpen])
+  const handleSheetOpenChange = (value: boolean) => {
+    if (onSheetOpenChange) {
+      onSheetOpenChange(value)
+    }
   }
 
-  const formRef = React.useRef<FormContextType>(null)
+  const tableRef = React.useRef<TableRefType>(null)
+
   const {
     columnsConfig,
     columnActions,
@@ -70,14 +85,6 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     () => get_columns(columnsConfig, tableConfig, columnActions),
     [columnsConfig, tableConfig, columnActions]
   )
-
-  // ✅ Sync drawer state from formConfig
-  React.useEffect(() => {
-    // Only auto-open if we're not being controlled from parent
-    if (!onSheetOpenChange) {
-      setOpen(Boolean(formConfig?.type))
-    }
-  }, [formConfig?.type, onSheetOpenChange])
 
   // Show skeleton when loading
   if (isLoading) {
@@ -115,12 +122,19 @@ export default function DynamicMaster<TData extends RowData = RowData>({
       </div>
     )
   }
-  const tableRef = React.useRef<TableRefType>(null)
+  if (errorMessage) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        {errorMessage}
+      </div>
+    )
+  }
+
   const itemData: ActionConfig = {
     title: addItemData.title,
     onClick: () => {
-      setOpen(true)
-      tableRef.current?.handleSheet(false)
+      handleSheetOpenChange(true)
+      onClickAddItem()
     },
   }
 
@@ -129,15 +143,15 @@ export default function DynamicMaster<TData extends RowData = RowData>({
       <Shell
         variant="sidebar"
         className={`transition-all duration-300 w-full ${
-          open ? 'md:w-[calc(100%-24rem)]' : ''
+          sheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
           <Table
             data={data}
             columns={columns}
             actionConfig={actionConfig}
-            ref={tableRef}
             addItem={itemData}
+            ref={tableRef}
             serverSideFiltering={serverSideFiltering}
             onFiltersChange={(filters, joinOperator) => {
               console.log('Filters changed:', filters, joinOperator)
@@ -150,25 +164,22 @@ export default function DynamicMaster<TData extends RowData = RowData>({
         </FeatureFlagsProvider>
       </Shell>
 
-      {open && (
+      {sheetOpen && (
         <SheetDemo
-          open={open}
+          open={sheetOpen}
           onOpenChange={() => {
-            setOpen(false)
+            handleSheetOpenChange(false)
           }}>
           <DynamicForm
             ref={formRef}
             formConfig={formConfig}
             schema={formSchema}
             onSubmit={(formData) => {
-              debugger
-              console.log('✅ Sheet form submitted:', formData)
-              debugger
-              //   handleSheetOpenChange(false)
+              onSubmit?.(formData)
             }}
             defaultValues={defaultFormValues}
             showResetButton
-            // className={formClassName}
+            className={formClassName}
           />
         </SheetDemo>
       )}

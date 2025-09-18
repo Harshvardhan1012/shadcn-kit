@@ -1,8 +1,6 @@
-'use client'
-
+import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import React, { useState } from 'react'
-import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import {
   Command,
@@ -24,6 +22,7 @@ interface ComboBoxProps extends StringComponentProps {
   searchPlaceholder?: string
   emptyMessage?: string
   disabled?: boolean
+  onSearchChange?: (searchValue: string) => void
 }
 
 export const ComboBox: React.FC<ComboBoxProps> = ({
@@ -39,6 +38,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   disabled = false,
   onChange,
   onBlur,
+  onSearchChange,
   ...props
 }) => {
   const [open, setOpen] = useState(false)
@@ -50,15 +50,22 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
     const newValue = currentValue === value ? '' : currentValue
     onChange?.(newValue)
     setOpen(false)
-    setSearchValue('')
   }
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen)
     if (!isOpen) {
-      setSearchValue('')
+      if (!value) {
+        setSearchValue('')
+        onSearchChange?.('')
+      }
       onBlur?.(value)
     }
+  }
+
+  const handleSearchChange = (newSearchValue: string) => {
+    setSearchValue(newSearchValue)
+    onSearchChange?.(newSearchValue)
   }
 
   return (
@@ -95,19 +102,34 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
             <CommandInput
               placeholder={searchPlaceholder}
               value={searchValue}
-              onValueChange={setSearchValue}
+              onValueChange={handleSearchChange}
               {...props}
             />
             <CommandList>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
               <CommandGroup>
-                {options
-                  .filter((option) =>
+                {(() => {
+                  // Filter options based on search
+                  const filteredOptions = options.filter((option) =>
                     option.label
                       .toLowerCase()
                       .includes(searchValue.toLowerCase())
                   )
-                  .map((option) => (
+
+                  // Always include the selected option if it exists and isn't already in filtered results
+                  const selectedOption = options.find(
+                    (option) => option.value === value
+                  )
+                  if (
+                    selectedOption &&
+                    !filteredOptions.some(
+                      (opt) => opt.value === selectedOption.value
+                    )
+                  ) {
+                    filteredOptions.unshift(selectedOption)
+                  }
+
+                  return filteredOptions.map((option) => (
                     <CommandItem
                       key={String(option.value)}
                       value={String(option.value)}
@@ -123,7 +145,8 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
                       {option.icon && <option.icon className="h-4 w-4" />}
                       <span className="truncate">{option.label}</span>
                     </CommandItem>
-                  ))}
+                  ))
+                })()}
               </CommandGroup>
             </CommandList>
           </Command>

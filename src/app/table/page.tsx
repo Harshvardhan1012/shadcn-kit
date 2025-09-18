@@ -103,7 +103,6 @@ const TableExample = () => {
       },
     },
   ]
-  console.log(columns)
 
   const [config, setConfig] = useState(exampleFormConfig)
 
@@ -238,6 +237,12 @@ const TableExample = () => {
         sheetOpen={sheetOpen}
         onSheetOpenChange={setSheetOpen}
         defaultFormValues={defaultFormValues}
+        onSubmit={(data)=>{
+          console.log(data)
+        }}
+        onClickAddItem={() => {
+          setDefaultFormValues(undefined)
+        }}
         // onFormConfigChange={(config) =>
         // addItem={add}
         // ref={}

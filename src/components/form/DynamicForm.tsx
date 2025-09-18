@@ -216,7 +216,7 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
       submitButtonText,
       showResetButton = false,
     }: DynamicFormProps<T>,
-    ref?: React.Ref<FormContextType>
+    ref: React.Ref<unknown> | undefined
   ) => {
     const form = useForm<T>({
       resolver: zodResolver(schema),
@@ -623,6 +623,7 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                         error={<FormMessage />}
                         description={description}
                         options={options}
+                        placeholder={selectProps.placeholder}
                         onBlur={() => {
                           field.onBlur()
                           handleBlur(fieldConfig, field.value)
@@ -731,6 +732,9 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                         handleValueChange(fieldConfig, val)
                       }}
                       onBlur={() => handleBlur(fieldConfig, field.value)}
+                      onSearchChange={(searchValue) => 
+                        comboboxConfig.onSearchChange?.(name, searchValue)
+                      }
                       placeholder={comboboxConfig.placeholder}
                       searchPlaceholder={comboboxConfig.searchPlaceholder}
                       emptyMessage={comboboxConfig.emptyMessage}
@@ -793,7 +797,10 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                         onValuesChange={(values: string[]) => {
                           field.onChange(values as PathValue<T, Path<T>>)
                           handleValueChange(fieldConfig, values)
-                        }}>
+                        }}
+                        onSearchChange={(searchValue) => 
+                          multiselectConfig.onSearchChange?.(name, searchValue)
+                        }>
                         <MultiSelectTrigger className="w-full">
                           <MultiSelectValue
                             placeholder={multiselectConfig.placeholder}

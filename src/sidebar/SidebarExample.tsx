@@ -21,7 +21,7 @@ export function SidebarExample({ children }: MainLayoutProps) {
 
   return (
     <div className="flex h-full w-full rounded-sm">
-      <DynamicSidebar config={sidebarConfig} />
+      <DynamicSidebar config={sidebarConfig}   />
       <SidebarInset>
         <nav className="flex items-center justify-between">
           <SidebarTrigger className="mr-2" />
