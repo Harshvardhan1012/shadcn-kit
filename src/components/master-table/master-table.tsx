@@ -29,36 +29,26 @@ interface DatatableConfig<TData extends RowData = RowData> {
 interface DynamicMasterProps<TData extends RowData = RowData> {
   datatableConfig: DatatableConfig<TData>
   data?: any[]
-  formConfig: any
   serverSideFiltering?: boolean
-  formSchema?: any
-  defaultFormValues?: any
   sheetOpen?: boolean
   onSheetOpenChange?: (open: boolean) => void
   isLoading?: boolean
-  formRef?: React.RefObject<FormContextType | null>
-  formClassName?: string
-  onSubmit?: (formData: any) => void
   errorMessage?: string
-  onClickAddItem?: () => void
+  onClickAddItem?: () => void,
+  children?: React.ReactNode
   //   columns: ColumnDef<TData, unknown>[]
 }
 
 export default function DynamicMaster<TData extends RowData = RowData>({
   datatableConfig,
   data,
-  formConfig,
   serverSideFiltering = false,
-  formSchema,
-  defaultFormValues,
   sheetOpen = false,
   onSheetOpenChange,
   isLoading = false,
-  formRef,
-  formClassName,
-  onSubmit,
   errorMessage,
   onClickAddItem = () => {},
+  children,
 }: DynamicMasterProps<TData>) {
   React.useEffect(() => {
     if (onSheetOpenChange) {
@@ -115,17 +105,17 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     )
   }
 
-  if (!data) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Missing required configuration or data</p>
-      </div>
-    )
-  }
   if (errorMessage) {
     return (
       <div className="flex items-center justify-center h-64">
         {errorMessage}
+      </div>
+    )
+  }
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Missing required configuration or data</p>
       </div>
     )
   }
@@ -170,17 +160,7 @@ export default function DynamicMaster<TData extends RowData = RowData>({
           onOpenChange={() => {
             handleSheetOpenChange(false)
           }}>
-          <DynamicForm
-            ref={formRef}
-            formConfig={formConfig}
-            schema={formSchema}
-            onSubmit={(formData) => {
-              onSubmit?.(formData)
-            }}
-            defaultValues={defaultFormValues}
-            showResetButton
-            className={formClassName}
-          />
+          {children}
         </SheetDemo>
       )}
     </div>

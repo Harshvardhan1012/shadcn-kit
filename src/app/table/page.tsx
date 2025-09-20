@@ -7,7 +7,7 @@ import { todos } from './data'
 import DynamicMaster from '@/components/master-table/master-table'
 import datatableConfig from './table_config'
 import { exampleFormConfig, formSchema } from './form_config'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   setActionClickHandler,
   setButtonClickHandler,
@@ -17,6 +17,8 @@ import {
   setupMasterPageHandlersAuto,
   updateFormFieldConfig,
 } from '@/lib/utils'
+import DynamicForm from '@/components/form/DynamicForm'
+import type { FormContextType } from '@/components/form/FormContext'
 
 interface Todos {
   id: number
@@ -160,7 +162,9 @@ const TableExample = () => {
       }
       if (action === 'delete') {
         setData((data) =>
-          data.filter((item) => rows.selectedIds.every((r: any) => r !== item.id))
+          data.filter((item) =>
+            rows.selectedIds.every((r: any) => r !== item.id)
+          )
         )
         console.log(data)
       }
@@ -224,6 +228,7 @@ const TableExample = () => {
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [defaultFormValues, setDefaultFormValues] = useState<any>()
+  const ref = useRef<FormContextType>(null)
   return (
     <>
       <DynamicMaster<Todos>
@@ -232,21 +237,24 @@ const TableExample = () => {
           ...datatableConfig,
           columnsConfig: columns,
         }}
-        formConfig={exampleFormConfig}
-        formSchema={formSchema}
         sheetOpen={sheetOpen}
         onSheetOpenChange={setSheetOpen}
-        defaultFormValues={defaultFormValues}
-        onSubmit={(data)=>{
-          console.log(data)
-        }}
         onClickAddItem={() => {
           setDefaultFormValues(undefined)
-        }}
-        // onFormConfigChange={(config) =>
-        // addItem={add}
-        // ref={}
-      />
+        }}>
+        {/* <DynamicForm
+          ref={ref}
+          formConfig={config}
+          schema={formSchema}
+          onSubmit={(formData) => {
+            console.log('Form submitted:', formData)
+          }}
+          defaultValues={defaultFormValues}
+          showResetButton
+          className="w-full"
+        /> */}
+        sdf
+      </DynamicMaster>
     </>
   )
 }
