@@ -10,11 +10,9 @@ import {
 } from './../ui/card'
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
+  ChartLegend, ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
+  type ChartConfig
 } from './../ui/chart'
 import {
   Select,
@@ -229,14 +227,21 @@ export interface DynamicChartProps {
   }
 }
 
-// Helper functions (getColorForKey, convertToCSV, downloadFile, prepareDownloadData) remain the same...
 function getColorForKey(
   key: string,
   index: number,
   config: ChartConfig
 ): string {
   const cssVar = `var(--color-${key})`
-  if (config[key]?.theme) return cssVar
+  // Check if the config has a themeable color defined
+  if (config[key]?.theme) {
+    return cssVar
+  }
+  // Fallback to the non-theme color in the config
+  if (typeof config[key]?.color === 'string') {
+    return config[key]!.color!
+  }
+  // Final fallback to a default color array
   return DEFAULT_LINE_COLORS[index % DEFAULT_LINE_COLORS.length]
 }
 
@@ -278,7 +283,7 @@ function prepareDownloadData(
   yAxisKeys: string[],
   config: ChartConfig
 ): ChartDataPoint[] {
-  if (chartType === 'pie' && yAxisKeys.length > 1) {
+  if ((chartType === 'pie' || chartType === 'donut') && yAxisKeys.length > 1) {
     return yAxisKeys.map((key) => {
       const total = data.reduce(
         (sum, item) =>
@@ -307,14 +312,14 @@ export function DynamicChart({
   config = defaultConfig,
   xAxisKey = 'name',
   yAxisKeys = ['value'],
-  showGrid = true,
+  // showGrid = true,
   showTooltip = true,
   showLegend = true,
-  tooltipFormatter,
-  tooltipLabelFormatter,
-  legendPosition = 'bottom',
+  // tooltipFormatter,
+  // tooltipLabelFormatter,
+  // legendPosition = 'bottom',
   className,
-  height = 400, // Default height for the container
+  height = 400,
   chartProps = {},
   classNames,
   zoom = {
@@ -335,7 +340,7 @@ export function DynamicChart({
   tableConfig = {},
 }: DynamicChartProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = React.useState(500) // Default width
+  const [containerWidth, setContainerWidth] = React.useState(500)
   const [currentChartType, setCurrentChartType] =
     React.useState<ChartType>(chartType)
   const [zoomLevel, setZoomLevel] = React.useState(zoom.initialZoom || 1)
@@ -344,61 +349,44 @@ export function DynamicChart({
     direction: 'asc' | 'desc'
   } | null>(null)
 
-  // Measure the container width to make the chart responsive
   React.useLayoutEffect(() => {
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
-      if (entry) {
-        setContainerWidth(entry.contentRect.width)
-      }
+      if (entry) setContainerWidth(entry.contentRect.width)
     })
-    if (containerRef.current) {
-      observer.observe(containerRef.current)
-    }
+    if (containerRef.current) observer.observe(containerRef.current)
     return () => {
       if (containerRef.current) observer.unobserve(containerRef.current)
     }
   }, [])
 
-  const handleZoomIn = () => {
-    if (!zoom.enabled) return
+  const handleZoomIn = () =>
     setZoomLevel((prev) =>
       Math.min(zoom.maxZoom || 3, prev + (zoom.factor || 0.2))
     )
-  }
-
-  const handleZoomOut = () => {
-    if (!zoom.enabled) return
+  const handleZoomOut = () =>
     setZoomLevel((prev) =>
       Math.max(zoom.minZoom || 0.5, prev - (zoom.factor || 0.2))
     )
-  }
-
-  const handleZoomReset = () => {
-    if (!zoom.enabled) return
-    setZoomLevel(zoom.initialZoom || 1)
-  }
-
+  const handleZoomReset = () => setZoomLevel(zoom.initialZoom || 1)
   const handleChartTypeChange = (newType: ChartType) => {
     setCurrentChartType(newType)
     onChartTypeChange?.(newType)
   }
-
   const handleDownload = () => {
     const downloadData = prepareDownloadData(
       data,
       currentChartType,
-      yAxisKeys,
+      validYAxisKeys,
       config
     )
     const csvContent = convertToCSV(downloadData)
     downloadFile(
-      `${downloadFilename}-${currentChartType}.csv`,
       csvContent,
+      `${downloadFilename}-${currentChartType}.csv`,
       'text/csv'
     )
   }
-
   const handleSort = (key: string) => {
     if (!tableConfig.sortable) return
     setSortConfig((current) =>
@@ -413,13 +401,13 @@ export function DynamicChart({
     return yAxisKeys.filter((key) => Object.keys(data[0]).includes(key))
   }, [data, yAxisKeys])
 
-  const chartDimensions = React.useMemo(() => {
-    const baseHeight = typeof height === 'number' ? height : 400
-    return {
-      height: baseHeight * zoomLevel,
+  const chartDimensions = React.useMemo(
+    () => ({
+      height: (typeof height === 'number' ? height : 400) * zoomLevel,
       width: containerWidth * zoomLevel,
-    }
-  }, [containerWidth, height, zoomLevel])
+    }),
+    [containerWidth, height, zoomLevel]
+  )
 
   const sortedData = React.useMemo(() => {
     if (!sortConfig) return data
@@ -437,9 +425,8 @@ export function DynamicChart({
     })
   }, [data, sortConfig])
 
-  const handleClick = (clickData: ChartClickData | PieChartEntryData) => {
-    if (clickData) onDataPointClick?.(clickData as ChartClickData)
-  }
+  const handleClick = (clickData: ChartClickData | PieChartEntryData) =>
+    onDataPointClick?.(clickData as ChartClickData)
 
   const renderActiveShape = (props: unknown) => {
     const {
@@ -491,7 +478,6 @@ export function DynamicChart({
   }
 
   const renderTable = () => {
-    // ... Table rendering logic remains the same
     const {
       showRowNumbers = false,
       columnHeaders = {},
@@ -499,13 +485,13 @@ export function DynamicChart({
       cellRenderer,
     } = tableConfig
     if (!data.length)
-      return <div className="text-center py-8">No data available</div>
+      return <div className="py-8 text-center">No data available</div>
     const columns = Object.keys(data[0]).filter(
       (key) => !hiddenColumns.includes(key)
     )
     return (
       <div
-        className="border rounded-md overflow-auto w-full"
+        className="w-full overflow-auto border rounded-md"
         style={{ height: typeof height === 'number' ? height : '100%' }}>
         <Table>
           <TableHeader>
@@ -555,7 +541,6 @@ export function DynamicChart({
 
   const renderChart = () => {
     const commonProps = {
-      data,
       width: chartDimensions.width,
       height: chartDimensions.height,
       ...chartProps,
@@ -564,161 +549,127 @@ export function DynamicChart({
     switch (currentChartType) {
       case 'area':
         return (
-          <AreaChart {...commonProps}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+          <AreaChart
+            data={data}
+            {...commonProps}>
+            <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
             <YAxis />
-            {showTooltip && (
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                  />
-                }
-              />
-            )}
-            {showLegend && (
-              <ChartLegend
-                content={<ChartLegendContent />}
-                verticalAlign={legendPosition}
-              />
-            )}
-            {validYAxisKeys.map((key, index) => (
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartLegend />
+            {validYAxisKeys.map((key, i) => (
               <Area
                 key={key}
-                type="monotone"
                 dataKey={key}
-                stackId="1"
-                stroke={getColorForKey(key, index, config)}
-                fill={getColorForKey(key, index, config)}
-                fillOpacity={0.5}
-                {...(chartProps[key] || {})}
+                fill={getColorForKey(key, i, config)}
+                stroke={getColorForKey(key, i, config)}
               />
             ))}
           </AreaChart>
         )
       case 'line':
         return (
-          <LineChart {...commonProps}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+          <LineChart
+            data={data}
+            {...commonProps}>
+            <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
             <YAxis />
-            {showTooltip && (
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                  />
-                }
-              />
-            )}
-            {showLegend && (
-              <ChartLegend
-                content={<ChartLegendContent />}
-                verticalAlign={legendPosition}
-              />
-            )}
-            {validYAxisKeys.map((key, index) => (
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartLegend />
+            {validYAxisKeys.map((key, i) => (
               <Line
                 key={key}
-                type="monotone"
                 dataKey={key}
-                stroke={getColorForKey(key, index, config)}
-                strokeWidth={2}
-                dot={{
-                  fill: getColorForKey(key, index, config),
-                  strokeWidth: 1,
-                  r: 2,
-                }}
-                activeDot={{ r: 4, strokeWidth: 1 }}
-                {...(chartProps[key] || {})}
+                stroke={getColorForKey(key, i, config)}
               />
             ))}
           </LineChart>
         )
       case 'bar':
         return (
-          <BarChart {...commonProps}>
-            {showGrid && <CartesianGrid strokeDasharray="3 3" />}
+          <BarChart
+            data={data}
+            {...commonProps}>
+            <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
             <YAxis />
-            {showTooltip && (
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={tooltipFormatter}
-                    labelFormatter={tooltipLabelFormatter}
-                  />
-                }
-              />
-            )}
-            {showLegend && (
-              <ChartLegend
-                content={<ChartLegendContent />}
-                verticalAlign={legendPosition}
-              />
-            )}
-            {validYAxisKeys.map((key, index) => (
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartLegend />
+            {validYAxisKeys.map((key, i) => (
               <Bar
-                key={index}
+                key={key}
                 dataKey={key}
-                fill={getColorForKey(key, index, config)}
-                onClick={(e: ChartClickData) => {
-                  handleClick(e)
-                }}
-                {...(chartProps[key] || {})}
+                fill={getColorForKey(key, i, config)}
               />
             ))}
           </BarChart>
         )
       case 'pie':
       case 'donut':
-        const pieData =
-          validYAxisKeys.length > 1
-            ? validYAxisKeys.map((key) => ({
-                name: config[key]?.label || key,
-                value: data.reduce(
-                  (sum, item) => sum + (Number(item[key]) || 0),
-                  0
-                ),
-              }))
-            : data
+        const isMultiSeries = validYAxisKeys.length > 1
+        const dataKey = isMultiSeries ? 'value' : validYAxisKeys[0]
+
+        if (!dataKey) {
+          return (
+            <div className="flex items-center justify-center h-full">
+              Error: Invalid or missing yAxisKey for Pie Chart.
+            </div>
+          )
+        }
+
+        const pieData = isMultiSeries
+          ? validYAxisKeys.map((key) => ({
+              dataKey: key, // Keep track of the original key
+              name: config[key]?.label || key,
+              value: data.reduce(
+                (sum, item) => sum + (Number(item[key]) || 0),
+                0
+              ),
+            }))
+          : data
+
         return (
           <PieChart {...commonProps}>
             <Pie
               data={pieData}
-              nameKey={xAxisKey}
-              dataKey={validYAxisKeys[0]}
+              nameKey={isMultiSeries ? 'name' : xAxisKey}
+              dataKey={dataKey}
               cx="50%"
               cy="50%"
               outerRadius="80%"
               innerRadius={currentChartType === 'donut' ? '60%' : '0%'}
               activeShape={highlightActive ? renderActiveShape : undefined}
               onClick={handleClick}>
-              {pieData.map((_entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={pieColors[index % pieColors.length]}
-                />
-              ))}
+              {pieData.map((entry, index) => {
+                let fillColor = ''
+                if (isMultiSeries) {
+                  // Use the config color for multi-series pie charts
+                  const key = (entry as any).dataKey
+                  fillColor = getColorForKey(key, index, config)
+                } else {
+                  // For single-series, prioritize 'fill' in data, then fallback to pieColors
+                  fillColor =
+                    (entry as any).fill || pieColors[index % pieColors.length]
+                }
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={fillColor}
+                  />
+                )
+              })}
             </Pie>
-            {showTooltip && (
-              <ChartTooltip
-                content={<ChartTooltipContent formatter={tooltipFormatter} />}
-              />
-            )}
-            {showLegend && (
-              <ChartLegend
-                content={<ChartLegendContent />}
-                verticalAlign={legendPosition}
-              />
-            )}
+            {showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
+            {showLegend && <ChartLegend />}
           </PieChart>
         )
       default:
-        return null
+        return (
+          <div className="flex items-center justify-center h-full">
+            No chart available for selected type.
+          </div>
+        )
     }
   }
 
@@ -729,90 +680,84 @@ export function DynamicChart({
         className,
         classNames?.card
       )}>
-      {(title ||
-        description ||
-        showTypeSelector ||
-        showDownload ||
-        (zoom.enabled && zoom.showControls)) && (
-        <CardHeader className={cn('relative', classNames?.cardHeader)}>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              {title && (
-                <CardTitle className={classNames?.cardTitle}>{title}</CardTitle>
-              )}
-              {description && (
-                <CardDescription className={classNames?.cardDescription}>
-                  {description}
-                </CardDescription>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {zoom.enabled &&
-                zoom.showControls &&
-                currentChartType !== 'table' && (
-                  <div className="flex items-center border rounded-md p-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleZoomOut}
-                      disabled={zoomLevel <= (zoom.minZoom || 0.5)}
-                      className="h-8 w-8 p-0"
-                      title="Zoom Out">
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs text-muted-foreground px-2 min-w-[3rem] text-center">
-                      {Math.round(zoomLevel * 100)}%
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleZoomIn}
-                      disabled={zoomLevel >= (zoom.maxZoom || 3)}
-                      className="h-8 w-8 p-0"
-                      title="Zoom In">
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleZoomReset}
-                      className="h-8 w-8 p-0"
-                      title="Reset Zoom">
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              {showTypeSelector && (
-                <Select
-                  value={currentChartType}
-                  onValueChange={handleChartTypeChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="area">Area</SelectItem>
-                    <SelectItem value="line">Line</SelectItem>
-                    <SelectItem value="bar">Bar</SelectItem>
-                    <SelectItem value="pie">Pie</SelectItem>
-                    <SelectItem value="donut">Donut</SelectItem>
-                    <SelectItem value="table">Table</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-              {showDownload && (
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={handleDownload}
-                  className="ml-1"
-                  title="Download CSV">
-                  <Download className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+      <CardHeader className={cn('relative', classNames?.cardHeader)}>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            {title && (
+              <CardTitle className={classNames?.cardTitle}>{title}</CardTitle>
+            )}
+            {description && (
+              <CardDescription className={classNames?.cardDescription}>
+                {description}
+              </CardDescription>
+            )}
           </div>
-        </CardHeader>
-      )}
+          <div className="flex items-center gap-2">
+            {zoom.enabled &&
+              zoom.showControls &&
+              currentChartType !== 'table' && (
+                <div className="flex items-center p-1 border rounded-md">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleZoomOut}
+                    disabled={zoomLevel <= (zoom.minZoom || 0.5)}
+                    className="w-8 h-8 p-0"
+                    title="Zoom Out">
+                    <ZoomOut className="w-4 h-4" />
+                  </Button>
+                  <span className="px-2 text-xs min-w-[3rem] text-center text-muted-foreground">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleZoomIn}
+                    disabled={zoomLevel >= (zoom.maxZoom || 3)}
+                    className="w-8 h-8 p-0"
+                    title="Zoom In">
+                    <ZoomIn className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleZoomReset}
+                    className="w-8 h-8 p-0"
+                    title="Reset Zoom">
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            {showTypeSelector && (
+              <Select
+                value={currentChartType}
+                onValueChange={handleChartTypeChange}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="area">Area</SelectItem>
+                  <SelectItem value="line">Line</SelectItem>
+                  <SelectItem value="bar">Bar</SelectItem>
+                  <SelectItem value="pie">Pie</SelectItem>
+                  <SelectItem value="donut">Donut</SelectItem>
+                  <SelectItem value="table">Table</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {showDownload && (
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleDownload}
+                className="ml-1"
+                title="Download CSV">
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
 
       <CardContent
         ref={containerRef}
