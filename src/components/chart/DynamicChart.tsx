@@ -1,34 +1,5 @@
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { Button } from './../ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from './../ui/card'
-import {
-  ChartContainer,
-  ChartLegend, ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig
-} from './../ui/chart'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './../ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './../ui/table'
 import { Download, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
 import * as React from 'react'
 import {
@@ -46,6 +17,37 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Button } from './../ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from './../ui/card'
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from './../ui/chart'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './../ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './../ui/table'
 
 // Type definitions for Recharts components
 interface ChartClickData {
@@ -89,57 +91,42 @@ interface RechartsTooltipProps {
   label?: string | number
 }
 
-// Default chart config
+// Default chart config - uses CSS variables that adapt to the current theme
 const defaultConfig: ChartConfig = {
   chartData1: {
     label: 'Dataset 1',
-    theme: {
-      light: 'oklch(0.6 0.22 41.116)',
-      dark: 'oklch(0.488 0.243 264.376)',
-    },
+    color: 'var(--chart-1)',
   },
   chartData2: {
     label: 'Dataset 2',
-    theme: {
-      light: 'oklch(0.6 0.118 184.704)',
-      dark: 'oklch(0.696 0.17 162.48)',
-    },
+    color: 'var(--chart-2)',
   },
   chartData3: {
     label: 'Dataset 3',
-    theme: {
-      light: 'oklch(0.398 0.07 227.392)',
-      dark: 'oklch(0.769 0.188 70.08)',
-    },
+    color: 'var(--chart-3)',
+  },
+  chartData4: {
+    label: 'Dataset 4',
+    color: 'var(--chart-4)',
+  },
+  chartData5: {
+    label: 'Dataset 5',
+    color: 'var(--chart-5)',
   },
 }
 
-// Default pie chart colors
+// Theme-aware pie chart colors using CSS variables that work in both light and dark modes
 const DEFAULT_PIE_COLORS = [
-  '#8884d8',
-  '#82ca9d',
-  '#ffc658',
-  '#ff7300',
-  '#00ff00',
-  '#0088fe',
-  '#ff0066',
-  '#8dd1e1',
-  '#d084d0',
-  '#87d068',
-]
-
-// Default line colors for fallback
-const DEFAULT_LINE_COLORS = [
-  '#ffca9d',
-  '#82ca9d',
-  '#ffc658',
-  '#ff7300',
-  '#0088fe',
-  '#ff0066',
-  '#8dd1e1',
-  '#d084d0',
-  '#87d068',
-  '#00ff00',
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'hsl(217 91% 60%)', // blue
+  'hsl(340 82% 52%)', // pink
+  'hsl(188 80% 72%)', // cyan
+  'hsl(300 50% 70%)', // purple
+  'hsl(120 39% 55%)', // green
 ]
 
 // Chart types
@@ -207,6 +194,7 @@ export interface DynamicChartProps {
     initialZoom?: number
     showControls?: boolean
   }
+  chartKey?: string
   showTypeSelector?: boolean
   onChartTypeChange?: (type: ChartType) => void
   pieColors?: string[]
@@ -214,6 +202,7 @@ export interface DynamicChartProps {
   highlightActive?: boolean
   showDownload?: boolean
   downloadFilename?: string
+  loading?: boolean
   tableConfig?: {
     showRowNumbers?: boolean
     sortable?: boolean
@@ -237,12 +226,20 @@ function getColorForKey(
   if (config[key]?.theme) {
     return cssVar
   }
-  // Fallback to the non-theme color in the config
+// Fallback to the non-theme color in the config
   if (typeof config[key]?.color === 'string') {
     return config[key]!.color!
   }
-  // Final fallback to a default color array
-  return DEFAULT_LINE_COLORS[index % DEFAULT_LINE_COLORS.length]
+  // Final fallback to theme-aware chart CSS variables (--chart-1, --chart-2, etc.)
+  // The CSS variables are already in oklch format, so we use them directly
+  const chartColors = [
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
+  ]
+  return chartColors[index % chartColors.length]
 }
 
 function convertToCSV(data: ChartDataPoint[]): string {
@@ -315,6 +312,7 @@ export function DynamicChart({
   // showGrid = true,
   showTooltip = true,
   showLegend = true,
+  chartKey,
   // tooltipFormatter,
   // tooltipLabelFormatter,
   // legendPosition = 'bottom',
@@ -337,12 +335,30 @@ export function DynamicChart({
   highlightActive = true,
   showDownload = true,
   downloadFilename = 'chart-data',
+  loading = false,
   tableConfig = {},
 }: DynamicChartProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = React.useState(500)
-  const [currentChartType, setCurrentChartType] =
-    React.useState<ChartType>(chartType)
+  const [currentChartType, setCurrentChartType] = React.useState<ChartType>(
+    () => {
+      // Check if localStorage is available (for SSR safety)
+      if (typeof window !== 'undefined') {
+        const savedType = localStorage.getItem(`dynamic-chart-type-${chartKey}`)
+        console.log(savedType, chartKey)
+        // Ensure the saved type is a valid ChartType before using it
+        if (
+          savedType &&
+          ['area', 'line', 'bar', 'pie', 'donut', 'table'].includes(savedType)
+        ) {
+          return savedType as ChartType
+        }
+      }
+      // Fallback to the initial prop if nothing is saved
+      return chartType
+    }
+  )
+
   const [zoomLevel, setZoomLevel] = React.useState(zoom.initialZoom || 1)
   const [sortConfig, setSortConfig] = React.useState<{
     key: string
@@ -371,7 +387,12 @@ export function DynamicChart({
   const handleZoomReset = () => setZoomLevel(zoom.initialZoom || 1)
   const handleChartTypeChange = (newType: ChartType) => {
     setCurrentChartType(newType)
-    onChartTypeChange?.(newType)
+    onChartTypeChange?.(newType) // Call the optional callback
+
+    // Save the new type to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`dynamic-chart-type-${chartKey}`, newType)
+    }
   }
   const handleDownload = () => {
     const downloadData = prepareDownloadData(
@@ -464,7 +485,7 @@ export function DynamicChart({
           x={cx}
           y={cy}
           textAnchor="middle"
-          fill="#333">
+          className="fill-foreground">
           {value}
         </text>
         <text
@@ -472,7 +493,9 @@ export function DynamicChart({
           y={cy}
           dy={20}
           textAnchor="middle"
-          fill="#999">{`(${(percent * 100).toFixed(2)}%)`}</text>
+          className="fill-muted-foreground">{`(${(percent * 100).toFixed(
+          2
+        )}%)`}</text>
       </g>
     )
   }
@@ -551,6 +574,7 @@ export function DynamicChart({
         return (
           <AreaChart
             data={data}
+            onClick={handleClick}
             {...commonProps}>
             <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
@@ -571,6 +595,7 @@ export function DynamicChart({
         return (
           <LineChart
             data={data}
+            onClick={handleClick}
             {...commonProps}>
             <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
@@ -590,6 +615,7 @@ export function DynamicChart({
         return (
           <BarChart
             data={data}
+            onClick={handleClick}
             {...commonProps}>
             <CartesianGrid />
             <XAxis dataKey={xAxisKey} />
@@ -676,122 +702,184 @@ export function DynamicChart({
   return (
     <Card
       className={cn(
-        'flex flex-col w-full h-full',
+        'group relative flex flex-col w-full h-full overflow-hidden',
+        'transition-all duration-500 ease-out',
+        'hover:shadow-2xl hover:shadow-primary/10',
+        'border border-border/50 hover:border-primary/30',
+        'bg-gradient-to-br from-background via-background to-primary/5',
+        'before:absolute before:inset-0 before:-translate-x-full',
+        'before:bg-gradient-to-r before:from-transparent before:via-primary/5 before:to-transparent',
+        'hover:before:translate-x-full before:transition-transform before:duration-1000',
         className,
         classNames?.card
       )}>
-      <CardHeader className={cn('relative', classNames?.cardHeader)}>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            {title && (
-              <CardTitle className={classNames?.cardTitle}>{title}</CardTitle>
-            )}
-            {description && (
-              <CardDescription className={classNames?.cardDescription}>
-                {description}
-              </CardDescription>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {zoom.enabled &&
-              zoom.showControls &&
-              currentChartType !== 'table' && (
-                <div className="flex items-center p-1 border rounded-md">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleZoomOut}
-                    disabled={zoomLevel <= (zoom.minZoom || 0.5)}
-                    className="w-8 h-8 p-0"
-                    title="Zoom Out">
-                    <ZoomOut className="w-4 h-4" />
-                  </Button>
-                  <span className="px-2 text-xs min-w-[3rem] text-center text-muted-foreground">
-                    {Math.round(zoomLevel * 100)}%
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleZoomIn}
-                    disabled={zoomLevel >= (zoom.maxZoom || 3)}
-                    className="w-8 h-8 p-0"
-                    title="Zoom In">
-                    <ZoomIn className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleZoomReset}
-                    className="w-8 h-8 p-0"
-                    title="Reset Zoom">
-                    <RotateCcw className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            {showTypeSelector && (
-              <Select
-                value={currentChartType}
-                onValueChange={handleChartTypeChange}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="area">Area</SelectItem>
-                  <SelectItem value="line">Line</SelectItem>
-                  <SelectItem value="bar">Bar</SelectItem>
-                  <SelectItem value="pie">Pie</SelectItem>
-                  <SelectItem value="donut">Donut</SelectItem>
-                  <SelectItem value="table">Table</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            {showDownload && (
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleDownload}
-                className="ml-1"
-                title="Download CSV">
-                <Download className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
+      {/* Animated border accent */}
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/30 via-primary/60 to-primary/30 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out" />
 
-      <CardContent
-        ref={containerRef}
-        className={cn('flex-1 p-1 w-full', classNames?.cardContent)}>
-        {currentChartType === 'table' ? (
-          renderTable()
-        ) : (
-          <div
-            style={{
-              height: typeof height === 'number' ? height : '100%',
-              width: '100%',
-              overflow: 'auto',
-            }}>
-            <ChartContainer
-              config={config}
-              className={cn('w-full h-full', classNames?.chart)}
-              style={{
-                width: chartDimensions.width,
-                height: chartDimensions.height,
-              }}>
-              {renderChart()}
-            </ChartContainer>
-          </div>
+      {/* Side accent line */}
+      <div
+        className={cn(
+          'absolute left-0 top-0 bottom-0 w-0.5 transition-all duration-500',
+          'bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20',
+          'group-hover:w-1 group-hover:from-primary/60 group-hover:via-primary group-hover:to-primary/60'
         )}
-      </CardContent>
+      />
 
-      {footer && (
-        <CardFooter
-          className={cn(
-            'flex justify-between text-xs text-muted-foreground',
-            classNames?.cardFooter
-          )}>
-          {footer}
-        </CardFooter>
+      {loading ? (
+        <>
+          <CardHeader
+            className={cn('relative pb-4 z-10', classNames?.cardHeader)}>
+            <div className="flex items-center justify-between">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-48 rounded-md" />
+                <Skeleton className="h-4 w-64 rounded-md" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-8 w-[120px] rounded-md" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent
+            ref={containerRef}
+            className={cn(
+              'flex-1 p-6 w-full relative z-10',
+              classNames?.cardContent
+            )}>
+            <div className="flex items-center justify-center h-full rounded-lg bg-muted/20">
+              <Skeleton className="h-full w-full rounded-lg" />
+            </div>
+          </CardContent>
+        </>
+      ) : (
+        <>
+          <CardHeader
+            className={cn(
+              'relative pb-4 border-b bg-gradient-to-r from-muted/5 to-transparent z-10 transition-colors duration-300',
+              classNames?.cardHeader
+            )}>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                {title && (
+                  <CardTitle
+                    className={cn(
+                      'text-lg font-semibold',
+                      classNames?.cardTitle
+                    )}>
+                    {title}
+                  </CardTitle>
+                )}
+                {description && (
+                  <CardDescription
+                    className={cn('text-sm mt-1', classNames?.cardDescription)}>
+                    {description}
+                  </CardDescription>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {zoom.enabled &&
+                  zoom.showControls &&
+                  currentChartType !== 'table' && (
+                    <div className="flex items-center p-1 border rounded-lg bg-background/50 backdrop-blur-sm shadow-sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel <= (zoom.minZoom || 0.5)}
+                        className="w-8 h-8 p-0 hover:bg-muted"
+                        title="Zoom Out">
+                        <ZoomOut className="w-4 h-4" />
+                      </Button>
+                      <span className="px-2 text-xs min-w-[3rem] text-center text-muted-foreground font-medium">
+                        {Math.round(zoomLevel * 100)}%
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel >= (zoom.maxZoom || 3)}
+                        className="w-8 h-8 p-0 hover:bg-muted"
+                        title="Zoom In">
+                        <ZoomIn className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleZoomReset}
+                        className="w-8 h-8 p-0 hover:bg-muted"
+                        title="Reset Zoom">
+                        <RotateCcw className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                {showTypeSelector && (
+                  <Select
+                    value={currentChartType}
+                    onValueChange={handleChartTypeChange}>
+                    <SelectTrigger className="bg-background/50 backdrop-blur-sm border-muted-foreground/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="area">Area</SelectItem>
+                      <SelectItem value="line">Line</SelectItem>
+                      <SelectItem value="bar">Bar</SelectItem>
+                      <SelectItem value="pie">Pie</SelectItem>
+                      <SelectItem value="donut">Donut</SelectItem>
+                      <SelectItem value="table">Table</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {showDownload && (
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={handleDownload}
+                    className="ml-1 hover:bg-muted bg-background/50 backdrop-blur-sm"
+                    title="Download CSV">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent
+            ref={containerRef}
+            className={cn(
+              'flex-1 p-4 w-full bg-gradient-to-b from-transparent to-muted/5',
+              classNames?.cardContent
+            )}>
+            {currentChartType === 'table' ? (
+              renderTable()
+            ) : (
+              <div
+                style={{
+                  height: typeof height === 'number' ? height : '100%',
+                  width: '100%',
+                  overflow: 'auto',
+                }}>
+                <ChartContainer
+                  config={config}
+                  className={cn('w-full h-full', classNames?.chart)}
+                  style={{
+                    width: chartDimensions.width,
+                    height: chartDimensions.height,
+                  }}>
+                  {renderChart()}
+                </ChartContainer>
+              </div>
+            )}
+          </CardContent>
+
+          {footer && (
+            <CardFooter
+              className={cn(
+                'flex justify-between text-xs text-muted-foreground',
+                classNames?.cardFooter
+              )}>
+              {footer}
+            </CardFooter>
+          )}
+        </>
       )}
     </Card>
   )
