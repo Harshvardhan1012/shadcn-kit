@@ -22,8 +22,7 @@ function AppProvider() {
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange>
+            enableSystem>
             <AlertProvider>
               <QueryClientWrapper>
                 <ClientSidebarProvider>

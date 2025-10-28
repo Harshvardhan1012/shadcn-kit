@@ -6,7 +6,7 @@ import {
 } from 'next-themes'
 
 // Define the available color themes
-export const colorThemes = ['default', 'red', 'rose', 'orange', 'green', 'blue']
+export const colorThemes = ['default', 'boldtech', 'amber', 'custom']
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
@@ -15,12 +15,11 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       forcedTheme={props.forcedTheme}
       enableSystem={props.enableSystem}
       enableColorScheme={true}
-      attribute={props.attribute || 'class'}
+      attribute={props.attribute || 'data-theme'}
       defaultTheme={props.defaultTheme || 'system'}
       themes={[
         'light',
         'dark',
-        'system',
         // Include combination themes (light/dark + color)
         ...colorThemes.map((color) => `light-${color}`),
         ...colorThemes.map((color) => `dark-${color}`),
