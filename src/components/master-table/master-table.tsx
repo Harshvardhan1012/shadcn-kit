@@ -1,11 +1,11 @@
-import type { ColumnDef, RowData } from '@tanstack/react-table'
+import type { RowData } from '@tanstack/react-table'
 import * as React from 'react'
-import DynamicForm from '../form/DynamicForm'
-import type { FormContextType } from '../form/FormContext'
+import { z } from 'zod'
 import { DataTableSkeleton } from './../data-table/data-table-skeleton'
 import SheetDemo from './../sheet/page'
+import { BulkUploadSheet } from './bulk-upload-sheet'
 import { FeatureFlagsProvider } from './feature-flags-provider'
-import { get_columns } from './get-columns'
+import { get_columns, type ColumnConfig } from './get-columns'
 import { Shell } from './shell'
 import { Table } from './table'
 
@@ -18,12 +18,71 @@ interface ActionConfig {
   onClick: () => void
 }
 
+// Form field types enum
+export enum FormFieldType {
+  TEXT = 'text',
+  PASSWORD = 'password',
+  EMAIL = 'email',
+  NUMBER = 'number',
+  FILE = 'file',
+  CHECKBOX = 'checkbox',
+  SWITCH = 'switch',
+  DATE = 'date',
+  DATETIME = 'datetime',
+  RADIO = 'radio',
+  SELECT = 'select',
+  TEXTAREA = 'textarea',
+  COMBOBOX = 'combobox',
+  MULTISELECT = 'multiselect',
+}
+
+// Excel column configuration with dropdown support
+export interface ExcelColumnConfig {
+  key: string
+  label: string
+  width?: number
+  type?: FormFieldType // Optional field type based on form field types
+  dropdownOptions?: Array<{
+    label: string // What user sees in Excel dropdown
+    value: string // What gets stored in your data
+  }>
+}
+
+export interface ExcelTemplate {
+  columns: ExcelColumnConfig[]
+}
+
+export interface ValidationError {
+  row: number
+  column: string
+  message: string
+  value?: any
+  expected?: string // For showing expected values (e.g., "HR, ENG, SAL" for enums)
+}
+
+export interface BulkUploadResult {
+  success: boolean
+  validRows: any[]
+  errors: ValidationError[]
+  totalRows: number
+  validCount: number
+  errorCount: number
+}
+
 interface DatatableConfig<TData extends RowData = RowData> {
-  columnsConfig: ColumnDef<TData, unknown>[]
+  columnsConfig: ColumnConfig[]
   columnActions: any[]
   tableConfig: any
   actionConfig: any
-  addItemData: any
+  addItemData?: any
+}
+// Bulk upload configuration
+export interface BulkUploadConfig {
+  template: ExcelTemplate
+  schema: z.ZodSchema<any>
+  onUpload: (data: any[]) => Promise<void>
+  buttonTitle?: string // Optional custom button title
+  emptyRowCount?: number // Number of empty rows to add (default: 10)
 }
 
 interface DynamicMasterProps<TData extends RowData = RowData> {
@@ -34,8 +93,11 @@ interface DynamicMasterProps<TData extends RowData = RowData> {
   onSheetOpenChange?: (open: boolean) => void
   isLoading?: boolean
   errorMessage?: string
-  onClickAddItem?: () => void,
+  onClickAddItem?: () => void
   children?: React.ReactNode
+  // Bulk upload props
+
+  bulkUploadConfig?: BulkUploadConfig
   //   columns: ColumnDef<TData, unknown>[]
 }
 
@@ -49,16 +111,25 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   errorMessage,
   onClickAddItem = () => {},
   children,
+  bulkUploadConfig,
 }: DynamicMasterProps<TData>) {
+  console.log(bulkUploadConfig)
+  const [bulkUploadSheetOpen, setBulkUploadSheetOpen] = React.useState(false)
+
   React.useEffect(() => {
     if (onSheetOpenChange) {
       onSheetOpenChange(sheetOpen)
     }
   }, [sheetOpen])
+
   const handleSheetOpenChange = (value: boolean) => {
     if (onSheetOpenChange) {
       onSheetOpenChange(value)
     }
+  }
+
+  const handleBulkUploadClick = () => {
+    setBulkUploadSheetOpen(true)
   }
 
   const tableRef = React.useRef<TableRefType>(null)
@@ -121,26 +192,34 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   }
 
   const itemData: ActionConfig = {
-    title: addItemData.title,
+    title: addItemData?.title,
     onClick: () => {
       handleSheetOpenChange(true)
       onClickAddItem()
     },
   }
 
+  const bulkUploadItemData: ActionConfig | undefined = bulkUploadConfig
+    ? {
+        title: bulkUploadConfig.buttonTitle || 'Bulk Upload',
+        onClick: handleBulkUploadClick,
+      }
+    : undefined
+
   return (
     <div className="relative flex flex-col w-full">
       <Shell
         variant="sidebar"
         className={`transition-all duration-300 w-full ${
-          sheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
+          sheetOpen || bulkUploadSheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
           <Table
             data={data}
             columns={columns}
             actionConfig={actionConfig}
-            addItem={itemData}
+            addItem={addItemData ? itemData : undefined}
+            bulkUploadItem={bulkUploadItemData}
             ref={tableRef}
             serverSideFiltering={serverSideFiltering}
             onFiltersChange={(filters, joinOperator) => {
@@ -162,6 +241,17 @@ export default function DynamicMaster<TData extends RowData = RowData>({
           }}>
           {children}
         </SheetDemo>
+      )}
+
+      {bulkUploadSheetOpen && bulkUploadConfig && (
+        <BulkUploadSheet
+          open={bulkUploadSheetOpen}
+          onOpenChange={setBulkUploadSheetOpen}
+          template={bulkUploadConfig.template as any}
+          schema={bulkUploadConfig.schema as any}
+          onUpload={bulkUploadConfig.onUpload as any}
+          emptyRowCount={bulkUploadConfig.emptyRowCount}
+        />
       )}
     </div>
   )

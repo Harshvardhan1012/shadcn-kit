@@ -1,12 +1,15 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useDataTable } from '@/hooks/use-data-table'
 import { getValidFilters } from '@/lib/data-table'
 import { applyFilter, getFilterFields } from '@/lib/filter'
 import { getFiltersStateParser } from '@/lib/parsers'
-import { TooltipContent } from '@radix-ui/react-tooltip'
 import { Expand, Shrink } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import * as React from 'react'
@@ -25,22 +28,27 @@ type TableProps = {
   pageCount?: number
   actionConfig?: any
   addItem?: any
+  bulkUploadItem?: any
   serverSideFiltering?: boolean // New flag for server-side filtering
   onFiltersChange?: (filters: any[], joinOperator: string) => void // Callback for server-side filtering
   onPaginationChange?: (page: number, perPage: number) => void // Callback for server-side pagination
 }
 
 export const Table = React.forwardRef(
-  ({
-    data,
-    columns,
-    pageCount = -1,
-    actionConfig,
-    addItem,
-    serverSideFiltering = false, // Default to client-side filtering
-    onFiltersChange,
-    onPaginationChange,
-  }: TableProps) => {
+  (
+    {
+      data,
+      columns,
+      pageCount = -1,
+      actionConfig,
+      addItem,
+      bulkUploadItem,
+      serverSideFiltering = false, // Default to client-side filtering
+      onFiltersChange,
+      onPaginationChange,
+    }: TableProps,
+    ref
+  ) => {
     const { enableAdvancedFilter } = useFeatureFlags()
     const [fullscreen, setFullscreen] = React.useState(false)
 
@@ -48,6 +56,14 @@ export const Table = React.forwardRef(
     const onExpandChange = () => {
       setFullscreen((value) => !value)
     }
+
+    const handleSheet = (value: any) => {
+      addvanceTableFilterRef?.current?.onSheetClose(value)
+    }
+
+    React.useImperativeHandle(ref, () => ({
+      handleSheet,
+    }))
 
     const filterColumns = getFilterFields(columns)
     const [filters] = useQueryState(
@@ -128,7 +144,6 @@ export const Table = React.forwardRef(
         onPaginationChange(page, perPage)
       }
     }, [page, perPage, serverSideFiltering, onPaginationChange])
-
     const { table } = useDataTable({
       data: paginatedData,
       columns,
@@ -142,7 +157,6 @@ export const Table = React.forwardRef(
       shallow: true,
       clearOnDefault: true,
       onPaginationChange: (updater) => {
-        console.log(updater)
         if (typeof updater === 'function') {
           const newPagination = updater({ pageIndex, pageSize })
           setPage(newPagination.pageIndex + 1)
@@ -162,6 +176,7 @@ export const Table = React.forwardRef(
               <DataTableAdvancedToolbar
                 table={table}
                 addItem={addItem}
+                bulkUploadItem={bulkUploadItem}
                 filteredData={filteredData}
                 ref={addvanceTableFilterRef}>
                 <Tooltip>
@@ -213,6 +228,7 @@ export const Table = React.forwardRef(
             <DataTableAdvancedToolbar
               table={table}
               addItem={addItem}
+              bulkUploadItem={bulkUploadItem}
               filteredData={filteredData}
               ref={addvanceTableFilterRef}>
               <Tooltip>
@@ -223,9 +239,7 @@ export const Table = React.forwardRef(
                     <Expand />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Expand</p>
-                </TooltipContent>
+                <TooltipContent>Expand</TooltipContent>
               </Tooltip>
               <DataTableFilterList table={table} />
               <DataTableSortList

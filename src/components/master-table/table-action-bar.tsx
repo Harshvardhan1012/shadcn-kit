@@ -125,9 +125,7 @@ export function TableActionBar({
               <X className="size-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent
-            sideOffset={10}
-            className="flex items-center gap-2 border bg-accent px-2 py-1 font-semibold text-foreground dark:bg-zinc-900 [&>span]:hidden">
+          <TooltipContent sideOffset={10}>
             <p>Clear selection</p>
             <kbd className="select-none rounded border bg-background px-1.5 py-px font-mono font-normal text-[0.7rem] text-foreground shadow-xs">
               <abbr

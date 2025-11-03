@@ -55,6 +55,7 @@
     "combobox": "^1.0.1",
     "command": "^1.1.1",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "install": "^0.13.0",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",

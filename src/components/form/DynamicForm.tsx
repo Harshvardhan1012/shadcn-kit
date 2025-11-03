@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import React, {
   forwardRef,
@@ -14,7 +15,6 @@ import {
   useForm,
 } from 'react-hook-form'
 import * as z from 'zod'
-import { cn } from '@/lib/utils'
 import { FormContext, type FormContextType } from './FormContext'
 
 // (assuming these are properly typed)
@@ -156,6 +156,7 @@ interface MultiselectFieldConfig
   placeholder?: string
   overflowBehavior?: 'wrap' | 'wrap-when-open' | 'cutoff'
   enableSearch?: boolean
+  creatable?: boolean // New prop to enable custom value creation
 }
 
 interface FileFieldConfig
@@ -468,7 +469,7 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                 return (
                   <FormItem
                     className={cn(
-                      'flex flex-row items-start space-x-3 space-y-0 rounded-md p-4',
+                      'flex flex-row items-start space-x-3 space-y-0 rounded-md',
                       className
                     )}>
                     <FormControl>
@@ -732,7 +733,7 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                         handleValueChange(fieldConfig, val)
                       }}
                       onBlur={() => handleBlur(fieldConfig, field.value)}
-                      onSearchChange={(searchValue) => 
+                      onSearchChange={(searchValue) =>
                         comboboxConfig.onSearchChange?.(name, searchValue)
                       }
                       placeholder={comboboxConfig.placeholder}
@@ -788,6 +789,11 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
               name={name as Path<T>}
               render={({ field }) => {
                 const multiselectConfig = fieldConfig as MultiselectFieldConfig
+                // When creatable is true, always show search input for typing
+                const shouldShowSearch = multiselectConfig.creatable
+                  ? true
+                  : multiselectConfig.enableSearch !== false
+
                 return (
                   <FormItem className={cn(className)}>
                     <FormLabel>{label}</FormLabel>
@@ -798,9 +804,10 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                           field.onChange(values as PathValue<T, Path<T>>)
                           handleValueChange(fieldConfig, values)
                         }}
-                        onSearchChange={(searchValue) => 
+                        onSearchChange={(searchValue) =>
                           multiselectConfig.onSearchChange?.(name, searchValue)
-                        }>
+                        }
+                        creatable={multiselectConfig.creatable}>
                         <MultiSelectTrigger className="w-full">
                           <MultiSelectValue
                             placeholder={multiselectConfig.placeholder}
@@ -812,10 +819,13 @@ const DynamicForm = forwardRef<FormContextType, DynamicFormProps>(
                         </MultiSelectTrigger>
                         <MultiSelectContent
                           search={
-                            multiselectConfig.enableSearch !== false
+                            shouldShowSearch
                               ? {
                                   placeholder:
-                                    multiselectConfig.searchPlaceholder,
+                                    multiselectConfig.searchPlaceholder ||
+                                    (multiselectConfig.creatable
+                                      ? 'Type and press Enter...'
+                                      : 'Search...'),
                                   emptyMessage: multiselectConfig.emptyMessage,
                                 }
                               : false

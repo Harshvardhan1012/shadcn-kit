@@ -34,6 +34,8 @@ type MultiSelectContextType = {
   items: Map<string, ReactNode>
   onItemAdded: (value: string, label: ReactNode) => void
   onSearchChange?: (searchValue: string) => void
+  creatable?: boolean
+  addCustomValue?: (value: string) => void
 }
 const MultiSelectContext = createContext<MultiSelectContextType | null>(null)
 
@@ -43,18 +45,45 @@ export function MultiSelect({
   defaultValues,
   onValuesChange,
   onSearchChange,
+  creatable = false,
 }: {
   children: ReactNode
   values?: string[]
   defaultValues?: string[]
   onValuesChange?: (values: string[]) => void
   onSearchChange?: (searchValue: string) => void
+  creatable?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [selectedValues, setSelectedValues] = useState(
     new Set<string>(values ?? defaultValues)
   )
-  const [items, setItems] = useState<Map<string, ReactNode>>(new Map())
+  const [items, setItems] = useState<Map<string, ReactNode>>(() => {
+    // Initialize items map with default/initial values when creatable is enabled
+    const initialItems = new Map<string, ReactNode>()
+    const initialValues = values ?? defaultValues
+    if (creatable && initialValues) {
+      initialValues.forEach((value) => {
+        initialItems.set(value, value)
+      })
+    }
+    return initialItems
+  })
+
+  // Sync items when values change from parent (for creatable mode)
+  useEffect(() => {
+    if (creatable && values) {
+      setItems((prev) => {
+        const newItems = new Map(prev)
+        values.forEach((value) => {
+          if (!newItems.has(value)) {
+            newItems.set(value, value)
+          }
+        })
+        return newItems
+      })
+    }
+  }, [values, creatable])
 
   function toggleValue(value: string) {
     const getNewSet = (prev: Set<string>) => {
@@ -69,6 +98,20 @@ export function MultiSelect({
     setSelectedValues(getNewSet)
     onValuesChange?.([...getNewSet(selectedValues)])
   }
+
+  const addCustomValue = useCallback(
+    (value: string) => {
+      if (value.trim() && !selectedValues.has(value)) {
+        const newSet = new Set(selectedValues)
+        newSet.add(value.trim())
+        setSelectedValues(newSet)
+        onValuesChange?.([...newSet])
+        // Also add to items map
+        setItems((prev) => new Map(prev).set(value.trim(), value.trim()))
+      }
+    },
+    [selectedValues, onValuesChange]
+  )
 
   const onItemAdded = useCallback((value: string, label: ReactNode) => {
     setItems((prev) => {
@@ -87,6 +130,8 @@ export function MultiSelect({
         items,
         onItemAdded,
         onSearchChange,
+        creatable,
+        addCustomValue,
       }}>
       <Popover
         open={open}
@@ -205,28 +250,26 @@ export function MultiSelectValue({
         shouldWrap && 'h-full flex-wrap',
         className
       )}>
-      {[...selectedValues]
-        .filter((value) => items.has(value))
-        .map((value) => (
-          <Badge
-            variant="outline"
-            data-selected-item
-            className="group flex items-center gap-1"
-            key={value}
-            onClick={
-              clickToRemove
-                ? (e) => {
-                    e.stopPropagation()
-                    toggleValue(value)
-                  }
-                : undefined
-            }>
-            {items.get(value)}
-            {clickToRemove && (
-              <XIcon className="size-2 text-muted-foreground group-hover:text-destructive" />
-            )}
-          </Badge>
-        ))}
+      {[...selectedValues].map((value) => (
+        <Badge
+          variant="outline"
+          data-selected-item
+          className="group flex items-center gap-1"
+          key={value}
+          onClick={
+            clickToRemove
+              ? (e) => {
+                  e.stopPropagation()
+                  toggleValue(value)
+                }
+              : undefined
+          }>
+          {items.get(value) || value}
+          {clickToRemove && (
+            <XIcon className="size-2 text-muted-foreground group-hover:text-destructive" />
+          )}
+        </Badge>
+      ))}
       <Badge
         style={{
           display: overflowAmount > 0 && !shouldWrap ? 'block' : 'none',
@@ -247,8 +290,23 @@ export function MultiSelectContent({
   search?: boolean | { placeholder?: string; emptyMessage?: string }
   children: ReactNode
 } & Omit<ComponentPropsWithoutRef<typeof Command>, 'children'>) {
-  const { onSearchChange } = useMultiSelectContext()
+  const { onSearchChange, creatable, addCustomValue } = useMultiSelectContext()
+  const [searchValue, setSearchValue] = useState('')
   const canSearch = typeof search === 'object' ? true : search
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && creatable && searchValue.trim()) {
+      e.preventDefault()
+      addCustomValue?.(searchValue.trim())
+      setSearchValue('')
+      // Keep the popover open for more entries
+    }
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value)
+    onSearchChange?.(value)
+  }
 
   return (
     <>
@@ -258,13 +316,17 @@ export function MultiSelectContent({
         </Command>
       </div>
       <PopoverContent className="min-w-[var(--radix-popover-trigger-width)] p-0">
-        <Command {...props}>
+        <Command
+          {...props}
+          shouldFilter={!creatable}>
           {canSearch ? (
             <CommandInput
               placeholder={
                 typeof search === 'object' ? search.placeholder : undefined
               }
-              onValueChange={onSearchChange}
+              value={searchValue}
+              onValueChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
             />
           ) : (
             <button
@@ -275,7 +337,20 @@ export function MultiSelectContent({
           <CommandList>
             {canSearch && (
               <CommandEmpty>
-                {typeof search === 'object' ? search.emptyMessage : undefined}
+                {creatable && searchValue.trim() ? (
+                  <div className="py-2 text-center text-sm">
+                    Press{' '}
+                    <kbd className="rounded border px-1.5 py-0.5 text-xs">
+                      Enter
+                    </kbd>{' '}
+                    to create "
+                    <span className="font-semibold">{searchValue}</span>"
+                  </div>
+                ) : typeof search === 'object' ? (
+                  search.emptyMessage
+                ) : (
+                  'No results found'
+                )}
               </CommandEmpty>
             )}
             {children}

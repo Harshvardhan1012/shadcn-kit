@@ -44,7 +44,9 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
 
-  const selectedOption = options.find((option) => option.value === value)
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value)
+  )
 
   const handleSelect = (currentValue: string) => {
     const newValue = currentValue === value ? '' : currentValue
@@ -118,7 +120,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
 
                   // Always include the selected option if it exists and isn't already in filtered results
                   const selectedOption = options.find(
-                    (option) => option.value === value
+                    (option) => String(option.value) === String(value)
                   )
                   if (
                     selectedOption &&
@@ -132,7 +134,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
                   return filteredOptions.map((option) => (
                     <CommandItem
                       key={String(option.value)}
-                      value={String(option.value)}
+                      value={String(option.label)}
                       disabled={option.disabled}
                       onSelect={() => handleSelect(String(option.value))}
                       className="flex items-center gap-2">
