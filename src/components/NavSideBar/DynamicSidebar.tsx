@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
-import React, { type ReactNode, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import React, { type ReactNode, useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from './../ui/button'
 import {
   Collapsible,
@@ -31,7 +31,7 @@ import { type SearchResult, SearchWrapper } from './search-wrapper'
 export interface SidebarSubItem {
   id: string | number
   title: string
-  icon?: React.ElementType
+  icon?: React.ElementType | string
   url?: string
   onClick?: () => void
   badge?: ReactNode | string | number
@@ -58,7 +58,7 @@ export interface SidebarHeaderConfig {
   logo?: {
     text?: string
     iconUrl?: string
-    iconComponent?: React.ElementType
+    iconComponent?: React.ElementType | string
   }
   user?: {
     name?: string
@@ -174,63 +174,94 @@ const renderHeaderAndFooter = (
   return renderFooterFromConfig(header as SidebarFooterConfig)
 }
 
-const renderIcon = (icon: React.ElementType | React.ReactNode) => {
+const renderIcon = (icon: React.ElementType | React.ReactNode | string) => {
   if (!icon) return null
   if (React.isValidElement(icon)) return icon
+  // Check if it's a string (URL or path)
+  if (typeof icon === 'string') {
+    return (
+      <img
+        src={icon}
+        alt="icon"
+        className="h-8 w-8 object-contain flex-shrink-0"
+      />
+    )
+  }
   const IconComponent = icon as React.ElementType
-  return <IconComponent className="h-4 w-4" />
+  return <IconComponent className="h-4 w-4 flex-shrink-0" />
 }
 
-const renderGroups = (groups: SidebarGroup[]) => (
-  <>
-    {groups &&
-      groups.length > 0 &&
-      groups.map((group) => (
-        <SidebarGroup
-          key={group.id}
-          className="p-0">
-          {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {group.items
-                .filter((item) => shouldShow(item.showIf))
-                .map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      asChild={!!item.url}
-                      onClick={item.onClick}
-                      tooltip={item.title}
-                      disabled={item.disabled}>
-                      {item.url ? (
-                        <Link to={item.url}>
-                          {item.icon && renderIcon(item.icon)}
-                          <span className="group-data-[collapsible=icon]:hidden">
-                            {item.title}
-                          </span>
-                          {item.badge && (
-                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+const renderGroups = (groups: SidebarGroup[]) => {
+  const location = useLocation()
+
+  return (
+    <>
+      {groups &&
+        groups.length > 0 &&
+        groups.map((group) => (
+          <SidebarGroup
+            key={group.id}
+            className="p-0">
+            {group.label && (
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items
+                  .filter((item) => shouldShow(item.showIf))
+                  .map((item) => {
+                    const isActive = item.url === location.pathname
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          asChild={!!item.url}
+                          onClick={item.onClick}
+                          tooltip={item.title}
+                          disabled={item.disabled}
+                          isActive={isActive}>
+                          {item.url ? (
+                            <Link
+                              to={item.url}
+                              replace={false}
+                              className={cn(
+                                'flex items-center gap-2 overflow-hidden',
+                                isActive &&
+                                  'bg-sidebar-primary text-sidebar-primary-foreground'
+                              )}>
+                              {item.icon && renderIcon(item.icon)}
+                              <span className="group-data-[collapsible=icon]:hidden truncate">
+                                {item.title}
+                              </span>
+                              {item.badge && (
+                                <SidebarMenuBadge>
+                                  {item.badge}
+                                </SidebarMenuBadge>
+                              )}
+                            </Link>
+                          ) : (
+                            <>
+                              {item.icon && renderIcon(item.icon)}
+                              <span className="group-data-[collapsible=icon]:hidden truncate">
+                                {item.title}
+                              </span>
+                              {item.badge && (
+                                <SidebarMenuBadge>
+                                  {item.badge}
+                                </SidebarMenuBadge>
+                              )}
+                            </>
                           )}
-                        </Link>
-                      ) : (
-                        <>
-                          {item.icon && renderIcon(item.icon)}
-                          <span className="group-data-[collapsible=icon]:hidden">
-                            {item.title}
-                          </span>
-                          {item.badge && (
-                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                          )}
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      ))}
-  </>
-)
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+    </>
+  )
+}
 
 const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
   return (
@@ -238,7 +269,7 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
       {config.logo && (
         <div className="flex items-center gap-2">
           {config.logo.iconUrl && (
-            <div className="relative h-6 w-6">
+            <div className="relative h-6 w-6 flex-shrink-0">
               <img
                 src={config.logo.iconUrl}
                 alt="Logo"
@@ -246,11 +277,18 @@ const renderHeaderFromConfig = (config: SidebarHeaderConfig) => {
               />
             </div>
           )}
-          {config.logo.iconComponent && (
-            <config.logo.iconComponent className="h-6 w-6" />
-          )}
+          {config.logo.iconComponent &&
+            (typeof config.logo.iconComponent === 'string' ? (
+              <img
+                src={config.logo.iconComponent}
+                alt="Logo"
+                className="h-6 w-6 object-contain flex-shrink-0"
+              />
+            ) : (
+              <config.logo.iconComponent className="h-6 w-6 flex-shrink-0" />
+            ))}
           {config.logo.text && (
-            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">
+            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden truncate">
               {config.logo.text}
             </span>
           )}
@@ -319,16 +357,45 @@ interface DynamicSidebarProps {
   isLoading?: boolean
 }
 
+// LocalStorage key for storing sidebar state
+const SIDEBAR_STATE_KEY = 'sidebar-collapsible-state'
+
+// Helper functions for localStorage
+const loadSidebarState = (): Record<string | number, boolean> => {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_STATE_KEY)
+    return saved ? JSON.parse(saved) : {}
+  } catch (error) {
+    console.error('Error loading sidebar state:', error)
+    return {}
+  }
+}
+
+const saveSidebarState = (state: Record<string | number, boolean>) => {
+  try {
+    localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state))
+  } catch (error) {
+    console.error('Error saving sidebar state:', error)
+  }
+}
+
 export function DynamicSidebar({
   config,
   enableSearch = true,
   isLoading = false,
 }: DynamicSidebarProps) {
+  // Load initial state from localStorage
   const [openItems, setOpenItems] = useState<Record<string | number, boolean>>(
-    {}
+    () => loadSidebarState()
   )
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const { state } = useSidebar()
+  const location = useLocation()
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    saveSidebarState(openItems)
+  }, [openItems])
 
   const searchSidebarItems = (query: string) => {
     if (!query.trim()) {
@@ -382,7 +449,12 @@ export function DynamicSidebar({
   }
 
   const isCollapsibleOpen = (id: string | number, defaultOpen?: boolean) => {
-    return openItems[id] === undefined ? !!defaultOpen : openItems[id]
+    // If the item has been explicitly set (exists in openItems), use that value
+    if (openItems[id] !== undefined) {
+      return openItems[id]
+    }
+    // Otherwise, use the defaultOpen prop
+    return !!defaultOpen
   }
 
   const renderMenuItem = (item: SidebarItem) => {
@@ -391,10 +463,15 @@ export function DynamicSidebar({
       shouldShow(subItem.showIf)
     )
 
+    const isActive = item.url === location.pathname
+    const hasActiveSubItem = visibleSubItems?.some(
+      (subItem) => subItem.url === location.pathname
+    )
+
     const menuButtonContent = (
       <>
         {item.icon && renderIcon(item.icon)}
-        <span className="group-data-[collapsible=icon]:hidden">
+        <span className="group-data-[collapsible=icon]:hidden truncate flex-1 text-left">
           {item.title}
         </span>
         {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
@@ -410,40 +487,56 @@ export function DynamicSidebar({
           onOpenChange={() => toggleCollapsible(item.id)}
           className="w-full">
           <SidebarMenuItem>
-            <CollapsibleTrigger>
-              <SidebarMenuButton tooltip={item.title}>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={hasActiveSubItem}
+                className="w-full">
                 {menuButtonContent}
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarMenuSub>
-                {visibleSubItems.map((subItem) => (
-                  <SidebarMenuSubItem key={subItem.id}>
-                    {subItem.url ? (
-                      <Link to={subItem.url}>
-                        <SidebarMenuSubButton onClick={subItem.onClick}>
-                          {renderIcon(subItem.icon)}
-                          <span className="group-data-[collapsible=icon]:hidden">
+                {visibleSubItems.map((subItem) => {
+                  const isSubItemActive = subItem.url === location.pathname
+                  return (
+                    <SidebarMenuSubItem key={subItem.id}>
+                      {subItem.url ? (
+                        <SidebarMenuSubButton
+                          asChild
+                          onClick={subItem.onClick}
+                          isActive={isSubItemActive}
+                          className="w-full">
+                          <Link
+                            to={subItem.url}
+                            className="flex items-center gap-2 overflow-hidden">
+                            {subItem.icon && renderIcon(subItem.icon)}
+                            <span className="group-data-[collapsible=icon]:hidden truncate flex-1 text-left">
+                              {subItem.title}
+                            </span>
+                            {subItem.badge && (
+                              <SidebarMenuBadge>
+                                {subItem.badge}
+                              </SidebarMenuBadge>
+                            )}
+                          </Link>
+                        </SidebarMenuSubButton>
+                      ) : (
+                        <SidebarMenuSubButton
+                          onClick={subItem.onClick}
+                          className="w-full">
+                          {subItem.icon && renderIcon(subItem.icon)}
+                          <span className="group-data-[collapsible=icon]:hidden truncate flex-1 text-left">
                             {subItem.title}
                           </span>
                           {subItem.badge && (
                             <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
                           )}
                         </SidebarMenuSubButton>
-                      </Link>
-                    ) : (
-                      <SidebarMenuSubButton onClick={subItem.onClick}>
-                        {renderIcon(subItem.icon)}
-                        <span className="group-data-[collapsible=icon]:hidden">
-                          {subItem.title}
-                        </span>
-                        {subItem.badge && (
-                          <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
-                        )}
-                      </SidebarMenuSubButton>
-                    )}
-                  </SidebarMenuSubItem>
-                ))}
+                      )}
+                    </SidebarMenuSubItem>
+                  )
+                })}
               </SidebarMenuSub>
             </CollapsibleContent>
           </SidebarMenuItem>
@@ -454,17 +547,26 @@ export function DynamicSidebar({
     return (
       <SidebarMenuItem key={item.id}>
         {item.url ? (
-          <Link to={item.url}>
+          <Link
+            to={item.url}
+            replace={false}
+            className={cn(
+              'flex items-center gap-2 overflow-hidden',
+              isActive && 'text-sidebar-primary-foreground'
+            )}>
             <SidebarMenuButton
               onClick={item.onClick}
-              tooltip={item.title}>
+              tooltip={item.title}
+              isActive={isActive}
+              className="w-full">
               {menuButtonContent}
             </SidebarMenuButton>
           </Link>
         ) : (
           <SidebarMenuButton
             onClick={item.onClick}
-            tooltip={item.title}>
+            tooltip={item.title}
+            className="w-full">
             {menuButtonContent}
           </SidebarMenuButton>
         )}
@@ -503,7 +605,9 @@ export function DynamicSidebar({
         )}
 
         {config.groups.map((group) => (
-          <SidebarGroup key={group.id}>
+          <SidebarGroup
+            key={group.id}
+            className="w-full">
             {group.label && (
               <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             )}

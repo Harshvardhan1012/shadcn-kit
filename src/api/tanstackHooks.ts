@@ -1,4 +1,4 @@
-import type { IAPIResponse } from "@/types/response"
+import type { IAPIResponse, IAPIError } from "@/types/apiResponse"
 import {
   useInfiniteQuery,
   useMutation,
@@ -17,7 +17,7 @@ import API, { type ApiCallOptions } from "./apiClient"
 // Generic reusable useQuery hook
 export function useGenericQuery<
   TQueryFnData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey
 >(
@@ -54,7 +54,7 @@ export function useGenericQueries<TData = unknown, TError = Error>(
 // Generic reusable useInfiniteQuery hook
 export function useGenericInfiniteQuery<
   TQueryFnData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
   TPageParam = number
@@ -76,7 +76,7 @@ export function useGenericInfiniteQuery<
 // Generic reusable useMutation hook
 export function useGenericMutation<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = void,
   TContext = unknown
 >(
@@ -95,7 +95,7 @@ export function useGenericMutation<
 // Generic reusable mutation hook with mutation key
 export function useGenericMutationWithKey<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = void,
   TContext = unknown
 >(
@@ -116,7 +116,7 @@ export function useGenericMutationWithKey<
 // Factory function for creating typed mutation hooks
 export function createGenericMutation<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = void,
   TContext = unknown
 >(
@@ -141,7 +141,7 @@ export function createGenericMutation<
 }
 
 // Generic hook for multiple mutations (similar to useQueries but for mutations)
-export function useGenericMutations<TData = unknown, TError = unknown>(
+export function useGenericMutations<TData = unknown, TError = IAPIError>(
   mutations: Array<{
     mutationKey?: readonly string[]
     mutationFn: MutationFunction<TData, any>
@@ -166,7 +166,7 @@ export function useGenericMutations<TData = unknown, TError = unknown>(
 // ============================================================================
 
 // API-integrated useQuery hook
-export function useApiQuery<TData = unknown, TError = unknown>(
+export function useApiQuery<TData = unknown, TError = IAPIError>(
   queryKey: QueryKey,
   apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" },
   options?: Omit<
@@ -190,7 +190,7 @@ export function useApiQuery<TData = unknown, TError = unknown>(
 }
 
 // API-integrated useQueries hook
-export function useApiQueries<TData = unknown, TError = unknown>(
+export function useApiQueries<TData = unknown, TError = IAPIError>(
   queries: Array<{
     queryKey: QueryKey
     apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" }
@@ -218,7 +218,7 @@ export function useApiQueries<TData = unknown, TError = unknown>(
 }
 
 // API-integrated useInfiniteQuery hook
-export function useApiInfiniteQuery<TData = unknown, TError = unknown>(
+export function useApiInfiniteQuery<TData = unknown, TError = IAPIError>(
   queryKey: QueryKey,
   apiOptions: Omit<ApiCallOptions, "method"> & { method?: "GET" },
   options: Omit<
@@ -252,7 +252,7 @@ export function useApiInfiniteQuery<TData = unknown, TError = unknown>(
 // API-integrated useMutation hook for POST requests
 export function useApiMutation<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = unknown
 >(
   apiOptions: Omit<ApiCallOptions, "data">,
@@ -303,7 +303,7 @@ export function useApiMutation<
 }
 
 // API-integrated hook for multiple mutations
-export function useApiMutations<TData = unknown, TError = unknown>(
+export function useApiMutations<TData = unknown, TError = IAPIError>(
   mutations: Array<{
     mutationKey?: readonly string[]
     apiOptions: Omit<ApiCallOptions, "data">
@@ -359,7 +359,7 @@ export function useApiMutations<TData = unknown, TError = unknown>(
 }
 
 // Convenience hooks for specific HTTP methods
-export function useApiGet<TData = unknown, TError = unknown>(
+export function useApiGet<TData = unknown, TError = IAPIError>(
   queryKey: QueryKey,
   url: string,
   apiOptions?: Omit<ApiCallOptions, "url" | "method">,
@@ -377,7 +377,7 @@ export function useApiGet<TData = unknown, TError = unknown>(
 
 export function useApiPost<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = unknown
 >(
   url: string,
@@ -419,7 +419,7 @@ export function useApiPost<
 
 export function useApiPut<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = unknown
 >(
   url: string,
@@ -461,7 +461,7 @@ export function useApiPut<
 
 export function useApiPatch<
   TData = unknown,
-  TError = unknown,
+  TError = IAPIError,
   TVariables = unknown
 >(
   url: string,
@@ -501,7 +501,7 @@ export function useApiPatch<
   )
 }
 
-export function useApiDelete<TData = unknown, TError = unknown>(
+export function useApiDelete<TData = unknown, TError = IAPIError>(
   url: string,
   invalidateKeys?: QueryKey | QueryKey[], // Keys to invalidate on success
   apiOptions?: Omit<ApiCallOptions, "url" | "method" | "data">,

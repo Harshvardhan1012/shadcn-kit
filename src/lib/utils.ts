@@ -5,14 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-let sheetOpen: boolean = false // Global sheet open state
-
-export function setSheetOpen(value: boolean) {
-  sheetOpen = value
-}
-
-export function getSheetOpen() {
-  return sheetOpen
+// Helper function to format date
+export const formatDate = (dateString: string) => {
+  try {
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "UTC", // force UTC, no shift
+    })
+  } catch {
+    return dateString
+  }
 }
 
 let buttonClickHandler:
@@ -125,27 +132,11 @@ export function invokeFormFieldOnChangeHandler(
   }
 }
 
-type FormField = {
-  name: string
-  [key: string]: any
-}
-
-type FormSection = {
-  id: string
-  fields: FormField[]
-  [key: string]: any
-}
-
-type FormConfig = {
-  sections: FormSection[]
-  [key: string]: any
-}
-
 export function updateFormFieldConfig(
-  formConfig,
-  sectionId,
-  fieldName,
-  updates
+  formConfig: { sections: any[] },
+  sectionId: any,
+  fieldName: any,
+  updates: { config: any }
 ) {
   const updatedConfig = {
     ...formConfig,
@@ -174,7 +165,6 @@ export function updateFormFieldConfig(
 }
 
 export function updateFormConfig(config: any, updates: any): any {
-  debugger
   return {
     ...config,
     ...updates,
@@ -214,109 +204,7 @@ export function autoMapRowToFormFields(
 ): Record<string, any> {
   console.log("🔍 autoMapRowToFormFields called with:", { row, formConfig })
 
-  if (!formConfig?.sections || !row) {
-    console.warn("❌ Invalid formConfig or row data for auto-mapping", {
-      formConfig,
-      row,
-    })
-    return {}
-  }
-
   const formData: Record<string, any> = {}
-  let fieldsMapped = 0
-  let fieldsSkipped: string[] = []
-
-  // Extract all field names from all sections
-  formConfig.sections.forEach((section: any, sectionIndex: number) => {
-    console.log(`🔍 Processing section ${sectionIndex}:`, section)
-
-    if (section.fields) {
-      section.fields.forEach((field: any, fieldIndex: number) => {
-        const fieldName = field.name
-        console.log(`🔍 Processing field ${fieldIndex}: ${fieldName}`, field)
-
-        if (fieldName && row.hasOwnProperty(fieldName)) {
-          let value = row[fieldName]
-          console.log(`✅ Found field ${fieldName} in row data:`, value)
-
-          // Handle different field types and data transformations
-          switch (field.type) {
-            case "subform":
-              // For subforms, the value should be an array of objects
-              if (Array.isArray(value)) {
-                formData[fieldName] = value
-                console.log(
-                  `✅ Mapped subform ${fieldName} with ${value.length} entries:`,
-                  value
-                )
-              } else {
-                console.warn(
-                  `⚠️ Subform ${fieldName} expected array but got:`,
-                  typeof value,
-                  value
-                )
-                formData[fieldName] = []
-              }
-              break
-            case "boolean":
-            case "switch":
-              value = Boolean(value)
-              formData[fieldName] = value
-              break
-            case "number":
-              value = value ? Number(value) : ""
-              formData[fieldName] = value
-              break
-            case "date":
-            case "datetime":
-              // Keep date as string for form handling
-              value = value || ""
-              formData[fieldName] = value
-              break
-            default:
-              // For text, textarea, select, etc.
-              value = value || ""
-              formData[fieldName] = value
-          }
-
-          fieldsMapped++
-          console.log(`✅ Mapped ${fieldName} = ${formData[fieldName]}`)
-        } else if (fieldName) {
-          // Set default value if field doesn't exist in row
-          let defaultValue
-          switch (field.type) {
-            case "boolean":
-            case "switch":
-              defaultValue = false
-              break
-            case "subform":
-              defaultValue = []
-              break
-            default:
-              defaultValue = ""
-          }
-          formData[fieldName] = defaultValue
-          fieldsSkipped.push(fieldName)
-          console.log(
-            `⚠️ Field ${fieldName} not found in row, using default:`,
-            defaultValue
-          )
-        }
-      })
-    }
-  })
-
-  console.log("🔄 Auto-mapped row to form fields:", {
-    originalRow: row,
-    mappedFormData: formData,
-    formConfig: formConfig.id || "unknown",
-  })
-
-  console.log(`📊 Mapping Summary:`, {
-    totalFieldsMapped: fieldsMapped,
-    fieldsSkipped: fieldsSkipped,
-    finalFormData: formData,
-  })
 
   return formData
 }
@@ -538,19 +426,19 @@ export function setupMasterPageHandlersAuto(
 
     if (type === "edit" || type === "view") {
       // Validate table-form alignment (only in development)
-      if (process.env.NODE_ENV === "development") {
-        validateTableFormAlignment(row, formConfig)
-      }
+      // if (process.env.NODE_ENV === "development") {
+      //   validateTableFormAlignment(row, formConfig)
+      // }
 
       // Automatically map row data to form fields
       const formValue = autoMapRowToFormFields(row, formConfig)
       console.log("Auto-mapped table row to form:", { row, formValue, type })
 
-      setCurrentFormConfig((prev) => ({
-        ...prev,
-        type: type, // Set the correct type (edit or view)
-        defaultValue: formValue,
-      }))
+      // setCurrentFormConfig((prev) => ({
+      //   ...prev,
+      //   type: type, // Set the correct type (edit or view)
+      //   defaultValue: formValue,
+      // }))
     }
   })
 }
@@ -563,7 +451,6 @@ export function setupMasterPageHandlersAuto(
  * @param onSubmit - Optional custom submit handler
  */
 export function setupMasterPageHandlers(
-  formConfig: any,
   setCurrentFormConfig: (updater: (prev: any) => any) => void,
   fieldMapping: (row: any) => Record<string, any>,
   onSubmit?: (values: any) => void
@@ -611,14 +498,14 @@ export function setupMasterPageHandlers(
 }
 
 export function updateButtons(buttons: any, updates: any) {
-  const ids = updates.map((item) => item.id)
+  const ids = updates.map((item: { id: any }) => item.id)
 
-  return buttons.map((item) => {
+  return buttons.map((item: { id: any }) => {
     const id = item.id
     if (ids.indexOf(id) > -1) {
       return {
         ...item,
-        ...updates.find((uitem) => uitem.id === id),
+        ...updates.find((uitem: { id: any }) => uitem.id === id),
       }
     } else {
       return item
