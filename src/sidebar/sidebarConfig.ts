@@ -22,6 +22,10 @@ const Table = lazy(() =>
   }))
 )
 
+const CustomTable = lazy(() =>
+  import("../app/custom-table/page")
+)
+
 export const sidebarConfig: SidebarConfig = {
   groups: [
     {
@@ -63,6 +67,13 @@ export const sidebarConfig: SidebarConfig = {
               component: Table,
               icon: Table2,
             },
+            {
+              id: "custom_table",
+              title: "Custom Table",
+              url: AppRoutes.CUSTOM_TABLE,
+              component: CustomTable,
+              icon: Table2,
+            }
           ],
         },
         {

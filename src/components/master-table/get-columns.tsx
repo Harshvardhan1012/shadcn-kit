@@ -242,7 +242,7 @@ const get_render = (column: any, details: any) => {
   // icons = { 'active': ActiveIcon, 'inactive': InactiveIcon, 'primary': DefaultIcon }
   // If field value is 'active', shows ActiveIcon, otherwise falls back to 'primary' icon
   if (icons) {
-    const Icon = icons[fieldValue] || icons['primary']
+    const Icon = icons.find((e: any) => e.value === fieldValue)?.icon || icons.find((e: any) => e.value === 'primary')?.icon
     icon_render = <Icon className="py-1 [&>svg]:size-3.5" />
   }
 

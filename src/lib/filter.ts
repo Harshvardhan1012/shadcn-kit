@@ -15,7 +15,7 @@ export function applyFilter(data: any, filter: any) {
         if (operator === "isNotEmpty") return !!data[id];
     }
     if (variant === "number") {
-        if (operator === "eq") return data[id] === value;
+        if (operator === "eq") return data[id] == value;
         if (operator === "ne") return data[id] !== value;
         if (operator === "lt") return data[id] < value;
         if (operator === "lte") return data[id] <= value;

@@ -1,4 +1,4 @@
-import type { IAPIResponse, IAPIError } from "@/types/apiResponse"
+import type { IAPIResponse, IAPIError } from "@/types/api-response"
 import {
   useInfiniteQuery,
   useMutation,

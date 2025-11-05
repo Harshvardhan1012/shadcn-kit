@@ -1,12 +1,8 @@
 'use client'
-import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { Badge } from '@/components/ui/badge'
-import type { Column, ColumnDef } from '@tanstack/react-table'
-import { TouchpadOff } from 'lucide-react'
 import { todos } from './data'
 import DynamicMaster from '@/components/master-table/master-table'
 import datatableConfig from './table_config'
-import { exampleFormConfig, formSchema } from './form_config'
+import { exampleFormConfig } from './form_config'
 import { useEffect, useRef, useState } from 'react'
 import {
   setActionClickHandler,
@@ -17,8 +13,8 @@ import {
   setupMasterPageHandlersAuto,
   updateFormFieldConfig,
 } from '@/lib/utils'
-import DynamicForm from '@/components/form/DynamicForm'
 import type { FormContextType } from '@/components/form/FormContext'
+import columnConfig from './column_config'
 
 interface Todos {
   id: number
@@ -28,84 +24,6 @@ interface Todos {
 }
 
 const TableExample = () => {
-  const columns: ColumnDef<Todos>[] = [
-    {
-      accessorKey: 'id',
-      header: ({ column }: { column: Column<Todos, unknown> }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="ID"
-        />
-      ),
-      enableColumnFilter: true,
-      meta: {
-        label: 'ID',
-        placeholder: 'Enter ID...',
-        variant: 'number',
-      },
-    },
-    {
-      accessorKey: 'todo',
-      header: ({ column }: { column: Column<Todos, unknown> }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Todo"
-        />
-      ),
-      enableColumnFilter: true,
-      filterFn: 'includesString',
-      meta: {
-        label: 'Todo',
-        placeholder: 'Search todos...',
-        variant: 'text',
-        icon: TouchpadOff,
-      },
-    },
-    {
-      accessorKey: 'completed',
-      header: ({ column }: { column: Column<Todos, unknown> }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Completed"
-        />
-      ),
-      size: 100,
-      enableColumnFilter: true,
-      filterFn: 'equals',
-      cell: ({ getValue }) => (
-        <Badge variant={getValue<boolean>() ? 'default' : 'secondary'}>
-          {getValue<boolean>() ? 'Yes' : 'No'}
-        </Badge>
-      ),
-      meta: {
-        label: 'Status',
-        variant: 'select',
-        options: [
-          { value: 'true', label: 'Completed' },
-          { value: 'false', label: 'Pending' },
-        ],
-      },
-    },
-    {
-      accessorKey: 'userId',
-      accessorFn: (row) => row.userId,
-      header: ({ column }: { column: Column<Todos, unknown> }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="User ID"
-        />
-      ),
-      size: 100,
-      enableColumnFilter: true,
-      filterFn: 'equals',
-      meta: {
-        label: 'User ID',
-        placeholder: 'Enter user ID...',
-        variant: 'number',
-      },
-    },
-  ]
-
   const [config, setConfig] = useState(exampleFormConfig)
 
   useEffect(() => {
@@ -235,7 +153,7 @@ const TableExample = () => {
         data={data}
         datatableConfig={{
           ...datatableConfig,
-          columnsConfig: columns,
+          columnsConfig: columnConfig ,
         }}
         sheetOpen={sheetOpen}
         onSheetOpenChange={setSheetOpen}

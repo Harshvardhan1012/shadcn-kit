@@ -11,5 +11,6 @@ export enum AppRoutes {
   LOGIN = "/login",
   LOGOUT = "/logout",
   UNAUTHORIZED = "/unauthorized",
+  CUSTOM_TABLE = "/custom-table",
   // Add more routes as needed
 }
