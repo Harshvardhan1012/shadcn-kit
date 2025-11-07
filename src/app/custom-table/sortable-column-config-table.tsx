@@ -1,5 +1,10 @@
 'use client'
 
+import type {
+  ColumnConfig,
+  ColumnConfigOptions,
+} from '@/components/master-table/get-columns'
+import { SortableTable } from '@/components/master-table/sortable-table'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -10,32 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Sortable,
-  SortableContent,
-  SortableItem,
-  SortableItemHandle,
-  SortableOverlay,
-} from '@/components/ui/sortable'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table'
-import { GripVertical } from 'lucide-react'
+import { type ColumnDef } from '@tanstack/react-table'
 import React, { useState } from 'react'
-import type { ColumnConfig, ColumnConfigOptions } from './columns_config'
 import { IconsManagerDialog } from './icons-manager-dialog'
 import { OptionsDialog } from './options-dialog'
 
@@ -50,7 +31,6 @@ interface SortableColumnConfigTableProps {
 
 const variantOptions = [
   { value: 'text', label: 'Text' },
-  { value: 'select', label: 'Select' },
   { value: 'number', label: 'Number' },
   { value: 'dateRange', label: 'Date Range' },
   { value: 'switch', label: 'Switch' },
@@ -58,15 +38,7 @@ const variantOptions = [
   { value: 'range', label: 'Range' },
 ]
 
-const textSizeOptions = [
-  { value: 'small', label: 'Small' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'large', label: 'Large' },
-]
-
 const valueTypeOptions = [
-  { value: 'string', label: 'String' },
-  { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
   { value: 'array', label: 'Array' },
 ]
@@ -75,7 +47,6 @@ export function SortableColumnConfigTable({
   columns,
   onColumnsChange,
 }: SortableColumnConfigTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
   const [tableData, setTableData] = useState<ColumnConfigTableData[]>(
     columns.map((col, idx) => ({
       ...col,
@@ -108,16 +79,6 @@ export function SortableColumnConfigTable({
   const tableCols = React.useMemo<ColumnDef<ColumnConfigTableData, unknown>[]>(
     () => [
       {
-        id: 'drag-handle',
-        header: '',
-        cell: () => (
-          <SortableItemHandle className="cursor-grab active:cursor-grabbing">
-            <GripVertical className="h-4 w-4 text-gray-400" />
-          </SortableItemHandle>
-        ),
-        size: 40,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
-      {
         accessorKey: 'field',
         header: 'Field',
         cell: ({ row }) => (
@@ -132,7 +93,7 @@ export function SortableColumnConfigTable({
             className="w-full rounded border px-2 py-1 text-sm"
           />
         ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         accessorKey: 'header',
         header: 'Header',
@@ -148,7 +109,7 @@ export function SortableColumnConfigTable({
             className="w-full rounded border px-2 py-1 text-sm"
           />
         ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'sortable',
         header: 'Sortable',
@@ -166,7 +127,7 @@ export function SortableColumnConfigTable({
           />
         ),
         size: 60,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'isHide',
         header: 'Hide',
@@ -184,25 +145,7 @@ export function SortableColumnConfigTable({
           />
         ),
         size: 50,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
-      {
-        id: 'hideable',
-        header: 'Hideable',
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.original.options?.hideable ?? false}
-            onCheckedChange={(checked) =>
-              handleUpdateColumn(row.original.id, {
-                options: {
-                  ...row.original.options,
-                  hideable: checked as boolean,
-                },
-              })
-            }
-          />
-        ),
-        size: 60,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'variant',
         header: 'Variant',
@@ -231,36 +174,7 @@ export function SortableColumnConfigTable({
             </SelectContent>
           </Select>
         ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
-      {
-        id: 'textSize',
-        header: 'Text Size',
-        cell: ({ row }) => (
-          <Select
-            value={row.original.options?.text_size ?? 'medium'}
-            onValueChange={(value) =>
-              handleUpdateColumn(row.original.id, {
-                options: {
-                  ...row.original.options,
-                  text_size: value as ColumnConfigOptions['text_size'],
-                },
-              })
-            }>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {textSizeOptions.map((opt) => (
-                <SelectItem
-                  key={opt.value}
-                  value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'valueType',
         header: 'Value Type',
@@ -289,7 +203,7 @@ export function SortableColumnConfigTable({
             </SelectContent>
           </Select>
         ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'isLongtext',
         header: 'Long Text',
@@ -307,51 +221,13 @@ export function SortableColumnConfigTable({
           />
         ),
         size: 70,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
-      {
-        id: 'isSwitch',
-        header: 'Is Switch',
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.original.options?.is_switch ?? false}
-            onCheckedChange={(checked) =>
-              handleUpdateColumn(row.original.id, {
-                options: {
-                  ...row.original.options,
-                  is_switch: checked as boolean,
-                },
-              })
-            }
-          />
-        ),
-        size: 70,
-      } as ColumnDef<ColumnConfigTableData, unknown>,
-      {
-        id: 'switchValue',
-        header: 'Switch Value',
-        cell: ({ row }) => (
-          <Input
-            type="text"
-            value={row.original.options?.switch_value ?? ''}
-            onChange={(e) =>
-              handleUpdateColumn(row.original.id, {
-                options: {
-                  ...row.original.options,
-                  switch_value: e.target.value,
-                },
-              })
-            }
-            placeholder="Switch value"
-            className="w-full rounded border px-2 py-1 text-sm"
-          />
-        ),
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'selectValues',
         header: 'Options',
         cell: ({ row }) => {
           const variant = row.original.options?.variant
-          if (variant !== 'select' && variant !== 'multiSelect') {
+          if (variant !== 'multiSelect') {
             return <span className="text-xs text-gray-400">N/A</span>
           }
           return (
@@ -365,11 +241,15 @@ export function SortableColumnConfigTable({
             </Button>
           )
         },
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
       {
         id: 'icons',
         header: 'Icons',
         cell: ({ row }) => {
+          const variant = row.original.options?.variant
+          if (variant !== 'multiSelect') {
+            return <span className="text-xs text-gray-400">N/A</span>
+          }
           return (
             <button
               onClick={() => {
@@ -377,11 +257,15 @@ export function SortableColumnConfigTable({
                 setIconsOpen(true)
               }}
               className="rounded bg-purple-100 px-2 py-1 text-xs text-purple-700 hover:bg-purple-200">
-              Manage ({Object.keys(row.original.options?.icons || {}).length})
+              Manage (
+              {Array.isArray(row.original.options?.icons)
+                ? row.original.options.icons.length
+                : 0}
+              )
             </button>
           )
         },
-      } as ColumnDef<ColumnConfigTableData, unknown>,
+      },
     ],
     [
       tableData,
@@ -392,78 +276,13 @@ export function SortableColumnConfigTable({
     ]
   )
 
-  const table = useReactTable({
-    data: tableData,
-    columns: tableCols,
-    state: {
-      sorting,
-    },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
-
   return (
     <div className="w-full">
-      <Sortable
-        value={tableData}
-        onValueChange={handleColumnsReorder}
-        getItemValue={(item) => item.id}
-        orientation="vertical">
-        <div className="rounded-md border">
-          <SortableContent>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        style={{ width: header.getSize() }}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <SortableItem
-                    key={row.id}
-                    value={row.original.id}
-                    asChild>
-                    <TableRow className="cursor-move hover:bg-gray-50">
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </SortableItem>
-                ))}
-              </TableBody>
-            </Table>
-          </SortableContent>
-        </div>
-        <SortableOverlay>
-          {({ value }) => {
-            const item = tableData.find((col) => col.id === value)
-            return item ? (
-              <div className="rounded border bg-white p-2 shadow-lg">
-                {item.header} ({item.field})
-              </div>
-            ) : null
-          }}
-        </SortableOverlay>
-      </Sortable>
+      <SortableTable
+        data={tableData}
+        columns={tableCols}
+        onDataChange={handleColumnsReorder}
+      />
 
       {selectedRowId && (
         <OptionsDialog
@@ -475,6 +294,13 @@ export function SortableColumnConfigTable({
           values={
             tableData.find((row) => row.id === selectedRowId)?.options
               ?.values || []
+          }
+          isBoolean={
+            tableData
+              .find((row) => row.id === selectedRowId)
+              ?.options?.values?.some(
+                (v: any) => typeof v.value === 'boolean'
+              ) ?? false
           }
           onSave={(values) => {
             handleUpdateColumn(selectedRowId, {
@@ -497,8 +323,7 @@ export function SortableColumnConfigTable({
           icons={
             (tableData.find((row) => row.id === selectedIconsRowId)?.options
               ?.icons as Array<{
-              label: string
-              value: string
+              value: boolean
               icon: string
             }>) || []
           }

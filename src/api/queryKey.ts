@@ -20,6 +20,9 @@ export const queryKeys = {
     preferences: (userId: string | number) =>
       [...queryKeys.users.detail(userId), "preferences"] as const,
   },
+  custom_table:{
+    all: ["custom_table"] 
+  }
 } as const
 
 /**

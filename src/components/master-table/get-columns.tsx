@@ -15,10 +15,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { formatDate } from '@/lib/format'
+import { resolveLucideIcon } from '@/lib/icon-resolver'
 import { invokeActionClickHandler } from '@/lib/utils'
 import { MoreHorizontal } from 'lucide-react'
 import { DataTableColumnHeader } from '../data-table/data-table-column-header'
 import { Switch } from '../ui/switch'
+import type { ColumnDef } from '@tanstack/react-table'
 
 export const createHeader =
   (title: string) =>
@@ -43,7 +45,6 @@ export interface ColumnConfigOptions {
   isHide?: boolean // Column is hidden from view but still available for filtering
   variant?:
     | 'text'
-    | 'select'
     | 'number'
     | 'dateRange'
     | 'switch'
@@ -54,9 +55,9 @@ export interface ColumnConfigOptions {
   is_switch?: boolean
   switch_value?: any
   text_size?: 'small' | 'medium' | 'large' // Font size for text: 'small', 'medium', 'large' - applies font-${size} class
-  value_type?: 'array' | 'date' | 'string' | 'number'
+  value_type?: 'array' | 'date'
   lable_fields?: string[]
-  icons?: Record<string, any> // Map of field values to icon components. Example: { 'active': ActiveIcon, 'inactive': InactiveIcon, 'primary': DefaultIcon }
+  icons?: Array<{ value: string | number | boolean; icon: string }> // Array of value-to-icon mappings. Example: [{ value: true, icon: 'check' }, { value: false, icon: 'x' }]
   on_click_id?: string
   on_change_id?: string
   values?: ColumnOption[]
@@ -109,15 +110,35 @@ const get_array_badges = (column: any, details: any) => {
     return null
   }
 
+  // Tailwind color combos to apply to each badge (bg / text / border)
+  const colorClasses = [
+    'bg-blue-100 text-blue-800 border-blue-200',
+    'bg-green-100 text-green-800 border-green-200',
+    'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'bg-pink-100 text-pink-800 border-pink-200',
+    'bg-purple-100 text-purple-800 border-purple-200',
+    'bg-red-100 text-red-800 border-red-200',
+    'bg-indigo-100 text-indigo-800 border-indigo-200',
+    'bg-teal-100 text-teal-800 border-teal-200',
+  ]
+
   return (
-    <div className="flex flex-wrap gap-1">
-      {arrayValue.map((item: any, index: number) => (
-        <Badge
-          key={index}
-          variant="outline">
-          {item}
-        </Badge>
-      ))}
+    <div className="flex flex-wrap w-50 gap-1">
+      {arrayValue.map((item: any, index: number) => {
+        // pick a random color for each badge
+        const colorCls =
+          colorClasses[Math.floor(Math.random() * colorClasses.length)]
+
+        return (
+          <Badge
+            key={index}
+            variant="outline"
+            className={`${colorCls} border px-2 py-0.5`}
+          >
+            {item}
+          </Badge>
+        )
+      })}
     </div>
   )
 }
@@ -145,7 +166,7 @@ const get_simple_text = (column: any, details: any) => {
     )
   }
 
-  return <div className="w-20">{textContent}</div>
+  return <div className="w-full">{textContent}</div>
 }
 
 const get_text_size_config = (column: any, details: any) => {
@@ -239,11 +260,16 @@ const get_render = (column: any, details: any) => {
   }
 
   // Render icon based on field value
-  // icons = { 'active': ActiveIcon, 'inactive': InactiveIcon, 'primary': DefaultIcon }
-  // If field value is 'active', shows ActiveIcon, otherwise falls back to 'primary' icon
-  if (icons) {
-    const Icon = icons.find((e: any) => e.value === fieldValue)?.icon || icons.find((e: any) => e.value === 'primary')?.icon
-    icon_render = <Icon className="py-1 [&>svg]:size-3.5" />
+  // icons = [{ value: true, icon: 'arrow-up' }, { value: false, icon: 'activity' }]
+  // Finds icon matching fieldValue and resolves the icon name to Lucide component
+  if (icons && Array.isArray(icons)) {
+    const iconMapping = icons.find((e: any) => e.value === fieldValue)
+    if (iconMapping?.icon) {
+      const Icon = resolveLucideIcon(iconMapping.icon)
+      if (Icon) {
+        icon_render = <Icon className="py-1 [&>svg]:size-3.5" />
+      }
+    }
   }
 
   const logtext_class = is_longtext
@@ -252,7 +278,7 @@ const get_render = (column: any, details: any) => {
 
   return (
     <div
-      className={`flex items-center gap-2 ${logtext_class}`}
+      className={`flex w-full items-center gap-2 ${logtext_class}`}
       key={column.id}>
       {lable_render}
       {icon_render}
@@ -289,7 +315,7 @@ export function get_columns(
 
   // Map all columns including hidden ones (for filtering)
   let columns = columnConfigs.map((col: any) => {
-    const baseColumn = {
+    const baseColumn: ColumnDef<any> = {
       ...col,
       header: col?.options?.isHide ? '' : createHeader(col.header || col.field),
       accessorKey: col.field,

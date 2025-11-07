@@ -1,5 +1,5 @@
-import { CheckCheck, LampCeilingIcon, Newspaper } from "lucide-react"
-import type { ColumnConfig } from "./columns_config"
+import type { ColumnConfig } from "@/components/master-table/get-columns"
+import { Newspaper } from "lucide-react"
 
 export const columnConfig: ColumnConfig[] = [
   {
@@ -7,7 +7,6 @@ export const columnConfig: ColumnConfig[] = [
     header: "ID",
     options: {
       variant: "number",
-      index: 0,
       sortable: true,
       isHide: false, // Set to true to hide this column
       text_size: "small",
@@ -17,7 +16,6 @@ export const columnConfig: ColumnConfig[] = [
     field: "todo",
     header: "Todo",
     options: {
-      index: 1,
       variant: "text",
       text_size: "large",
       icon: Newspaper,
@@ -30,24 +28,22 @@ export const columnConfig: ColumnConfig[] = [
     field: "completed",
     header: "Status",
     options: {
-      index: 2,
       sortable: true,
       variant: "multiSelect",
       values: [
-        { label: "Completed", value: "true" },
-        { label: "Pending", value: "false" },
+        { label: "Completed", value: true },
+        { label: "Pending", value: false },
       ],
-      icons:[
-        {
-            value: true,
-            icon: CheckCheck,
-        },
-        {
-            value: false,
-            icon: LampCeilingIcon,
-
-        }
-      ],
+      // icons:[
+      //   {
+      //       value: true,
+      //       icon: CheckCheck,
+      //   },
+      //   {
+      //       value: false,
+      //       icon: LampCeilingIcon,
+      //   }
+      // ],
       // isHide: true,
       // is_switch: true, // Renders as switch with CircleCheckBig icon when checked
       // switch_value: true, // Value that represents "checked" state

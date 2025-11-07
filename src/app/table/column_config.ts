@@ -22,39 +22,43 @@ export const columnConfig: ColumnConfig[] = [
     options: {
       index: 1,
       variant: "text",
-      text_size: "large",
-      icon: Newspaper ,
+      // text_size: "large",
+      sortable: true,
+      value_type: undefined,
+      icon: Newspaper,
       isHide: false,
-      is_longtext: true,
+      // is_longtext: true,
       // on_click_id: "view_todo",
     },
   },
   {
     field: "completed",
-    header: "Status",
+    header: "Completed",
     options: {
       index: 2,
-      sortable: true,
       variant: "multiSelect",
+      isHide: false,
+      sortable: true,
       values: [
-        { label: "Completed", value: true },
-        { label: "Pending", value: false },
-      ],
-      icons:[
         {
-            value: true,
-            icon: CheckCheck,
+          label: "completed",
+          value: true,
         },
         {
-            value: false,
-            icon: LampCeilingIcon,
-
-        }
+          label: "Pending",
+          value: false,
+        },
       ],
-      // isHide: true,
-      // is_switch: true, // Renders as switch with CircleCheckBig icon when checked
-      // switch_value: true, // Value that represents "checked" state
-      on_change_id: "toggle_completed", // Triggers when switch changes
+      icons: [
+        {
+          value: true,
+          icon: "a-arrow-down",
+        },
+        {
+          value: false,
+          icon: "airplay",
+        },
+      ],
     },
   },
   {
@@ -68,6 +72,26 @@ export const columnConfig: ColumnConfig[] = [
       text_size: "large",
     },
   },
+  {
+    field: "email",
+    header: "Email",
+    options:{
+      index:4,
+      variant:"text",
+      isHide:false,
+      text_size:"medium",
+    }
+  },
+  {
+    field: "name",
+    header: "Name",
+    options:{
+      index:5,
+      variant:"text",
+      isHide:false,
+      text_size:"medium",
+    }
+  }
   // Example of a hidden column
   // Uncomment to see how isHide works
   // {

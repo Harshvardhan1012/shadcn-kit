@@ -1,5 +1,4 @@
 'use client'
-import { todos } from './data'
 import DynamicMaster from '@/components/master-table/master-table'
 import datatableConfig from './table_config'
 import { exampleFormConfig } from './form_config'
@@ -15,6 +14,7 @@ import {
 } from '@/lib/utils'
 import type { FormContextType } from '@/components/form/FormContext'
 import columnConfig from './column_config'
+import { todos } from '../custom-table/data'
 
 interface Todos {
   id: number
@@ -150,7 +150,7 @@ const TableExample = () => {
   return (
     <>
       <DynamicMaster<Todos>
-        data={data}
+        data={todos}
         datatableConfig={{
           ...datatableConfig,
           columnsConfig: columnConfig ,

@@ -44,16 +44,16 @@ export const actionConfig = [
   },
 ]
 
-export const columnActions = [
-  {
-    title: "Edit",
-    type: "edit",
-  },
-  {
-    title: "View",
-    type: "view",
-  },
-]
+// export const columnActions = [
+//   {
+//     title: "Edit",
+//     type: "edit",
+//   },
+//   {
+//     title: "View",
+//     type: "view",
+//   },
+// ]
 
 const addItemData = {
   title: "Add Activity",
@@ -61,12 +61,12 @@ const addItemData = {
 
 export const tableConfig = {
   selectAll: true,
-  actionColumn: true,
+  actionColumn: false,
 }
 
 const datatableConfig = {
   actionConfig,
-  columnActions,
+  columnActions: [],
   addItemData,
   tableConfig,
 }

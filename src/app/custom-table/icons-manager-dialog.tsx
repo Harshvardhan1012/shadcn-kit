@@ -9,8 +9,8 @@ import { useIconsData } from './use-icons-data'
 interface IconsManagerDialogProps {
   open: boolean
   onClose: () => void
-  icons: Array<{ label: string; value: string; icon: string }>
-  onSave: (icons: Array<{ label: string; value: string; icon: string }>) => void
+  icons: Array<{ label?: string; value: boolean; icon: string }>
+  onSave: (icons: Array<{ value: boolean; icon: string }>) => void
 }
 
 export function IconsManagerDialog({
@@ -35,21 +35,37 @@ export function IconsManagerDialog({
   )
 
   const handleSubmit = (data: Array<any>) => {
-    onSave(data)
+    // Convert string values to boolean for saving
+    const processedData = data.map((item) => ({
+      value: item.value === 'true', // Convert string to boolean
+      icon: item.icon,
+    }))
+    onSave(processedData)
     onClose()
   }
 
+  // Convert boolean values back to strings for form display
+  const formData = icons.map((icon) => ({
+    value: icon.value === true ? 'true' : 'false',
+    icon: {
+      label: icon.icon,
+      value: icon.icon,
+    },
+  }))
+
   const configWithDefaults = {
     ...sectionConfig,
-    defaultValues: icons || [],
+    defaultValues: formData || [],
+    maxSections: 2, // Only allow true and false
+    minSections: 1, // At least one icon mapping
   }
 
   return (
     <FormDialog
       open={open}
       onClose={onClose}
-      title="Manage Icons"
-      description="Add, edit, or remove icon mappings">
+      title="Manage Icons for Boolean Values"
+      description="Assign Lucide icons to true and false values">
       <SectionedDynamicForm
         sectionConfig={configWithDefaults}
         schema={iconsZodSchema}

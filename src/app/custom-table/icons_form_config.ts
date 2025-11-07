@@ -7,32 +7,40 @@ import z from "zod"
 export const createIconsSectionConfig = (
   iconOptions: Array<{ label: string; value: string }>
 ): SectionConfig => ({
-  title: "Map Values to Icons",
-  description: "Assign Lucide icons to column values",
+  title: "Map Boolean Values to Icons",
+  description: "Assign Lucide icons to true/false values (boolean fields only)",
   fields: [
     {
       fieldName: "value",
-      fieldLabel: "Value for which icon is assigned",
-      fieldType: FormFieldType.TEXT,
-      placeholder: "Enter value (e.g., active, true)",
+      fieldLabel: "Boolean Value",
+      fieldType: FormFieldType.SELECT,
+      placeholder: "Select true or false",
+      options: [
+        { label: "True", value: "true" },
+        { label: "False", value: "false" },
+      ],
     },
     {
       fieldName: "icon",
-      fieldLabel: "Icon Selection Luicide react ",
+      fieldLabel: "Icon Selection (Lucide React)",
       fieldType: FormFieldType.COMBOBOX,
       placeholder: "Search and select icon...",
       searchPlaceholder: "Search icons...",
-      description: `visit https://lucide.dev/icons to explore available icons.`,
+      description: `Visit https://lucide.dev/icons to explore available icons`,
       options: iconOptions,
     },
   ],
   defaultValues: [],
-  allowCopy: true,
+  allowCopy: false, // Don't allow copy for boolean values (only true/false allowed)
   allowReset: true,
   collapsible: true,
 })
 
 export const iconsZodSchema = z.object({
-  value: z.string().min(1, "Value is required"),
+  value: z
+    .enum(["true", "false"])
+    .refine((val) => val === "true" || val === "false", {
+      message: "Value must be 'true' or 'false'",
+    }),
   icon: z.string().min(1, "Icon is required"),
 })

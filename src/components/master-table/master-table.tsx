@@ -1,11 +1,13 @@
+import { TableProvider } from '@/app/custom-table/card-builder'
 import type { RowData } from '@tanstack/react-table'
 import * as React from 'react'
 import { z } from 'zod'
 import { DataTableSkeleton } from './../data-table/data-table-skeleton'
 import SheetDemo from './../sheet/page'
 import { BulkUploadSheet } from './bulk-upload-sheet'
+import { getColumns } from './columns'
 import { FeatureFlagsProvider } from './feature-flags-provider'
-import { get_columns, type ColumnConfig } from './get-columns'
+import { type ColumnConfig } from './get-columns'
 import { Shell } from './shell'
 import { Table } from './table'
 
@@ -113,7 +115,7 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   children,
   bulkUploadConfig,
 }: DynamicMasterProps<TData>) {
-  console.log(bulkUploadConfig)
+  console.log(datatableConfig.columnsConfig)
   const [bulkUploadSheetOpen, setBulkUploadSheetOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -142,10 +144,9 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     addItemData,
   } = datatableConfig
 
-  const columns = React.useMemo(
-    () => get_columns(columnsConfig, tableConfig, columnActions),
-    [columnsConfig, tableConfig, columnActions]
-  )
+  const columns = getColumns(columnsConfig, tableConfig, columnActions)
+
+  console.log('Columns for table:', columns)
 
   // Show skeleton when loading
   if (isLoading) {
@@ -199,6 +200,29 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     },
   }
 
+  const columnsKey = React.useMemo(() => {
+    // Create a hash of the entire columns configuration
+    // This includes options, values, icons, and any other metadata
+    const configString = JSON.stringify(
+      columns.map((col: any) => ({
+        accessorKey: col.accessorKey,
+        meta: col.meta,
+        header: col.header,
+        options: col.options,
+      }))
+    )
+
+    // Simple hash function to create a shorter key
+    let hash = 0
+    for (let i = 0; i < configString.length; i++) {
+      const char = configString.charCodeAt(i)
+      hash = (hash << 5) - hash + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+
+    return `columns-${Math.abs(hash).toString(36)}`
+  }, [columns])
+
   const bulkUploadItemData: ActionConfig | undefined = bulkUploadConfig
     ? {
         title: bulkUploadConfig.buttonTitle || 'Bulk Upload',
@@ -214,34 +238,37 @@ export default function DynamicMaster<TData extends RowData = RowData>({
           sheetOpen || bulkUploadSheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
-          <Table
-            data={data}
-            columns={columns}
-            actionConfig={actionConfig}
-            addItem={addItemData ? itemData : undefined}
-            bulkUploadItem={bulkUploadItemData}
-            ref={tableRef}
-            serverSideFiltering={serverSideFiltering}
-            onFiltersChange={(filters, joinOperator) => {
-              console.log('Filters changed:', filters, joinOperator)
-            }}
-            onPaginationChange={(page, perPage) => {
-              // Make API call with pagination
-              console.log('Pagination changed:', page, perPage)
-            }}
-          />
+          <TableProvider>
+            <Table
+              key={columnsKey}
+              data={data}
+              columns={columns}
+              actionConfig={actionConfig}
+              addItem={addItemData ? itemData : undefined}
+              bulkUploadItem={bulkUploadItemData}
+              ref={tableRef}
+              serverSideFiltering={serverSideFiltering}
+              onFiltersChange={(filters, joinOperator) => {
+                console.log('Filters changed:', filters, joinOperator)
+              }}
+              onPaginationChange={(page, perPage) => {
+                // Make API call with pagination
+                console.log('Pagination changed:', page, perPage)
+              }}>
+            </Table>
+
+            {sheetOpen && (
+              <SheetDemo
+              open={sheetOpen}
+              onOpenChange={() => {
+                handleSheetOpenChange(false)
+              }}>
+                {children}
+              </SheetDemo>
+            )}
+          </TableProvider>
         </FeatureFlagsProvider>
       </Shell>
-
-      {sheetOpen && (
-        <SheetDemo
-          open={sheetOpen}
-          onOpenChange={() => {
-            handleSheetOpenChange(false)
-          }}>
-          {children}
-        </SheetDemo>
-      )}
 
       {bulkUploadSheetOpen && bulkUploadConfig && (
         <BulkUploadSheet

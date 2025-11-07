@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  TableProvider,
+  useTableContext,
+} from '@/app/custom-table/card-builder/TableContext'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -32,6 +36,7 @@ type TableProps = {
   serverSideFiltering?: boolean // New flag for server-side filtering
   onFiltersChange?: (filters: any[], joinOperator: string) => void // Callback for server-side filtering
   onPaginationChange?: (page: number, perPage: number) => void // Callback for server-side pagination
+  children?: React.ReactNode // Additional children that need table context (like CardBuilder)
 }
 
 export const Table = React.forwardRef(
@@ -46,11 +51,14 @@ export const Table = React.forwardRef(
       serverSideFiltering = false, // Default to client-side filtering
       onFiltersChange,
       onPaginationChange,
+      children,
     }: TableProps,
     ref
   ) => {
+    console.log(columns)
     const { enableAdvancedFilter } = useFeatureFlags()
     const [fullscreen, setFullscreen] = React.useState(false)
+    const { setTable, setColumns } = useTableContext()
 
     const addvanceTableFilterRef = React.useRef<any>(null)
     const onExpandChange = () => {
@@ -167,6 +175,29 @@ export const Table = React.forwardRef(
         }
       },
     })
+
+    // Set table and columns in context when ready
+    React.useEffect(() => {
+      if (table && columns) {
+        setTable(table)
+        setColumns(columns)
+      }
+    }, [table, columns, setTable, setColumns])
+
+    const columnsChecksum = useMemo(() => {
+      return JSON.stringify(
+        columns.map((col: any) => ({
+          accessorKey: col.accessorKey,
+          meta: col.meta,
+        }))
+      )
+    }, [columns])
+
+    React.useEffect(() => {
+      if (table) {
+        table.resetColumnFilters()
+      }
+    }, [columnsChecksum, table])
 
     return (
       <>
