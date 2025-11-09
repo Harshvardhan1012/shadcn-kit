@@ -8,6 +8,14 @@ import {
   CollapsibleTrigger,
 } from './../ui/collapsible'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './../ui/dropdown-menu'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -26,6 +34,7 @@ import {
 } from './../ui/sidebar'
 import { Skeleton } from './../ui/skeleton'
 import { type SearchResult, SearchWrapper } from './search-wrapper'
+import { ChevronRight } from 'lucide-react'
 
 // Types for the sidebar items
 export interface SidebarSubItem {
@@ -183,7 +192,7 @@ const renderIcon = (icon: React.ElementType | React.ReactNode | string) => {
       <img
         src={icon}
         alt="icon"
-        className="h-8 w-8 object-contain flex-shrink-0"
+        className="h-4 w-4 object-contain flex-shrink-0"
       />
     )
   }
@@ -478,6 +487,78 @@ export function DynamicSidebar({
       </>
     )
 
+    // If sidebar is collapsed and item has subitems, show dropdown menu
+    if (visibleSubItems?.length && state === 'collapsed') {
+      return (
+        <DropdownMenu key={item.id}>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={hasActiveSubItem || isActive}
+                className="w-full">
+                {item.icon && renderIcon(item.icon)}
+                <span className="group-data-[collapsible=icon]:hidden truncate flex-1 text-left">
+                  {item.title}
+                </span>
+                <ChevronRight className="ml-auto h-4 w-4 group-data-[collapsible=icon]:hidden" />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="right"
+            align="start"
+            className="w-56">
+            <DropdownMenuLabel className="flex items-center gap-2">
+              {item.icon && renderIcon(item.icon)}
+              {item.title}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {visibleSubItems.map((subItem) => {
+              const isSubItemActive = subItem.url === location.pathname
+              return (
+                <DropdownMenuItem
+                  key={subItem.id}
+                  asChild={!!subItem.url}
+                  className={cn(
+                    'cursor-pointer',
+                    isSubItemActive && 'bg-accent'
+                  )}>
+                  {subItem.url ? (
+                    <Link
+                      to={subItem.url}
+                      className="flex items-center gap-2 w-full"
+                      onClick={subItem.onClick}>
+                      {subItem.icon && renderIcon(subItem.icon)}
+                      <span className="flex-1">{subItem.title}</span>
+                      {subItem.badge && (
+                        <span className="ml-auto text-xs">
+                          {subItem.badge}
+                        </span>
+                      )}
+                    </Link>
+                  ) : (
+                    <div
+                      className="flex items-center gap-2 w-full"
+                      onClick={subItem.onClick}>
+                      {subItem.icon && renderIcon(subItem.icon)}
+                      <span className="flex-1">{subItem.title}</span>
+                      {subItem.badge && (
+                        <span className="ml-auto text-xs">
+                          {subItem.badge}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+
+    // If sidebar is expanded and item has subitems, show collapsible
     if (visibleSubItems?.length) {
       return (
         <Collapsible
@@ -544,6 +625,7 @@ export function DynamicSidebar({
       )
     }
 
+    // Regular menu item without subitems
     return (
       <SidebarMenuItem key={item.id}>
         {item.url ? (
