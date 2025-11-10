@@ -9,6 +9,7 @@ import { CardForm } from './CardForm'
 import { CardGrid } from './CardGrid'
 import type { Card, FilterVariant } from './types'
 import { useCardStorage } from './useCardStorage'
+import SheetDemo from '@/components/sheet/page'
 
 interface CardBuilderProps {
   data: Record<string, any>[]
@@ -104,25 +105,16 @@ export function CardBuilder({
         onReorder={reorderCards}
       />
 
-      <Sheet
-        open={showForm}
-        onOpenChange={setShowForm}>
-        <VisuallyHidden>
-          <SheetTitle>
-            {editingCard ? 'Edit Card' : 'Create New Card'}
-          </SheetTitle>
-        </VisuallyHidden>
-        <SheetContent className="overflow-y-auto">
-          <CardForm
-            availableFields={availableFields}
-            fieldVariants={fieldVariants}
-            columnConfig={columnConfig}
-            onSave={handleSave}
-            onCancel={() => setShowForm(false)}
-            initialCard={editingCard}
-          />
-        </SheetContent>
-      </Sheet>
+      <SheetDemo open={showForm} onOpenChange={setShowForm}>
+        <CardForm
+          availableFields={availableFields}
+          fieldVariants={fieldVariants}
+          columnConfig={columnConfig}
+          onSave={handleSave}
+          onCancel={() => setShowForm(false)}
+          initialCard={editingCard}
+        />
+      </SheetDemo>
     </div>
   )
 }

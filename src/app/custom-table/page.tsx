@@ -28,6 +28,7 @@ export default function ColumnConfigPage() {
     if (!apiResponse?.data || apiResponse.data.length === 0) return []
     return Object.keys(apiResponse?.data[0])
   }, [apiResponse])
+  
 
   return (
     <div className="space-y-6 p-6 h-screen overflow-y-scroll">
@@ -53,6 +54,11 @@ export default function ColumnConfigPage() {
           onColumnsChange={setColumns}
         />
       </div>
+      <CardBuilder
+        data={apiResponse?.data}
+        availableFields={availableFields}
+        columnConfig={columns}
+      />
 
       {apiResponse?.data && (
         <DynamicMaster<any>
@@ -62,11 +68,6 @@ export default function ColumnConfigPage() {
             columnsConfig: columns,
           }}
           >
-          <CardBuilder
-            data={apiResponse.data}
-            availableFields={availableFields}
-            columnConfig={columns}
-          />
         </DynamicMaster>
       )}
 

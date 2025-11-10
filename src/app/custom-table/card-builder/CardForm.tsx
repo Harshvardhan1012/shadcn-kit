@@ -6,7 +6,6 @@
  * This component integrates the powerful data-table filter system directly
  * for defining card filters. Instead of building custom filter UI, it reuses:
  *
- * - DataTableFilterMenu: Compact filter UI with inline filter chips
  * - DataTableFilterList: Advanced filter UI with sortable list and AND/OR operators
  *
  * Features inherited from data-table filters:
@@ -15,11 +14,16 @@
  * - Variant-aware value inputs (text, number, date, multiSelect, etc.)
  * - Date pickers, range inputs, multi-select checkboxes
  * - Keyboard shortcuts (press 'f' to open filter menu)
- * - Query parameter persistence via nuqs
  * - Full accessibility support
  *
- * The form creates a virtual TanStack table instance just for the filter components,
- * then converts the resulting filters to the card's filter format on save.
+ * Note: Filters are managed internally (not in URL) to support editing cards
+ * with pre-existing filters.
+ *
+ * Dynamic Date Intervals:
+ * - Interval operators (isToday, isThisMonth, lastNDays, etc.) automatically
+ *   recalculate based on the current date each time the card is displayed
+ * - Example: A card with "This Month" filter will show different results each month
+ * - No need to update saved cards - they adapt to the current date automatically
  */
 
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
@@ -32,9 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getFiltersStateParser } from '@/lib/parsers'
-import type { ExtendedColumnFilter } from '@/types/data-table'
-import { useQueryStates } from 'nuqs'
+import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { useEffect, useState } from 'react'
 import { useTableContext } from './TableContext'
 import type { Card, CardFilter, CardOperation, FilterVariant } from './types'
@@ -48,25 +50,37 @@ interface CardFormProps {
   initialCard?: Card
 }
 
-const OPERATIONS: CardOperation[] = [
-  'count',
-  'sum',
-  'avg',
-  'min',
-  'max',
-  'uniqueCount',
-]
+const ALL_OPERATIONS: Record<string, CardOperation[]> = {
+  text: ['count', 'uniqueCount'],
+  number: ['count', 'sum', 'avg', 'min', 'max', 'uniqueCount'],
+  range: ['count', 'sum', 'avg', 'min', 'max', 'uniqueCount'],
+  date: ['count', 'min', 'max', 'uniqueCount'],
+  dateRange: ['count', 'min', 'max', 'uniqueCount'],
+  boolean: ['count', 'uniqueCount'],
+  select: ['count', 'uniqueCount'],
+  multiSelect: ['count', 'uniqueCount'],
+  default: ['count', 'uniqueCount'],
+}
 
-const COLORS = [
-  { name: 'red', value: '#ef4444' },
-  { name: 'orange', value: '#f97316' },
-  { name: 'yellow', value: '#eab308' },
-  { name: 'green', value: '#22c55e' },
-  { name: 'blue', value: '#3b82f6' },
-  { name: 'purple', value: '#a855f7' },
-  { name: 'pink', value: '#ec4899' },
-  { name: 'slate', value: '#64748b' },
-]
+const OPERATION_LABELS: Record<CardOperation, string> = {
+  count: 'Count',
+  sum: 'Sum',
+  avg: 'Average',
+  min: 'Minimum',
+  max: 'Maximum',
+  uniqueCount: 'Unique Count',
+}
+
+// const COLORS = [
+//   { name: 'red', value: '#ef4444' },
+//   { name: 'orange', value: '#f97316' },
+//   { name: 'yellow', value: '#eab308' },
+//   { name: 'green', value: '#22c55e' },
+//   { name: 'blue', value: '#3b82f6' },
+//   { name: 'purple', value: '#a855f7' },
+//   { name: 'pink', value: '#ec4899' },
+//   { name: 'slate', value: '#64748b' },
+// ]
 
 export function CardForm({
   availableFields,
@@ -81,11 +95,52 @@ export function CardForm({
   const [operation, setOperation] = useState<CardOperation>(
     initialCard?.operation || 'count'
   )
-  const [color, setColor] = useState(initialCard?.color || COLORS[4].value)
+  // const [color, setColor] = useState(initialCard?.color || COLORS[4].value)
 
   // Get the table instance from context (shared with the main data table)
-  const { table, columns } = useTableContext()
-  console.log('CardForm - table from context:', table)
+  const { table } = useTableContext()
+
+  // Manage filters internally (not in URL query params)
+  const [filters, setFilters] = useState<ExtendedColumnFilter<any>[]>([])
+  const [joinOperator, setJoinOperator] = useState<JoinOperator>('and')
+
+  // Get field variant from columnConfig
+  const getFieldVariant = (fieldName: string): FilterVariant => {
+    if (!columnConfig) return 'text'
+    const column = columnConfig.find((col) => col.field === fieldName)
+    return column?.options?.variant || 'text'
+  }
+
+  // Get available operations based on selected field's variant
+  const availableOperations = field
+    ? ALL_OPERATIONS[getFieldVariant(field)] || ALL_OPERATIONS.default
+    : ALL_OPERATIONS.default
+
+  // Reset operation if it's not available for the new field
+  useEffect(() => {
+    if (field && !availableOperations.includes(operation)) {
+      setOperation(availableOperations[0] || 'count')
+    }
+  }, [field, availableOperations, operation])
+
+  // Initialize filters from initialCard if editing
+  useEffect(() => {
+    if (initialCard?.filters && initialCard.filters.length > 0) {
+      const convertedFilters: ExtendedColumnFilter<any>[] =
+        initialCard.filters.map((f) => ({
+          id: f.field as any,
+          value: f.value as any,
+          variant: (f.variant || 'text') as any,
+          operator: f.operator as any,
+          filterId: `${f.field}-${Date.now()}-${Math.random()}`,
+        }))
+      setFilters(convertedFilters)
+    } else {
+      // Clear filters when creating a new card
+      setFilters([])
+      setJoinOperator('and')
+    }
+  }, [initialCard])
 
   if (!table) {
     return (
@@ -97,18 +152,6 @@ export function CardForm({
       </div>
     )
   }
-
-  // Parse filters from query state (managed by DataTableFilterList/Menu)
-  const [queryFilters] = useQueryStates({
-    filters: getFiltersStateParser(
-      columns.map((col) => col.id || col.accessorKey).filter(Boolean)
-    )
-      .withDefault([])
-      .withOptions({
-        clearOnDefault: true,
-        shallow: true,
-      }),
-  })
 
   // Convert data-table filters to card filters when saving
   const convertToCardFilters = (
@@ -122,31 +165,26 @@ export function CardForm({
     }))
   }
 
-  // Initialize filters from initialCard if editing
-  useEffect(() => {
-    if (initialCard?.filters && initialCard.filters.length > 0) {
-      // Note: Setting filters programmatically would require direct query state manipulation
-      // For now, users will need to re-add filters when editing
-      // This is a known limitation of the current implementation
-    }
-  }, [initialCard])
-
   const handleSave = () => {
     if (!title || !field) {
       alert('Please fill in all required fields')
       return
     }
 
-    const cardFilters = convertToCardFilters(queryFilters.filters)
+    const cardFilters = convertToCardFilters(filters)
 
     onSave({
       id: initialCard?.id || Date.now().toString(),
       title,
       field,
       operation,
-      color,
+      // color,
       filters: cardFilters,
     })
+
+    // Reset form for next card
+    setFilters([])
+    setJoinOperator('and')
   }
 
   return (
@@ -190,32 +228,20 @@ export function CardForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {OPERATIONS.map((op) => (
+            {availableOperations.map((op) => (
               <SelectItem
                 key={op}
                 value={op}>
-                {op.charAt(0).toUpperCase() + op.slice(1)}
+                {OPERATION_LABELS[op]}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium">Card Color</label>
-        <div className="flex gap-2 mt-2 flex-wrap">
-          {COLORS.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => setColor(c.value)}
-              className={`w-8 h-8 rounded-lg border-2 transition ${
-                color === c.value ? 'border-gray-800' : 'border-gray-200'
-              }`}
-              style={{ backgroundColor: c.value }}
-              title={c.name}
-            />
-          ))}
-        </div>
+        {field && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Available operations for {getFieldVariant(field)} field
+          </p>
+        )}
       </div>
 
       <div>
@@ -223,37 +249,18 @@ export function CardForm({
           Filters (Optional)
         </label>
         <div className="mt-2 rounded-lg border p-3 bg-muted/20 space-y-3">
-          {/* 
-            DataTableFilterMenu: Displays inline filter chips with quick add/remove
-            - Compact UI that shows each active filter as a chip
-            - Good for limited space scenarios
-            - Each filter is individually editable inline
-            
-            Alternative: DataTableFilterList (uncomment below to switch)
-            - Shows filters in a sortable list inside a popover
-            - Supports AND/OR join operators between filters
-            - Drag-and-drop to reorder filters
-            - Better for complex multi-filter scenarios
-          */}
           <DataTableFilterList
             table={table}
-            debounceMs={300}
-            throttleMs={50}
-            shallow={true}
+            internalFilters={filters}
+            onInternalFiltersChange={setFilters}
+            internalJoinOperator={joinOperator}
+            onInternalJoinOperatorChange={setJoinOperator}
           />
-
-          {/* Alternative: Use DataTableFilterList for a different UI
-          <DataTableFilterList
-            table={table}
-            debounceMs={300}
-            throttleMs={50}
-            shallow={true}
-          />
-          */}
 
           <p className="text-xs text-muted-foreground mt-2">
-            💡 Add filters to refine your card calculations. These filters will
-            be applied when computing the card value.
+            💡 Add filters to refine your card calculations. Interval filters
+            (like "This Month" or "Last 30 Days") dynamically update based on
+            the current date.
           </p>
         </div>
       </div>

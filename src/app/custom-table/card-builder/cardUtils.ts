@@ -1,5 +1,28 @@
 import { applyFilter } from "@/lib/filter"
-import type { Card } from "./types"
+import type { Card, CardFilter } from "./types"
+
+// Operators that use dynamic date intervals (recalculated each time)
+const INTERVAL_OPERATORS = [
+  "isToday",
+  "isYesterday",
+  "isThisWeek",
+  "isThisMonth",
+  "isThisQuarter",
+  "isThisYear",
+  "lastNDays",
+  "nextNDays",
+  "lastNWeeks",
+  "lastNMonths",
+  "lastNYears",
+]
+
+/**
+ * Check if a filter uses dynamic date intervals
+ * These filters recalculate based on current date each time
+ */
+export const isIntervalFilter = (filter: CardFilter): boolean => {
+  return INTERVAL_OPERATORS.includes(filter.operator as any)
+}
 
 export const calculateCardValue = (
   data: Record<string, any>[],
@@ -12,7 +35,9 @@ export const calculateCardValue = (
   if (card.filters && card.filters.length > 0) {
     filteredData = data.filter((row) =>
       card.filters!.every((filter) => {
-        // Convert card filter format to the format expected by applyFilter
+        // For interval operators, the value is dynamic and calculated at runtime
+        // The filter.value contains the configuration (e.g., "7" for lastNDays)
+        // applyFilter will handle the date calculation based on current date
         return applyFilter(row, {
           id: filter.field,
           operator: filter.operator,

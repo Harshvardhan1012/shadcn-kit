@@ -62,6 +62,7 @@ export interface ColumnConfigOptions {
   on_change_id?: string
   values?: ColumnOption[]
   icon?: React.FC<React.SVGProps<SVGSVGElement>>
+  main?: boolean
 }
 
 export interface ColumnConfig {
@@ -330,6 +331,7 @@ export function get_columns(
         options: col?.options?.values,
         icon: col?.options?.icon,
         isHidden: col?.options?.isHide || false,
+        main: col?.options?.main || false,
       },
     }
 

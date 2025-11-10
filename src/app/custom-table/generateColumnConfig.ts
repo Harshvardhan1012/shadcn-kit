@@ -1,4 +1,7 @@
-import type { ColumnConfig, ColumnConfigOptions } from "@/components/master-table/get-columns"
+import type {
+  ColumnConfig,
+  ColumnConfigOptions,
+} from "@/components/master-table/get-columns"
 import type { Option } from "@/types/data-table"
 
 /**
@@ -11,7 +14,20 @@ function getVariantFromValue(value: any): ColumnConfigOptions["variant"] {
   if (typeof value === "number") {
     return "number"
   }
+  // Check if it's a Date object or valid date string
+  if (value instanceof Date) {
+    return "dateRange"
+  }
   if (typeof value === "string") {
+    // Try to parse as date - check if it's a valid date string
+    const dateRegex =
+      /^\d{4}-\d{2}-\d{2}|^\d{2}\/\d{2}\/\d{4}|^\d{2}-\d{2}-\d{4}/
+    if (dateRegex.test(value)) {
+      const parsed = new Date(value)
+      if (!isNaN(parsed.getTime())) {
+        return "dateRange"
+      }
+    }
     return "text"
   }
   return "text"
@@ -21,7 +37,20 @@ function getVariantFromValue(value: any): ColumnConfigOptions["variant"] {
  * Auto-detects the value type of a value
  */
 function getValueTypeFromValue(value: any): ColumnConfigOptions["value_type"] {
-  
+  if (value instanceof Date) {
+    return "date"
+  }
+  if (typeof value === "string") {
+    // Try to parse as date
+    const dateRegex =
+      /^\d{4}-\d{2}-\d{2}|^\d{2}\/\d{2}\/\d{4}|^\d{2}-\d{2}-\d{4}/
+    if (dateRegex.test(value)) {
+      const parsed = new Date(value)
+      if (!isNaN(parsed.getTime())) {
+        return "date"
+      }
+    }
+  }
   if (Array.isArray(value)) {
     return "array"
   }
@@ -83,8 +112,9 @@ function generateIconsForBooleanField(): Array<{
 
 /**
  * Auto-generates column configuration from data
- * - Auto-detects data types (boolean → multiSelect, number → number, string → text)
+ * - Auto-detects data types (boolean → multiSelect, number → number, string → text, date → dateRange)
  * - For boolean multiSelect: generates true/false options + icons
+ * - For date fields: sets variant to dateRange and value_type to date
  * - For other multiSelect: extracts unique values from dataset
  * - Removes switch property
  * - Icons only shown for multiSelect boolean fields

@@ -25,6 +25,7 @@ import { DataTableSortList } from '../data-table/data-table-sort-list'
 import { DataTableViewOptions } from '../data-table/data-table-view-options'
 import { useFeatureFlags } from './feature-flags-provider'
 import { TableActionBar } from './table-action-bar'
+import { DataTableToolbar } from '../data-table/data-table-toolbar'
 
 type TableProps = {
   data: any[]

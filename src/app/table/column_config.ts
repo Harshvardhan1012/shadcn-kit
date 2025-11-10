@@ -21,6 +21,7 @@ export const columnConfig: ColumnConfig[] = [
     header: "Todo",
     options: {
       index: 1,
+      main: true,
       variant: "text",
       // text_size: "large",
       sortable: true,

@@ -1,31 +1,31 @@
-import type { Column } from "@tanstack/react-table";
-import { dataTableConfig } from "@/config/data-table";
+import { dataTableConfig } from "@/config/data-table"
 import type {
   ExtendedColumnFilter,
   FilterOperator,
   FilterVariant,
-} from "@/types/data-table";
+} from "@/types/data-table"
+import type { Column } from "@tanstack/react-table"
 
 export function getCommonPinningStyles<TData>({
   column,
   withBorder = false,
 }: {
-  column: Column<TData>;
-  withBorder?: boolean;
+  column: Column<TData>
+  withBorder?: boolean
 }): React.CSSProperties {
-  const isPinned = column.getIsPinned();
+  const isPinned = column.getIsPinned()
   const isLastLeftPinnedColumn =
-    isPinned === "left" && column.getIsLastColumn("left");
+    isPinned === "left" && column.getIsLastColumn("left")
   const isFirstRightPinnedColumn =
-    isPinned === "right" && column.getIsFirstColumn("right");
+    isPinned === "right" && column.getIsFirstColumn("right")
 
   return {
     boxShadow: withBorder
       ? isLastLeftPinnedColumn
         ? "-4px 0 4px -4px hsl(var(--border)) inset"
         : isFirstRightPinnedColumn
-          ? "4px 0 4px -4px hsl(var(--border)) inset"
-          : undefined
+        ? "4px 0 4px -4px hsl(var(--border)) inset"
+        : undefined
       : undefined,
     left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
     right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
@@ -34,7 +34,7 @@ export function getCommonPinningStyles<TData>({
     background: isPinned ? "hsl(var(--background))" : "hsl(var(--background))",
     width: column.getSize(),
     zIndex: isPinned ? 1 : 0,
-  };
+  }
 }
 
 export function getFilterOperators(filterVariant: FilterVariant) {
@@ -50,28 +50,61 @@ export function getFilterOperators(filterVariant: FilterVariant) {
     boolean: dataTableConfig.booleanOperators,
     select: dataTableConfig.selectOperators,
     multiSelect: dataTableConfig.multiSelectOperators,
-  };
+  }
 
-  return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
+  return operatorMap[filterVariant] ?? dataTableConfig.textOperators
 }
 
 export function getDefaultFilterOperator(filterVariant: FilterVariant) {
-  const operators = getFilterOperators(filterVariant);
+  const operators = getFilterOperators(filterVariant)
 
-  return operators[0]?.value ?? (filterVariant === "text" ? "iLike" : "eq");
+  return operators[0]?.value ?? (filterVariant === "text" ? "iLike" : "eq")
 }
 
 export function getValidFilters<TData>(
-  filters: ExtendedColumnFilter<TData>[],
+  filters: ExtendedColumnFilter<TData>[]
 ): ExtendedColumnFilter<TData>[] {
   return filters.filter(
     (filter) =>
       filter.operator === "isEmpty" ||
       filter.operator === "isNotEmpty" ||
+      // Interval operators that don't require value
+      filter.operator === "isToday" ||
+      filter.operator === "isYesterday" ||
+      filter.operator === "isThisWeek" ||
+      filter.operator === "isThisMonth" ||
+      filter.operator === "isThisQuarter" ||
+      filter.operator === "isThisYear" ||
+      // Operators that require value
       (Array.isArray(filter.value)
         ? filter.value.length > 0
         : filter.value !== "" &&
           filter.value !== null &&
-          filter.value !== undefined),
-  );
+          filter.value !== undefined)
+  )
+}
+
+export function operatorNeedsValue(operator: FilterOperator): boolean {
+  const noValueOperators: FilterOperator[] = [
+    "isEmpty",
+    "isNotEmpty",
+    "isToday",
+    "isYesterday",
+    "isThisWeek",
+    "isThisMonth",
+    "isThisQuarter",
+    "isThisYear",
+  ]
+  return !noValueOperators.includes(operator)
+}
+
+export function operatorNeedsNumberInput(operator: FilterOperator): boolean {
+  const numberInputOperators: FilterOperator[] = [
+    "lastNDays",
+    "nextNDays",
+    "lastNWeeks",
+    "lastNMonths",
+    "lastNYears",
+  ]
+  return numberInputOperators.includes(operator)
 }

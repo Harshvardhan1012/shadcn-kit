@@ -14,6 +14,7 @@ import { NuqsAdapter } from 'nuqs/adapters/react'
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import './../index.css'
 import { QueryClientWrapper } from './QueryClientProvider'
+import { TableProvider } from '@/app/custom-table/card-builder'
 
 function AppProvider() {
   const routes = generateRoutesFromSidebar(sidebarConfig)
@@ -21,17 +22,18 @@ function AppProvider() {
     <ErrorBoundary>
       <Router>
         <NuqsAdapter>
-          <FeatureFlagsProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem>
-              <AlertProvider>
-                <AuthProvider>
-                  <QueryClientWrapper>
-                    <ClientSidebarProvider>
-                      <Routes>
-                        {/* <Route
+          <TableProvider>
+            <FeatureFlagsProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem>
+                <AlertProvider>
+                  <AuthProvider>
+                    <QueryClientWrapper>
+                      <ClientSidebarProvider>
+                        <Routes>
+                          {/* <Route
                           path="/login"
                           element={
                             <Suspense fallback={<div>Loading...</div>}>
@@ -39,32 +41,33 @@ function AppProvider() {
                             </Suspense>
                           }
                         /> */}
-                        {/* Add any additional routes here if needed */}
-                        {/* Routes with sidebar */}
-                        <Route
-                          path="/*"
-                          element={
-                            <div className="flex flex-col h-screen w-full overflow-hidden">
-                              <div className="absolute right-4 top-2 z-50 flex items-center gap-4">
-                                <ThemeSelector />
-                                <ModeToggle />
+                          {/* Add any additional routes here if needed */}
+                          {/* Routes with sidebar */}
+                          <Route
+                            path="/*"
+                            element={
+                              <div className="flex flex-col h-screen w-full overflow-hidden">
+                                <div className="absolute right-4 top-2 z-50 flex items-center gap-4">
+                                  <ThemeSelector />
+                                  <ModeToggle />
+                                </div>
+                                <div className="flex flex-1 w-full overflow-hidden">
+                                  <SidebarExample>
+                                    <Routes>{routes}</Routes>
+                                  </SidebarExample>
+                                </div>
                               </div>
-                              <div className="flex flex-1 w-full overflow-hidden">
-                                <SidebarExample>
-                                  <Routes>{routes}</Routes>
-                                </SidebarExample>
-                              </div>
-                            </div>
-                          }
-                        />
-                      </Routes>
-                    </ClientSidebarProvider>
-                    <Toaster />
-                  </QueryClientWrapper>
-                </AuthProvider>
-              </AlertProvider>
-            </ThemeProvider>
-          </FeatureFlagsProvider>
+                            }
+                          />
+                        </Routes>
+                      </ClientSidebarProvider>
+                      <Toaster />
+                    </QueryClientWrapper>
+                  </AuthProvider>
+                </AlertProvider>
+              </ThemeProvider>
+            </FeatureFlagsProvider>
+          </TableProvider>
         </NuqsAdapter>
       </Router>
     </ErrorBoundary>

@@ -75,13 +75,126 @@ export function applyFilter(data: any, filter: any) {
     )
     const targetTime = targetDateOnly.getTime()
 
-    console.log("Filtering date:", {
-      target,
-      targetDate,
-      targetDateOnly,
-      operator,
-      value,
-    })
+    // Helper to get start and end of day
+    const getStartOfDay = (date: Date) => {
+      const d = new Date(date)
+      d.setHours(0, 0, 0, 0)
+      return d
+    }
+
+    const getEndOfDay = (date: Date) => {
+      const d = new Date(date)
+      d.setHours(23, 59, 59, 999)
+      return d
+    }
+
+    // Helper to check if date is in range
+    const isDateInRange = (start: Date, end: Date) => {
+      const startTime = getStartOfDay(start).getTime()
+      const endTime = getEndOfDay(end).getTime()
+      return targetTime >= startTime && targetTime <= endTime
+    }
+
+    // Handle new interval operators
+    if (operator === "isToday") {
+      const today = getStartOfDay(new Date())
+      return targetTime === today.getTime()
+    }
+
+    if (operator === "isYesterday") {
+      const yesterday = getStartOfDay(new Date())
+      yesterday.setDate(yesterday.getDate() - 1)
+      return targetTime === yesterday.getTime()
+    }
+
+    if (operator === "isThisWeek") {
+      const now = new Date()
+      const startOfWeek = getStartOfDay(new Date(now))
+      startOfWeek.setDate(now.getDate() - now.getDay()) // Sunday
+      const endOfWeek = getEndOfDay(new Date(startOfWeek))
+      endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
+      return isDateInRange(startOfWeek, endOfWeek)
+    }
+
+    if (operator === "isThisMonth") {
+      const now = new Date()
+      const startOfMonth = getStartOfDay(
+        new Date(now.getFullYear(), now.getMonth(), 1)
+      )
+      const endOfMonth = getEndOfDay(
+        new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      )
+      return isDateInRange(startOfMonth, endOfMonth)
+    }
+
+    if (operator === "isThisQuarter") {
+      const now = new Date()
+      const quarter = Math.floor(now.getMonth() / 3)
+      const startOfQuarter = getStartOfDay(
+        new Date(now.getFullYear(), quarter * 3, 1)
+      )
+      const endOfQuarter = getEndOfDay(
+        new Date(now.getFullYear(), quarter * 3 + 3, 0)
+      )
+      return isDateInRange(startOfQuarter, endOfQuarter)
+    }
+
+    if (operator === "isThisYear") {
+      const now = new Date()
+      const startOfYear = getStartOfDay(new Date(now.getFullYear(), 0, 1))
+      const endOfYear = getEndOfDay(new Date(now.getFullYear(), 11, 31))
+      return isDateInRange(startOfYear, endOfYear)
+    }
+
+    if (operator === "lastNDays") {
+      const n = parseInt(value as string)
+      if (isNaN(n)) return false
+      const now = new Date()
+      const startDate = getStartOfDay(new Date(now))
+      startDate.setDate(now.getDate() - n)
+      const endDate = getEndOfDay(new Date())
+      return isDateInRange(startDate, endDate)
+    }
+
+    if (operator === "nextNDays") {
+      const n = parseInt(value as string)
+      if (isNaN(n)) return false
+      const now = new Date()
+      const startDate = getStartOfDay(new Date())
+      const endDate = getEndOfDay(new Date(now))
+      endDate.setDate(now.getDate() + n)
+      return isDateInRange(startDate, endDate)
+    }
+
+    if (operator === "lastNWeeks") {
+      const n = parseInt(value as string)
+      if (isNaN(n)) return false
+      const now = new Date()
+      const startDate = getStartOfDay(new Date(now))
+      startDate.setDate(now.getDate() - n * 7)
+      const endDate = getEndOfDay(new Date())
+      return isDateInRange(startDate, endDate)
+    }
+
+    if (operator === "lastNMonths") {
+      const n = parseInt(value as string)
+      if (isNaN(n)) return false
+      const now = new Date()
+      const startDate = getStartOfDay(new Date(now))
+      startDate.setMonth(now.getMonth() - n)
+      const endDate = getEndOfDay(new Date())
+      return isDateInRange(startDate, endDate)
+    }
+
+    if (operator === "lastNYears") {
+      const n = parseInt(value as string)
+      if (isNaN(n)) return false
+      const now = new Date()
+      const startDate = getStartOfDay(new Date(now))
+      startDate.setFullYear(now.getFullYear() - n)
+      const endDate = getEndOfDay(new Date())
+      return isDateInRange(startDate, endDate)
+    }
 
     if (operator === "eq") {
       // value is timestamp (e.g., 1751308200000)

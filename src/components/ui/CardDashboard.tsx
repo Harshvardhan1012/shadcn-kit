@@ -1,5 +1,6 @@
-import { TrendingDown, TrendingUp } from 'lucide-react'
+import { Edit2, Trash2, TrendingDown, TrendingUp } from 'lucide-react'
 import { Badge } from './badge'
+import { Button } from './button'
 import {
   Card,
   CardAction,
@@ -25,6 +26,11 @@ interface CardDashboardProps {
   className?: string
   loading?: boolean
   onClick?: () => void
+  editDelete?: {
+    onEdit?: () => void
+    onDelete?: () => void
+  }
+  dragHandle?: React.ReactNode
 }
 
 export const CardDashboard = ({
@@ -35,15 +41,52 @@ export const CardDashboard = ({
   footer,
   className,
   loading = false,
-  onClick
+  onClick,
+  editDelete,
+  dragHandle,
 }: CardDashboardProps) => {
   const TrendIcon = trend?.isPositive === false ? TrendingDown : TrendingUp
 
   return (
-    <Card className={`w-full ${className || ''}`} onClick={onClick}>
+    <Card
+      className={`w-full relative ${className || ''}`}
+      onClick={onClick}>
+      {dragHandle && (
+        <div className="absolute top-2 left-2 z-10">{dragHandle}</div>
+      )}
+
+      {editDelete && (editDelete.onEdit || editDelete.onDelete) && (
+        <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-100">
+          {editDelete.onEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                editDelete.onEdit?.()
+              }}>
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          )}
+          {editDelete.onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation()
+                editDelete.onDelete?.()
+              }}>
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      )}
+
       <CardHeader>
         <CardDescription>
-          {loading ? <Skeleton className="h-4 w-24" /> : (description || title)}
+          {loading ? <Skeleton className="h-4 w-24" /> : description || title}
         </CardDescription>
         <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
           {loading ? <Skeleton className="h-8 w-20" /> : value}

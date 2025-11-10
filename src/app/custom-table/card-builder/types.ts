@@ -35,6 +35,18 @@ export type FilterOperator =
   | "inAll"
   // DateRange operators
   | "isBetween"
+  | "isToday"
+  | "isYesterday"
+  | "isThisWeek"
+  | "isThisMonth"
+  | "isThisQuarter"
+  | "isThisYear"
+  | "lastNDays"
+  | "nextNDays"
+  | "lastNWeeks"
+  | "lastNMonths"
+  | "lastNYears"
+  | "isRelativeToToday"
 
 export interface CardFilter {
   field: string
@@ -48,7 +60,6 @@ export interface Card {
   title: string
   field: string
   operation: CardOperation
-  color: string
   filters?: CardFilter[]
   order?: number
 }

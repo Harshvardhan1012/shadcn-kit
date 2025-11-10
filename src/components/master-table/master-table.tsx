@@ -238,7 +238,6 @@ export default function DynamicMaster<TData extends RowData = RowData>({
           sheetOpen || bulkUploadSheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
-          <TableProvider>
             <Table
               key={columnsKey}
               data={data}
@@ -266,7 +265,6 @@ export default function DynamicMaster<TData extends RowData = RowData>({
                 {children}
               </SheetDemo>
             )}
-          </TableProvider>
         </FeatureFlagsProvider>
       </Shell>
 

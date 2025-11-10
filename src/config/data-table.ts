@@ -1,4 +1,4 @@
-export type DataTableConfig = typeof dataTableConfig;
+export type DataTableConfig = typeof dataTableConfig
 
 export const dataTableConfig = {
   textOperators: [
@@ -28,6 +28,17 @@ export const dataTableConfig = {
     { label: "Is on or before", value: "lte" as const },
     { label: "Is on or after", value: "gte" as const },
     { label: "Is between", value: "isBetween" as const },
+    { label: "Is today", value: "isToday" as const },
+    { label: "Is yesterday", value: "isYesterday" as const },
+    { label: "Is this week", value: "isThisWeek" as const },
+    { label: "Is this month", value: "isThisMonth" as const },
+    { label: "Is this quarter", value: "isThisQuarter" as const },
+    { label: "Is this year", value: "isThisYear" as const },
+    { label: "Last N days", value: "lastNDays" as const },
+    { label: "Next N days", value: "nextNDays" as const },
+    { label: "Last N weeks", value: "lastNWeeks" as const },
+    { label: "Last N months", value: "lastNMonths" as const },
+    { label: "Last N years", value: "lastNYears" as const },
     { label: "Is relative to today", value: "isRelativeToToday" as const },
     { label: "Is empty", value: "isEmpty" as const },
     { label: "Is not empty", value: "isNotEmpty" as const },
@@ -76,7 +87,18 @@ export const dataTableConfig = {
     "gt",
     "gte",
     "isBetween",
+    "isToday",
+    "isYesterday",
+    "isThisWeek",
+    "isThisMonth",
+    "isThisQuarter",
+    "isThisYear",
+    "lastNDays",
+    "nextNDays",
+    "lastNWeeks",
+    "lastNMonths",
+    "lastNYears",
     "isRelativeToToday",
   ] as const,
   joinOperators: ["and", "or"] as const,
-};
+}
