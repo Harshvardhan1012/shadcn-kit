@@ -9,7 +9,9 @@ export type CardOperation =
 export type FilterVariant =
   | "text"
   | "number"
+  | "range"
   | "multiSelect"
+  | "select"
   | "array"
   | "boolean"
   | "dateRange"

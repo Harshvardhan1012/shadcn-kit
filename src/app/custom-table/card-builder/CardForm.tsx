@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { useEffect, useState } from 'react'
+import { ALL_OPERATIONS, OPERATION_LABELS, getFieldVariant } from './card-utils'
 import { useTableContext } from './TableContext'
 import type { Card, CardFilter, CardOperation, FilterVariant } from './types'
 
@@ -48,27 +49,6 @@ interface CardFormProps {
   onSave: (card: Card) => void
   onCancel: () => void
   initialCard?: Card
-}
-
-const ALL_OPERATIONS: Record<string, CardOperation[]> = {
-  text: ['count', 'uniqueCount'],
-  number: ['count', 'sum', 'avg', 'min', 'max', 'uniqueCount'],
-  range: ['count', 'sum', 'avg', 'min', 'max', 'uniqueCount'],
-  date: ['count', 'min', 'max', 'uniqueCount'],
-  dateRange: ['count', 'min', 'max', 'uniqueCount'],
-  boolean: ['count', 'uniqueCount'],
-  select: ['count', 'uniqueCount'],
-  multiSelect: ['count', 'uniqueCount'],
-  default: ['count', 'uniqueCount'],
-}
-
-const OPERATION_LABELS: Record<CardOperation, string> = {
-  count: 'Count',
-  sum: 'Sum',
-  avg: 'Average',
-  min: 'Minimum',
-  max: 'Maximum',
-  uniqueCount: 'Unique Count',
 }
 
 // const COLORS = [
@@ -84,7 +64,6 @@ const OPERATION_LABELS: Record<CardOperation, string> = {
 
 export function CardForm({
   availableFields,
-  fieldVariants,
   columnConfig,
   onSave,
   onCancel,
@@ -95,7 +74,6 @@ export function CardForm({
   const [operation, setOperation] = useState<CardOperation>(
     initialCard?.operation || 'count'
   )
-  // const [color, setColor] = useState(initialCard?.color || COLORS[4].value)
 
   // Get the table instance from context (shared with the main data table)
   const { table } = useTableContext()
@@ -104,16 +82,15 @@ export function CardForm({
   const [filters, setFilters] = useState<ExtendedColumnFilter<any>[]>([])
   const [joinOperator, setJoinOperator] = useState<JoinOperator>('and')
 
-  // Get field variant from columnConfig
-  const getFieldVariant = (fieldName: string): FilterVariant => {
+  // Get field variant from columnConfig using shared utility
+  const getFieldVariantLocal = (fieldName: string): FilterVariant => {
     if (!columnConfig) return 'text'
-    const column = columnConfig.find((col) => col.field === fieldName)
-    return column?.options?.variant || 'text'
+    return getFieldVariant(fieldName, columnConfig)
   }
 
   // Get available operations based on selected field's variant
   const availableOperations = field
-    ? ALL_OPERATIONS[getFieldVariant(field)] || ALL_OPERATIONS.default
+    ? ALL_OPERATIONS[getFieldVariantLocal(field)] || ALL_OPERATIONS.default
     : ALL_OPERATIONS.default
 
   // Reset operation if it's not available for the new field
@@ -239,7 +216,7 @@ export function CardForm({
         </Select>
         {field && (
           <p className="text-xs text-muted-foreground mt-1">
-            Available operations for {getFieldVariant(field)} field
+            Available operations for {getFieldVariantLocal(field)} field
           </p>
         )}
       </div>

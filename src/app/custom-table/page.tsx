@@ -9,6 +9,7 @@ import { callApi } from './api'
 import { CardBuilder } from './card-builder/CardBuilder'
 import { generateColumnConfig } from './generateColumnConfig'
 import { SortableColumnConfigTable } from './sortable-column-config-table'
+import { ChartBuilderSheet } from './card-builder/ChartBuilderSheet'
 
 export default function ColumnConfigPage() {
   const [url, setUrl] = useState('')
@@ -23,12 +24,10 @@ export default function ColumnConfigPage() {
     setColumns(columnConfig)
   }, [columnConfig])
 
-  
   const availableFields = useMemo(() => {
     if (!apiResponse?.data || apiResponse.data.length === 0) return []
     return Object.keys(apiResponse?.data[0])
   }, [apiResponse])
-  
 
   return (
     <div className="space-y-6 p-6 h-screen overflow-y-scroll">
@@ -59,6 +58,13 @@ export default function ColumnConfigPage() {
         availableFields={availableFields}
         columnConfig={columns}
       />
+      <ChartBuilderSheet
+        data={apiResponse?.data}
+        columns={columns}
+        onSave={(config) => {
+          console.log('Chart Configuration:', config)
+        }}
+      />
 
       {apiResponse?.data && (
         <DynamicMaster<any>
@@ -66,9 +72,7 @@ export default function ColumnConfigPage() {
           datatableConfig={{
             ...datatableConfig,
             columnsConfig: columns,
-          }}
-          >
-        </DynamicMaster>
+          }}></DynamicMaster>
       )}
 
       <div className="rounded-lg border bg-slate-50 p-4">

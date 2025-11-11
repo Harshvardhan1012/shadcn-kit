@@ -55,7 +55,7 @@ export interface ColumnConfigOptions {
   is_switch?: boolean
   switch_value?: any
   text_size?: 'small' | 'medium' | 'large' // Font size for text: 'small', 'medium', 'large' - applies font-${size} class
-  value_type?: 'array' | 'date'
+  value_type?: 'array' | 'date' 
   lable_fields?: string[]
   icons?: Array<{ value: string | number | boolean; icon: string }> // Array of value-to-icon mappings. Example: [{ value: true, icon: 'check' }, { value: false, icon: 'x' }]
   on_click_id?: string

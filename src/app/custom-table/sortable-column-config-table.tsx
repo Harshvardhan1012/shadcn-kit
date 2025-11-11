@@ -60,16 +60,18 @@ export function SortableColumnConfigTable({
     null
   )
 
-  const handleUpdateColumn = (
-    id: string,
-    updates: Partial<ColumnConfigTableData>
-  ) => {
-    const newData = tableData.map((row) =>
-      row.id === id ? { ...row, ...updates } : row
-    )
-    setTableData(newData)
-    onColumnsChange(newData.map(({ id, ...col }) => col))
-  }
+  const handleUpdateColumn = React.useCallback(
+    (id: string, updates: Partial<ColumnConfigTableData>) => {
+      setTableData((prev) => {
+        const newData = prev.map((row) =>
+          row.id === id ? { ...row, ...updates } : row
+        )
+        onColumnsChange(newData.map(({ id: _id, ...col }) => col))
+        return newData
+      })
+    },
+    [onColumnsChange]
+  )
 
   const handleColumnsReorder = (reorderedData: ColumnConfigTableData[]) => {
     setTableData(reorderedData)
@@ -85,11 +87,6 @@ export function SortableColumnConfigTable({
           <Input
             type="text"
             value={row.original.field}
-            onChange={(e) =>
-              handleUpdateColumn(row.original.id, {
-                field: e.target.value,
-              })
-            }
             className="w-full rounded border px-2 py-1 text-sm"
           />
         ),
@@ -97,19 +94,42 @@ export function SortableColumnConfigTable({
       {
         accessorKey: 'header',
         header: 'Header',
-        cell: ({ row }) => (
-          <Input
-            type="text"
-            value={row.original.header}
-            onChange={(e) =>
-              handleUpdateColumn(row.original.id, {
-                header: e.target.value,
-              })
+        cell: ({ row }) => {
+          const [editingValue, setEditingValue] = React.useState(
+            row.original.header
+          )
+
+          // Update local state when row data changes externally
+          React.useEffect(() => {
+            setEditingValue(row.original.header)
+          }, [row.original.header])
+
+          const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
+              // Apply change and blur
+              handleUpdateColumn(row.original.id, { header: editingValue })
+              ;(e.target as HTMLInputElement).blur()
             }
-            className="w-full rounded border px-2 py-1 text-sm"
-          />
-        ),
+            if (e.key === 'Escape') {
+              // Revert and blur
+              setEditingValue(row.original.header)
+              ;(e.target as HTMLInputElement).blur()
+            }
+          }
+
+          return (
+            <Input
+              type="text"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              // onFocus={(e) => e.target.select()} // Optional: auto-select text on focus
+              onKeyDown={handleKeyDown}
+              className="w-full rounded border px-2 py-1 text-sm"
+            />
+          )
+        },
       },
+
       {
         id: 'sortable',
         header: 'Sortable',
@@ -165,35 +185,6 @@ export function SortableColumnConfigTable({
             </SelectTrigger>
             <SelectContent>
               {variantOptions.map((opt) => (
-                <SelectItem
-                  key={opt.value}
-                  value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ),
-      },
-      {
-        id: 'valueType',
-        header: 'Value Type',
-        cell: ({ row }) => (
-          <Select
-            value={row.original.options?.value_type ?? 'string'}
-            onValueChange={(value) =>
-              handleUpdateColumn(row.original.id, {
-                options: {
-                  ...row.original.options,
-                  value_type: value as ColumnConfigOptions['value_type'],
-                },
-              })
-            }>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {valueTypeOptions.map((opt) => (
                 <SelectItem
                   key={opt.value}
                   value={opt.value}>
@@ -267,13 +258,7 @@ export function SortableColumnConfigTable({
         },
       },
     ],
-    [
-      tableData,
-      setSelectedRowId,
-      setOptionsOpen,
-      setSelectedIconsRowId,
-      setIconsOpen,
-    ]
+    [handleUpdateColumn]
   )
 
   return (
