@@ -2,7 +2,7 @@
 export interface BaseComponentProps<T = unknown> {
   label?: string
   description?: string
-  error: React.JSX.Element | null
+  error?: React.JSX.Element | null
   className?: string
   disabled?: boolean
   onChange?: (value: T) => void

@@ -1,1091 +1,1039 @@
-# json-reactify Documentation
+# Shadcn-Kit Documentation
 
-A comprehensive React component library for building dynamic forms, charts,sidebars and alerts from JSON configuration.
+Complete documentation for Forms, Tables, and Charts components.
 
 ---
 
-## Form Component
+## Table of Contents
 
-The Form component is a flexible, type-safe React form builder that supports multiple field types with built-in validation using React Hook Form and Zod.
+1. [Dynamic Form](#dynamic-form)
+2. [Master Table](#master-table)
+3. [Dynamic Chart](#dynamic-chart)
 
-<details>
-<summary><strong>Quick Start</strong></summary>
+---
+
+## Dynamic Form
+
+A flexible, type-safe form builder with validation, conditional fields, and custom components.
+
+### Features
+
+- Multiple field types (text, email, password, number, select, multiselect, combobox, date, datetime, file, checkbox, switch, radio, textarea)
+- Zod schema validation
+- Conditional field visibility
+- Custom field validation
+- File upload with preview
+- Multi-select with search
+- Combobox with search
+- Date and DateTime pickers
+- Form context API for programmatic control
+
+### Basic Usage
 
 ```tsx
-import { Form } from 'json-reactify'
+import { DynamicForm, FormFieldType } from '@/components/form'
+import { z } from 'zod'
 
-// Define your form schema
-const userSchema = z.object({
+// Define schema
+const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  age: z.number().min(18, 'Must be at least 18 years old'),
+  age: z.number().min(18, 'Must be 18 or older'),
+  role: z.string(),
 })
 
-type UserFormData = z.infer<typeof userSchema>
-
-// Configure your form fields
+// Define form configuration
 const formConfig = [
   {
-    fieldType: FormFieldType.TEXT,
     fieldName: 'name',
     fieldLabel: 'Full Name',
-    placeholder: 'Enter your full name',
-    description: 'Your legal first and last name',
+    fieldType: FormFieldType.TEXT,
+    placeholder: 'Enter your name',
+    description: 'Your full legal name',
   },
   {
-    fieldType: FormFieldType.EMAIL,
     fieldName: 'email',
-    fieldLabel: 'Email Address',
-    placeholder: 'you@example.com',
+    fieldLabel: 'Email',
+    fieldType: FormFieldType.EMAIL,
+    placeholder: 'your.email@example.com',
   },
   {
-    fieldType: FormFieldType.NUMBER,
     fieldName: 'age',
     fieldLabel: 'Age',
-    placeholder: '25',
+    fieldType: FormFieldType.NUMBER,
+    placeholder: '18',
+  },
+  {
+    fieldName: 'role',
+    fieldLabel: 'Role',
+    fieldType: FormFieldType.SELECT,
+    options: [
+      { label: 'Admin', value: 'admin' },
+      { label: 'User', value: 'user' },
+      { label: 'Guest', value: 'guest' },
+    ],
   },
 ]
 
-// Use the component
 function MyForm() {
-  const handleSubmit = (data: UserFormData) => {
-    console.log('Form submitted:', data)
+  const handleSubmit = (data) => {
+    console.log('Form data:', data)
   }
 
   return (
-    <Form
+    <DynamicForm
       formConfig={formConfig}
-      schema={userSchema}
+      schema={schema}
       onSubmit={handleSubmit}
-      defaultValues={{ name: '', email: '', age: 0 }}
+      submitButtonText="Submit"
+      showResetButton={true}
     />
   )
 }
 ```
 
-</details>
+### Field Types
 
-<details>
-<summary><strong>Field Types</strong></summary>
-
-### Text Input Fields
+#### Text Input
 
 ```tsx
 {
-  fieldType: FormFieldType.TEXT,
   fieldName: 'username',
   fieldLabel: 'Username',
+  fieldType: FormFieldType.TEXT,
   placeholder: 'Enter username',
-  icon: User, // Optional icon from lucide-react
+  description: 'Choose a unique username',
+  disabled: false,
 }
 ```
 
-**Supported types:** `TEXT`, `PASSWORD`, `EMAIL`, `NUMBER`
-
-### Textarea
+#### Email Input
 
 ```tsx
 {
-  fieldType: FormFieldType.TEXTAREA,
-  fieldName: 'description',
-  fieldLabel: 'Description',
-  placeholder: 'Enter description...',
-  rows: 4,
+  fieldName: 'email',
+  fieldLabel: 'Email Address',
+  fieldType: FormFieldType.EMAIL,
+  placeholder: 'your.email@example.com',
 }
 ```
 
-### Checkbox
+#### Password Input
 
 ```tsx
 {
+  fieldName: 'password',
+  fieldLabel: 'Password',
+  fieldType: FormFieldType.PASSWORD,
+  placeholder: 'Enter password',
+  description: 'Must be at least 8 characters',
+}
+```
+
+#### Number Input
+
+```tsx
+{
+  fieldName: 'age',
+  fieldLabel: 'Age',
+  fieldType: FormFieldType.NUMBER,
+  placeholder: '18',
+}
+```
+
+#### Select Dropdown
+
+```tsx
+{
+  fieldName: 'country',
+  fieldLabel: 'Country',
+  fieldType: FormFieldType.SELECT,
+  placeholder: 'Select country',
+  options: [
+    { label: 'United States', value: 'us' },
+    { label: 'United Kingdom', value: 'uk' },
+    { label: 'India', value: 'in' },
+  ],
+}
+```
+
+#### Multi-Select
+
+```tsx
+{
+  fieldName: 'skills',
+  fieldLabel: 'Skills',
+  fieldType: FormFieldType.MULTISELECT,
+  placeholder: 'Select skills',
+  options: [
+    { label: 'JavaScript', value: 'js' },
+    { label: 'TypeScript', value: 'ts' },
+    { label: 'React', value: 'react' },
+    { label: 'Node.js', value: 'node' },
+  ],
+  enableSearch: true,
+  maxSelectedDisplay: 3,
+  creatable: true, // Allow custom values
+}
+```
+
+#### Combobox (Searchable Select)
+
+```tsx
+{
+  fieldName: 'city',
+  fieldLabel: 'City',
+  fieldType: FormFieldType.COMBOBOX,
+  placeholder: 'Select city',
+  searchPlaceholder: 'Search cities...',
+  emptyMessage: 'No city found',
+  options: [
+    { label: 'New York', value: 'ny' },
+    { label: 'Los Angeles', value: 'la' },
+    { label: 'Chicago', value: 'chi' },
+  ],
+  onSearchChange: (name, value) => {
+    console.log('Searching:', value)
+  },
+}
+```
+
+#### Date Picker
+
+```tsx
+{
+  fieldName: 'birthDate',
+  fieldLabel: 'Birth Date',
+  fieldType: FormFieldType.DATE,
+  mode: 'single',
+  minDate: new Date('1900-01-01'),
+  maxDate: new Date(),
+}
+```
+
+#### Date Range Picker
+
+```tsx
+{
+  fieldName: 'dateRange',
+  fieldLabel: 'Date Range',
+  fieldType: FormFieldType.DATE,
+  mode: 'range',
+}
+```
+
+#### DateTime Picker
+
+```tsx
+{
+  fieldName: 'appointmentTime',
+  fieldLabel: 'Appointment Time',
+  fieldType: FormFieldType.DATETIME,
+  timeFormat: 12, // or 24
+  timeStructure: 'hour-minute', // or 'hour-minute-second'
+  minDate: new Date(),
+}
+```
+
+#### Checkbox
+
+```tsx
+{
+  fieldName: 'terms',
+  fieldLabel: 'Accept Terms and Conditions',
   fieldType: FormFieldType.CHECKBOX,
-  fieldName: 'agreeToTerms',
-  fieldLabel: 'I agree to the terms and conditions',
-  description: 'You must agree to continue',
+  description: 'You must accept the terms to continue',
 }
 ```
 
-### Switch
+#### Switch
 
 ```tsx
 {
-  fieldType: FormFieldType.SWITCH,
   fieldName: 'notifications',
   fieldLabel: 'Enable Notifications',
+  fieldType: FormFieldType.SWITCH,
   description: 'Receive email notifications',
 }
 ```
 
-### Select Dropdown
+#### Radio Group
 
 ```tsx
 {
-  fieldType: FormFieldType.SELECT,
-  fieldName: 'country',
-  fieldLabel: 'Country',
-  placeholder: 'Select your country',
-  options: [
-    { value: 'us', label: 'United States' },
-    { value: 'ca', label: 'Canada' },
-    { value: 'uk', label: 'United Kingdom' },
-  ],
-}
-```
-
-### Radio Group
-
-```tsx
-{
+  fieldName: 'gender',
+  fieldLabel: 'Gender',
   fieldType: FormFieldType.RADIO,
-  fieldName: 'plan',
-  fieldLabel: 'Subscription Plan',
   options: [
-    { value: 'basic', label: 'Basic ($9/month)' },
-    { value: 'pro', label: 'Pro ($19/month)' },
-    { value: 'enterprise', label: 'Enterprise ($49/month)' },
-  ],
-  orientation: 'vertical', // or 'horizontal'
-}
-```
-
-### Combobox (Searchable Select)
-
-```tsx
-{
-  fieldType: FormFieldType.COMBOBOX,
-  fieldName: 'language',
-  fieldLabel: 'Programming Language',
-  placeholder: 'Select a language',
-  searchPlaceholder: 'Search languages...',
-  emptyMessage: 'No language found.',
-  options: [
-    { value: 'js', label: 'JavaScript', icon: Code },
-    { value: 'ts', label: 'TypeScript', icon: Code },
-    { value: 'py', label: 'Python', icon: Code },
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
   ],
 }
 ```
 
-### Multi-Select
+#### Textarea
 
 ```tsx
 {
-  fieldType: FormFieldType.MULTISELECT,
-  fieldName: 'skills',
-  fieldLabel: 'Skills',
-  placeholder: 'Select your skills',
-  maxSelectedDisplay: 3,
-  options: [
-    { value: 'react', label: 'React' },
-    { value: 'vue', label: 'Vue.js' },
-    { value: 'angular', label: 'Angular' },
-    { value: 'node', label: 'Node.js' },
-  ],
+  fieldName: 'bio',
+  fieldLabel: 'Biography',
+  fieldType: FormFieldType.TEXTAREA,
+  placeholder: 'Tell us about yourself',
+  description: 'Maximum 500 characters',
 }
 ```
 
-### Date Picker
+#### File Upload
 
 ```tsx
 {
-  fieldType: FormFieldType.DATE,
-  fieldName: 'birthDate',
-  fieldLabel: 'Birth Date',
-  mode: 'single', // 'single', 'multiple', or 'range'
-  fromDate: new Date(1900, 0, 1),
-  toDate: new Date(),
-}
-```
-
-### DateTime Picker
-
-```tsx
-{
-  fieldType: FormFieldType.DATETIME,
-  fieldName: 'appointmentTime',
-  fieldLabel: 'Appointment Date & Time',
-  timeFormat: '12', // '12' or '24'
-  timeStructure: 'hh:mm', // 'hh', 'hh:mm', or 'hh:mm:ss'
-  fromDate: new Date(),
-  toDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-}
-```
-
-### File Upload
-
-```tsx
-{
-  fieldType: FormFieldType.FILE,
   fieldName: 'avatar',
   fieldLabel: 'Profile Picture',
+  fieldType: FormFieldType.FILE,
   accept: 'image/*',
-  multiple: false,
-  icon: Upload,
+  buttonText: 'Upload Image',
+  description: 'Max size: 5MB',
 }
 ```
-
-</details>
-
-<details>
-<summary><strong>Advanced Features</strong></summary>
 
 ### Conditional Fields
 
 Show/hide fields based on other field values:
 
 ```tsx
-{
-  fieldType: FormFieldType.TEXT,
-  fieldName: 'otherReason',
-  fieldLabel: 'Please specify',
-  showIf: (formValues) => formValues.reason === 'other',
-  dependsOn: ['reason'],
-}
+const formConfig = [
+  {
+    fieldName: 'hasExperience',
+    fieldLabel: 'Do you have experience?',
+    fieldType: FormFieldType.SWITCH,
+  },
+  {
+    fieldName: 'yearsOfExperience',
+    fieldLabel: 'Years of Experience',
+    fieldType: FormFieldType.NUMBER,
+    showIf: (formValues) => formValues.hasExperience === true,
+  },
+]
 ```
 
-### Field Validation
-
-Use Zod for powerful validation:
-
-```tsx
-const schema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
-```
-
-### Event Callbacks
+### Field Events
 
 Handle field-level events:
 
 ```tsx
 {
-  fieldType: FormFieldType.EMAIL,
   fieldName: 'email',
   fieldLabel: 'Email',
+  fieldType: FormFieldType.EMAIL,
   onChangeField: (value) => {
     console.log('Email changed:', value)
   },
   onBlurField: (value) => {
-    // Validate email exists
-    checkEmailExists(value)
+    console.log('Email blurred:', value)
   },
   onErrorField: (error) => {
-    console.error('Email field error:', error)
+    console.error('Email error:', error)
   },
 }
 ```
 
-### Custom Submit Button
+### Form Context API
+
+Access form methods programmatically:
 
 ```tsx
-<Form
-  formConfig={formConfig}
-  schema={schema}
-  onSubmit={handleSubmit}
-  customSubmitButton={
-    <div className="flex gap-2">
-      <Button type="submit" className="bg-blue-600">
-        Save Changes
-      </Button>
-    </div>
+import { useFormContext } from '@/components/form'
+
+function MyComponent() {
+  const formContext = useFormContext()
+
+  const handleCustomAction = () => {
+    // Get field value
+    const email = formContext.getFieldValue('email')
+    
+    // Set field value
+    formContext.setFieldValue('name', 'John Doe')
+    
+    // Validate specific field
+    formContext.validateField('email')
+    
+    // Validate entire form
+    formContext.validateForm()
+    
+    // Reset form
+    formContext.resetForm()
+    
+    // Get all form values
+    const allValues = formContext.getFormValues()
+    
+    // Check if form is valid
+    const isValid = formContext.isValid()
+    
+    // Get errors
+    const errors = formContext.getErrors()
   }
-/>
+
+  return <button onClick={handleCustomAction}>Custom Action</button>
+}
 ```
 
-</details>
+### Props Reference
 
-<details>
-<summary><strong>Props Reference</strong></summary>
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `formConfig` | `FormFieldConfig[]` | Required | Array of field configurations |
+| `schema` | `ZodSchema` | Required | Zod validation schema |
+| `onSubmit` | `(data) => void` | Required | Form submission handler |
+| `defaultValues` | `object` | `{}` | Default form values |
+| `submitButtonText` | `string` | `'Submit'` | Submit button text |
+| `showResetButton` | `boolean` | `false` | Show reset button |
+| `loading` | `boolean` | `false` | Show loading skeleton |
+| `className` | `string` | `''` | Additional CSS classes |
+| `customSubmitButton` | `ReactNode` | `null` | Custom submit button component |
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `formConfig` | `FormFieldConfig[]` | ✅ | Array of field configurations |
-| `onSubmit` | `SubmitHandler<T>` | ✅ | Form submission handler |
-| `schema` | `z.ZodSchema<T>` | ✅ | Zod validation schema |
-| `defaultValues` | `DefaultValues<T>` | ❌ | Default form values |
-| `customSubmitButton` | `React.ReactNode` | ❌ | Custom submit button component |
-| `className` | `string` | ❌ | CSS classes for form container |
-| `loading` | `boolean` | ❌ | Show loading skeletons |
+---
 
-### Field Configuration Options
+## Master Table
 
-All field types support these common properties:
+A powerful data table component with client-side filtering, sorting, pagination, and bulk operations.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `fieldType` | `FormFieldType` | The type of field to render |
-| `fieldName` | `string` | Field name (must match schema) |
-| `fieldLabel` | `string` | Display label for the field |
-| `description` | `string` | Optional help text |
-| `placeholder` | `string` | Placeholder text |
-| `disabled` | `boolean` | Disable the field |
-| `hidden` | `boolean` | Hide the field |
-| `showIf` | `(values) => boolean` | Conditional visibility |
-| `dependsOn` | `string[]` | Fields this depends on |
-| `onChangeField` | `(value) => void` | Change event handler |
-| `onBlurField` | `(value) => void` | Blur event handler |
-| `onErrorField` | `(error) => void` | Error event handler |
+### Features
 
-</details>
+- Column sorting
+- Pagination
+- Row selection
+- Bulk actions
+- Column visibility toggle
+- Export to Excel
+- Customizable columns
+- Multiple Filter management
+- Bulk upload from Excel
 
-<details>
-<summary><strong>Complete Example</strong></summary>
+
+### Column Configuration
+
+#### Text Column
 
 ```tsx
-import { Form, FormFieldType, FormOption } from 'json-reactify'
-import * as z from 'zod'
-import { User, Mail, Phone, MapPin } from 'lucide-react'
+{
+  field: 'name',
+  headerName: 'Name',
+  enableSorting: true,
+  enableHiding: true,
+  options: {
+    variant: 'text',
+  },
+}
+```
 
-const profileSchema = z.object({
-  firstName: z.string().min(2, 'First name required'),
-  lastName: z.string().min(2, 'Last name required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().optional(),
-  country: z.string().min(1, 'Please select a country'),
-  bio: z.string().max(500, 'Bio must be under 500 characters').optional(),
-  skills: z.array(z.string()).min(1, 'Select at least one skill'),
-  availability: z.enum(['full-time', 'part-time', 'contract']),
-  newsletter: z.boolean(),
-  profilePicture: z.instanceof(File).optional(),
-})
+#### Number Column
 
-type ProfileFormData = z.infer<typeof profileSchema>
+```tsx
+{
+  field: 'age',
+  headerName: 'Age',
+  enableSorting: true,
+  options: {
+    variant: 'number',
+  },
+}
+```
 
-const countryOptions: FormOption[] = [
-  { value: 'us', label: 'United States' },
-  { value: 'ca', label: 'Canada' },
-  { value: 'uk', label: 'United Kingdom' },
-  { value: 'de', label: 'Germany' },
-]
+#### Select/Enum Column
 
-const skillOptions: FormOption[] = [
-  { value: 'react', label: 'React' },
-  { value: 'vue', label: 'Vue.js' },
-  { value: 'angular', label: 'Angular' },
-  { value: 'node', label: 'Node.js' },
-  { value: 'python', label: 'Python' },
-  { value: 'java', label: 'Java' },
-]
-
-const formConfig = [
-  {
-    fieldType: FormFieldType.TEXT,
-    fieldName: 'firstName',
-    fieldLabel: 'First Name',
-    placeholder: 'John',
-    icon: User,
-  },
-  {
-    fieldType: FormFieldType.TEXT,
-    fieldName: 'lastName',
-    fieldLabel: 'Last Name',
-    placeholder: 'Doe',
-    icon: User,
-  },
-  {
-    fieldType: FormFieldType.EMAIL,
-    fieldName: 'email',
-    fieldLabel: 'Email Address',
-    placeholder: 'john@example.com',
-    icon: Mail,
-  },
-  {
-    fieldType: FormFieldType.TEXT,
-    fieldName: 'phone',
-    fieldLabel: 'Phone Number',
-    placeholder: '+1 (555) 123-4567',
-    icon: Phone,
-  },
-  {
-    fieldType: FormFieldType.SELECT,
-    fieldName: 'country',
-    fieldLabel: 'Country',
-    placeholder: 'Select your country',
-    options: countryOptions,
-    icon: MapPin,
-  },
-  {
-    fieldType: FormFieldType.TEXTAREA,
-    fieldName: 'bio',
-    fieldLabel: 'Bio',
-    placeholder: 'Tell us about yourself...',
-    rows: 4,
-    description: 'Optional: Share a brief description about yourself',
-  },
-  {
-    fieldType: FormFieldType.MULTISELECT,
-    fieldName: 'skills',
-    fieldLabel: 'Skills',
-    placeholder: 'Select your skills',
-    options: skillOptions,
-    maxSelectedDisplay: 3,
-  },
-  {
-    fieldType: FormFieldType.RADIO,
-    fieldName: 'availability',
-    fieldLabel: 'Availability',
-    options: [
-      { value: 'full-time', label: 'Full-time' },
-      { value: 'part-time', label: 'Part-time' },
-      { value: 'contract', label: 'Contract' },
+```tsx
+{
+  field: 'status',
+  headerName: 'Status',
+  enableSorting: true,
+  options: {
+    variant: 'select',
+    selectOptions: [
+      { label: 'Active', value: 'active' },
+      { label: 'Inactive', value: 'inactive' },
+      { label: 'Pending', value: 'pending' },
     ],
   },
-  {
-    fieldType: FormFieldType.SWITCH,
-    fieldName: 'newsletter',
-    fieldLabel: 'Newsletter Subscription',
-    description: 'Receive updates and news via email',
+}
+```
+
+#### Date Column
+
+```tsx
+{
+  field: 'createdAt',
+  headerName: 'Created At',
+  enableSorting: true,
+  options: {
+    variant: 'date',
   },
+}
+```
+
+
+### Row Actions
+
+Define actions for each row:
+
+```tsx
+const columnActions = [
   {
-    fieldType: FormFieldType.FILE,
-    fieldName: 'profilePicture',
-    fieldLabel: 'Profile Picture',
-    accept: 'image/*',
-    description: 'Upload a profile picture (optional)',
+    label: 'View',
+    key: 'view' 
   },
 ]
+```
 
-export default function ProfileForm() {
-  const handleSubmit = (data: ProfileFormData) => {
-    console.log('Profile data:', data)
-    // Handle form submission
-  }
+### Bulk Actions
 
-  const defaultValues: Partial<ProfileFormData> = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    country: '',
-    skills: [],
-    availability: 'full-time',
-    newsletter: false,
-  }
+Define actions for multiple selected rows:
+
+```tsx
+const actionConfig = {
+  bulkActions: [
+    {
+      label: 'Delete Selected',
+      key: "delete"
+    },
+    {
+      label: 'Export Selected',
+      key: "export"
+    },
+  ],
+}
+```
+
+### Add Item Button
+
+Add a button to create new items:
+
+```tsx
+const addItemData = {
+  title: 'Add New User',
+}
+
+function MyTable() {
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create Profile</h1>
-      <Form
-        formConfig={formConfig}
-        schema={profileSchema}
-        onSubmit={handleSubmit}
-        defaultValues={defaultValues}
-        className="space-y-4"
-      />
-    </div>
+    <DynamicMaster
+      datatableConfig={{
+        columnsConfig,
+        columnActions,
+        tableConfig: {},
+        actionConfig: {},
+        addItemData,
+      }}
+      data={data}
+      sheetOpen={sheetOpen}
+      onSheetOpenChange={setSheetOpen}
+      onClickAddItem={() => {
+        console.log('Add new item')
+      }}>
+      {/* Your form or content for the sheet */}
+      <div>Add User Form</div>
+    </DynamicMaster>
   )
 }
 ```
 
-</details>
+### Bulk Upload
+
+Enable bulk upload from Excel:
+
+```tsx
+import { z } from 'zod'
+
+const bulkUploadConfig = {
+  template: {
+    columns: [
+      { key: 'name', label: 'Name', type: FormFieldType.TEXT },
+      { key: 'email', label: 'Email', type: FormFieldType.EMAIL },
+      { 
+        key: 'role', 
+        label: 'Role', 
+        type: FormFieldType.SELECT,
+        dropdownOptions: [
+          { label: 'Admin', value: 'admin' },
+          { label: 'User', value: 'user' },
+        ],
+      },
+    ],
+  },
+  schema: z.object({
+    name: z.string().min(2),
+    email: z.string().email(),
+    role: z.enum(['admin', 'user']),
+  }),
+  onUpload: async (data) => {
+    console.log('Upload data:', data)
+    // Make API call to save data
+  },
+  buttonTitle: 'Bulk Upload Users',
+  emptyRowCount: 10,
+}
+
+function MyTable() {
+  return (
+    <DynamicMaster
+      datatableConfig={{...}}
+      data={data}
+      bulkUploadConfig={bulkUploadConfig}
+    />
+  )
+}
+```
+
+### Loading State
+
+Show loading skeleton:
+
+```tsx
+<DynamicMaster
+  datatableConfig={{...}}
+  data={data}
+  isLoading={true}
+/>
+```
+
+### Error State
+
+Show error message:
+
+```tsx
+<DynamicMaster
+  datatableConfig={{...}}
+  data={data}
+  errorMessage="Failed to load data. Please try again."
+/>
+```
+
+### Props Reference
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `datatableConfig` | `DatatableConfig` | Required | Table configuration object |
+| `data` | `any[]` | `[]` | Table data |
+| `sheetOpen` | `boolean` | `false` | Control sheet visibility |
+| `onSheetOpenChange` | `(open: boolean) => void` | `undefined` | Sheet state change handler |
+| `isLoading` | `boolean` | `false` | Show loading state |
+| `errorMessage` | `string` | `undefined` | Error message to display |
+| `onClickAddItem` | `() => void` | `() => {}` | Add item button handler |
+| `bulkUploadConfig` | `BulkUploadConfig` | `undefined` | Bulk upload configuration |
 
 ---
 
-## Chart Component
+## Dynamic Chart
 
-A flexible React chart component built with Recharts and shadcn/ui. Supports multiple chart types, zoom, export, and table view.
+A flexible charting component supporting multiple chart types with filtering and export capabilities.
 
-<details>
-<summary><strong>Features</strong></summary>
+### Features
 
-- **6 Chart Types**: Area, Line, Bar, Pie, Donut, Table
-- **Interactive**: Zoom, click handlers, type switching
-- **Responsive**: Auto-sizing and mobile-friendly
-- **Export**: CSV download functionality
-- **Customizable**: Themes, colors, styling
+- Multiple chart types (line, area, bar, pie, donut, table)
+- Dynamic data visualization
+- Chart type switching
+- Zoom controls
+- Export to CSV
+- Global and series-specific filtering
+- Value operation for raw data display
+- Aggregation operations (sum, avg, min, max, count, uniqueCount)
+- Loading state
+- Customizable styling
 
-</details>
-
-<details>
-<summary><strong>Quick Start</strong></summary>
+### Basic Usage
 
 ```tsx
-import { Chart } from 'json-reactify'
+import { DynamicChart } from '@/components/chart'
 
 const data = [
-  { name: 'Jan', sales: 4000, revenue: 2400 },
-  { name: 'Feb', sales: 3000, revenue: 1398 },
-  { name: 'Mar', sales: 2000, revenue: 9800 },
+  { month: 'Jan', revenue: 1000, expenses: 800 },
+  { month: 'Feb', revenue: 1500, expenses: 900 },
+  { month: 'Mar', revenue: 1200, expenses: 850 },
 ]
 
-<Chart
-  title="Sales Dashboard"
-  data={data}
+const config = {
+  revenue: { label: 'Revenue' },
+  expenses: { label: 'Expenses' },
+}
+
+function MyChart() {
+  return (
+    <DynamicChart
+      title="Monthly Revenue"
+      description="Revenue and expenses over time"
+      chartType="bar"
+      data={data}
+      config={config}
+      xAxisKey="month"
+      yAxisKeys={['revenue', 'expenses']}
+      height={400}
+    />
+  )
+}
+```
+
+### Chart Types
+
+#### Line Chart
+
+```tsx
+<DynamicChart
   chartType="line"
-  xAxisKey="name"
-  yAxisKeys={['sales', 'revenue']}
+  data={data}
+  xAxisKey="month"
+  yAxisKeys={['sales']}
+  config={{ sales: { label: 'Sales' } }}
 />
 ```
 
-</details>
-
-<details>
-<summary><strong>Chart Types</strong></summary>
+#### Area Chart
 
 ```tsx
-// Line Chart
-<Chart chartType="line" data={data} xAxisKey="date" yAxisKeys={['value']} />
-
-// Bar Chart  
-<Chart chartType="bar" data={data} xAxisKey="category" yAxisKeys={['amount']} />
-
-// Pie Chart
-<Chart chartType="pie" data={data} xAxisKey="name" yAxisKeys={['value']} />
-
-// Table View
-<Chart 
-  chartType="table" 
+<DynamicChart
+  chartType="area"
   data={data}
-  tableConfig={{ sortable: true, showRowNumbers: true }}
+  xAxisKey="month"
+  yAxisKeys={['sales']}
+  config={{ sales: { label: 'Sales' } }}
 />
 ```
 
-</details>
-
-<details>
-<summary><strong>Customization</strong></summary>
+#### Bar Chart
 
 ```tsx
-<Chart
+<DynamicChart
+  chartType="bar"
   data={data}
+  xAxisKey="month"
+  yAxisKeys={['revenue', 'expenses']}
   config={{
-    sales: { label: 'Sales', color: '#8884d8' },
-    revenue: { label: 'Revenue', color: '#82ca9d' }
+    revenue: { label: 'Revenue' },
+    expenses: { label: 'Expenses' },
   }}
-  pieColors={['#8884d8', '#82ca9d', '#ffc658']}
-  autoSize={{ minHeight: 300, maxHeight: 600 }}
-  zoom={{ enabled: true, showControls: true }}
-  onDataPointClick={(data) => console.log('Clicked:', data)}
 />
 ```
 
-</details>
+#### Pie Chart
 
-<details>
-<summary><strong>Examples</strong></summary>
-/>
-```
-
-</details>
-
-<details>
-<summary><strong>Props Reference</strong></summary>
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `data` | `ChartDataPoint[]` | `[]` | Chart data |
-| `chartType` | `'area' \| 'line' \| 'bar' \| 'pie' \| 'donut' \| 'table'` | `'line'` | Chart type |
-| `xAxisKey` | `string` | `'name'` | X-axis data key |
-| `yAxisKeys` | `string[]` | `['value']` | Y-axis data keys |
-| `title` | `ReactNode` | - | Chart title |
-| `showTypeSelector` | `boolean` | `true` | Show type dropdown |
-| `showDownload` | `boolean` | `true` | Show download button |
-| `zoom` | `ZoomConfig` | - | Zoom configuration |
-| `tableConfig` | `TableConfig` | - | Table settings |
-| `onDataPointClick` | `(data) => void` | - | Click handler |
-
-</details>
-
-<details>
-<summary><strong>Examples</strong></summary>
-
-### Dashboard Widget
 ```tsx
-<Chart
-  title="Revenue"
-  data={revenueData}
-  chartType="area" 
-  height={200}
-  showTypeSelector={false}
+<DynamicChart
+  chartType="pie"
+  data={data}
+  xAxisKey="category"
+  yAxisKeys={['value']}
+  config={{ value: { label: 'Sales by Category' } }}
 />
 ```
 
-### Interactive Report
-```tsx
-const [chartType, setChartType] = useState('bar')
+#### Donut Chart
 
-<Chart
-  data={salesData}
-  chartType={chartType}
-  onChartTypeChange={setChartType}
-  onDataPointClick={(data) => setSelected(data)}
+```tsx
+<DynamicChart
+  chartType="donut"
+  data={data}
+  xAxisKey="category"
+  yAxisKeys={['value']}
+  config={{ value: { label: 'Market Share' } }}
 />
 ```
 
-### Sortable Table
+#### Table View
+
 ```tsx
-<Chart
+<DynamicChart
   chartType="table"
-  data={tableData}
+  data={data}
+  xAxisKey="product"
+  yAxisKeys={['sales', 'profit']}
   tableConfig={{
+    showRowNumbers: true,
     sortable: true,
-    columnHeaders: { sales: 'Sales ($)' },
-    cellRenderer: (value, key) => 
-      key === 'sales' ? `$${value.toLocaleString()}` : value
+    columnHeaders: {
+      product: 'Product Name',
+      sales: 'Total Sales',
+      profit: 'Net Profit',
+    },
+    hiddenColumns: ['id'],
   }}
 />
 ```
 
-</details>
-
-<details>
-<summary><strong>TypeScript Support</strong></summary>
+### Zoom Controls
 
 ```tsx
-import type { ChartType, ChartDataPoint } from 'json-reactify'
-
-interface MyData extends ChartDataPoint {
-  date: string
-  value: number
-}
-```
-
-</details>
-
----
-
-## Alert Service
-
-A simple alert/notification system with auto-dismiss and TypeScript support.
-
-```tsx
-import { AlertProvider, useAlert } from 'json-reactify'
-
-// 1. Wrap your app
-function App() {
-  return (
-    <AlertProvider>
-      <MyComponent />
-    </AlertProvider>
-  )
-}
-
-// 2. Use in components
-function MyComponent() {
-  const { showAlert } = useAlert()
-
-  const handleSuccess = () => {
-    showAlert('default', 'Success!', 'Action completed successfully.')
-  }
-
-  const handleError = () => {
-    showAlert('destructive', 'Error!', 'Something went wrong.')
-  }
-
-  return (
-    <div>
-      <button onClick={handleSuccess}>Success</button>
-      <button onClick={handleError}>Error</button>
-    </div>
-  )
-}
-```
-
-**Available Methods:**
-- `showAlert(type, title, description)` - Show alert (auto-dismisses in 3s)
-- `closeAlert(id)` - Manually close alert
-- `alerts` - Array of current alerts
-
-**Alert Types:** `'default'` | `'destructive'`
-
----
-
-## Sidebar Component
-
-A flexible, configurable sidebar component system built with React and TypeScript that allows you to create dynamic navigation sidebars from JSON configuration.
-
-<details>
-<summary><strong>Installation</strong></summary>
-
-```bash
-npm install json-reactify
-```
-
-</details>
-
-<details>
-<summary><strong>Quick Start</strong></summary>
-
-```tsx
-import { Sidebar, SideBarProvider } from 'json-reactify'
-import { Home, Settings, Users } from 'lucide-react'
-
-function App() {
-  const sidebarConfig = {
-    groups: [
-      {
-        id: 'main',
-        label: 'Navigation',
-        items: [
-          {
-            id: 'home',
-            title: 'Home',
-            icon: Home,
-            url: '/'
-          },
-          {
-            id: 'users',
-            title: 'Users',
-            icon: Users,
-            url: '/users'
-          }
-        ]
-      }
-    ]
-  }
-
-  return (
-    <SideBarProvider>
-      <div className="flex">
-        <Sidebar config={sidebarConfig} />
-        <main className="flex-1 p-6">
-          {/* Your main content */}
-        </main>
-      </div>
-    </SideBarProvider>
-  )
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Components</strong></summary>
-
-### Sidebar
-
-The main sidebar component that renders a configurable navigation menu.
-
-```tsx
-import { Sidebar } from 'json-reactify'
-
-<Sidebar 
-  config={sidebarConfig}
-  enableSearch={true}
-  isLoading={false}
+<DynamicChart
+  data={data}
+  xAxisKey="date"
+  yAxisKeys={['value']}
+  zoom={{
+    enabled: true,
+    factor: 0.2,
+    minZoom: 0.5,
+    maxZoom: 3,
+    initialZoom: 1,
+    showControls: true,
+  }}
 />
 ```
 
-#### Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `config` | `SidebarConfig` | **required** | Configuration object defining the sidebar structure |
-| `enableSearch` | `boolean` | `true` | Enable/disable search functionality |
-| `isLoading` | `boolean` | `false` | Show loading skeleton when true |
-
-### SideBarProvider
-
-A provider component that wraps your application to provide sidebar context.
+### Export to CSV
 
 ```tsx
-import { SideBarProvider } from 'json-reactify'
-
-<SideBarProvider>
-  <App />
-</SideBarProvider>
-```
-
-</details>
-
-<details>
-<summary><strong> Configuration</strong></summary>
-
-### SidebarConfig
-
-The main configuration object that defines your sidebar structure.
-
-```tsx
-interface SidebarConfig {
-  groups: SidebarGroup[]
-  header?: ReactNode | SidebarHeaderConfig | SidebarGroup[]
-  footer?: ReactNode | SidebarFooterConfig | SidebarGroup[]
-}
-```
-
-### SidebarGroup
-
-Defines a group of related sidebar items.
-
-```tsx
-interface SidebarGroup {
-  id: string | number
-  label?: string
-  items: SidebarItem[]
-}
-```
-
-### SidebarItem
-
-Defines an individual sidebar menu item.
-
-```tsx
-interface SidebarItem {
-  id: string | number
-  title: string
-  icon?: React.ElementType | React.ReactNode
-  url?: string
-  onClick?: () => void
-  badge?: ReactNode | string | number
-  subItems?: SidebarSubItem[]
-  disabled?: boolean
-  defaultOpen?: boolean
-  showIf?: boolean | (() => boolean)
-}
-```
-
-### SidebarSubItem
-
-Defines a sub-item within a sidebar item (for nested menus).
-
-```tsx
-interface SidebarSubItem {
-  id: string | number
-  title: string
-  icon?: React.ElementType | React.ReactNode
-  url?: string
-  onClick?: () => void
-  badge?: ReactNode | string | number
-  disabled?: boolean
-  showIf?: boolean | (() => boolean)
-}
-```
-
-### SidebarHeaderConfig
-
-Configuration for the sidebar header section.
-
-```tsx
-interface SidebarHeaderConfig {
-  logo?: {
-    text?: string
-    iconUrl?: string
-    iconComponent?: React.ElementType
-  }
-  user?: {
-    name?: string
-    email?: string
-    avatarUrl?: string
-    avatarComponent?: React.ElementType
-  }
-  className?: string
-}
-```
-
-### SidebarFooterConfig
-
-Configuration for the sidebar footer section.
-
-```tsx
-interface SidebarFooterConfig {
-  buttons?: Array<{
-    id: string | number
-    label: string
-    icon?: React.ElementType
-    onClick?: () => void
-    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  }>
-  className?: string
-}
-```
-
-</details>
-
-<details>
-<summary><strong> Examples</strong></summary>
-
-### Basic Sidebar
-
-```tsx
-const basicConfig = {
-  groups: [
-    {
-      id: 'main',
-      label: 'Main Navigation',
-      items: [
-        {
-          id: 'dashboard',
-          title: 'Dashboard',
-          icon: LayoutDashboard,
-          url: '/dashboard'
-        },
-        {
-          id: 'analytics',
-          title: 'Analytics',
-          icon: BarChart,
-          url: '/analytics',
-          badge: 'New'
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Sidebar with Header and Footer
-
-```tsx
-const configWithHeaderFooter = {
-  groups: [
-    // ... your groups
-  ],
-  header: {
-    logo: {
-      text: 'MyApp',
-      iconComponent: Logo
-    },
-    user: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      avatarUrl: '/avatar.jpg'
-    }
-  },
-  footer: {
-    buttons: [
-      {
-        id: 'settings',
-        label: 'Settings',
-        icon: Settings,
-        onClick: () => navigate('/settings')
-      },
-      {
-        id: 'logout',
-        label: 'Logout',
-        icon: LogOut,
-        variant: 'destructive',
-        onClick: handleLogout
-      }
-    ]
-  }
-}
-```
-
-### Nested Menu Items
-
-```tsx
-const nestedConfig = {
-  groups: [
-    {
-      id: 'management',
-      label: 'Management',
-      items: [
-        {
-          id: 'users',
-          title: 'User Management',
-          icon: Users,
-          defaultOpen: true,
-          subItems: [
-            {
-              id: 'all-users',
-              title: 'All Users',
-              url: '/users'
-            },
-            {
-              id: 'user-roles',
-              title: 'User Roles',
-              url: '/users/roles'
-            },
-            {
-              id: 'permissions',
-              title: 'Permissions',
-              url: '/users/permissions'
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Conditional Items
-
-```tsx
-const conditionalConfig = {
-  groups: [
-    {
-      id: 'admin',
-      label: 'Admin',
-      items: [
-        {
-          id: 'admin-panel',
-          title: 'Admin Panel',
-          icon: Shield,
-          url: '/admin',
-          showIf: () => user?.role === 'admin'
-        },
-        {
-          id: 'beta-features',
-          title: 'Beta Features',
-          icon: Zap,
-          url: '/beta',
-          showIf: user?.betaAccess === true,
-          badge: 'Beta'
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Custom Header Component
-
-```tsx
-const CustomHeader = () => (
-  <div className="flex flex-col items-center p-4">
-    <img src="/logo.png" alt="Logo" className="w-8 h-8 mb-2" />
-    <h2 className="text-lg font-bold">My Application</h2>
-  </div>
-)
-
-const customHeaderConfig = {
-  groups: [
-    // ... your groups
-  ],
-  header: <CustomHeader />
-}
-```
-
-### With Search Functionality
-
-```tsx
-<Sidebar 
-  config={sidebarConfig}
-  enableSearch={true} // Search is enabled by default
+<DynamicChart
+  data={data}
+  xAxisKey="month"
+  yAxisKeys={['sales']}
+  showDownload={true}
+  downloadFilename="sales-report"
 />
 ```
-
-The search functionality automatically indexes all sidebar items and sub-items, allowing users to quickly find and navigate to specific pages.
 
 ### Loading State
 
 ```tsx
-<Sidebar 
-  config={sidebarConfig}
-  isLoading={loading}
+<DynamicChart
+  data={[]}
+  xAxisKey="month"
+  yAxisKeys={['sales']}
+  loading={true}
 />
 ```
 
-When `isLoading` is true, the sidebar displays a skeleton loading state.
+### Custom Styling
 
-</details>
+```tsx
+<DynamicChart
+  data={data}
+  xAxisKey="month"
+  yAxisKeys={['sales']}
+  className="my-chart"
+  classNames={{
+    card: 'border-2',
+    cardHeader: 'bg-gray-100',
+    cardTitle: 'text-xl font-bold',
+    cardContent: 'p-6',
+  }}
+  height={500}
+/>
+```
 
-<details>
-<summary><strong>Features</strong></summary>
+### Props Reference
 
-- **Fully Customizable** - Configure every aspect through JSON
-- **Built-in Search** - Automatic search functionality across all menu items
-- **Responsive Design** - Collapsible sidebar with icon-only mode
-- **TypeScript Support** - Full type safety and IntelliSense
-- **Flexible Icons** - Support for icon components or custom React nodes
-- **Conditional Rendering** - Show/hide items based on conditions
-- **Badges & Notifications** - Add badges to highlight important items
-- **Nested Menus** - Support for multi-level navigation
-- **Loading States** - Built-in skeleton loading animation
-- **Theming** - Works with your existing CSS/Tailwind theme
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `ReactNode` | `undefined` | Chart title |
+| `description` | `ReactNode` | `undefined` | Chart description |
+| `footer` | `ReactNode` | `undefined` | Chart footer |
+| `chartType` | `ChartType` | `'line'` | Type of chart to display |
+| `data` | `ChartDataPoint[]` | Required | Chart data |
+| `config` | `ChartConfig` | `{}` | Chart configuration |
+| `xAxisKey` | `string` | `'name'` | X-axis data key |
+| `yAxisKeys` | `string[]` | `['value']` | Y-axis data keys |
+| `showGrid` | `boolean` | `true` | Show grid lines |
+| `showTooltip` | `boolean` | `true` | Show tooltip |
+| `showLegend` | `boolean` | `true` | Show legend |
+| `height` | `number \| string` | `400` | Chart height |
+| `showTypeSelector` | `boolean` | `true` | Show chart type selector |
+| `showDownload` | `boolean` | `true` | Show download button |
+| `downloadFilename` | `string` | `'chart-data'` | Download filename |
+| `loading` | `boolean` | `false` | Show loading state |
+| `zoom` | `ZoomConfig` | `{}` | Zoom configuration |
+| `tableConfig` | `TableConfig` | `{}` | Table view configuration |
+| `onDataPointClick` | `(data) => void` | `undefined` | Data point click handler |
 
-</details>
+---
 
+## Complete Example
+
+Here's a complete example combining all three components:
+
+```tsx
+import { useState } from 'react'
+import { DynamicForm, FormFieldType } from '@/components/form'
+import DynamicMaster from '@/components/master-table'
+import { DynamicChart } from '@/components/chart'
+import { z } from 'zod'
+
+// Form schema
+const userSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  role: z.enum(['admin', 'user', 'guest']),
+  department: z.string(),
+})
+
+// Form configuration
+const formConfig = [
+  {
+    fieldName: 'name',
+    fieldLabel: 'Full Name',
+    fieldType: FormFieldType.TEXT,
+    placeholder: 'John Doe',
+  },
+  {
+    fieldName: 'email',
+    fieldLabel: 'Email',
+    fieldType: FormFieldType.EMAIL,
+    placeholder: 'john@example.com',
+  },
+  {
+    fieldName: 'role',
+    fieldLabel: 'Role',
+    fieldType: FormFieldType.SELECT,
+    options: [
+      { label: 'Admin', value: 'admin' },
+      { label: 'User', value: 'user' },
+      { label: 'Guest', value: 'guest' },
+    ],
+  },
+  {
+    fieldName: 'department',
+    fieldLabel: 'Department',
+    fieldType: FormFieldType.COMBOBOX,
+    searchPlaceholder: 'Search departments...',
+    options: [
+      { label: 'Engineering', value: 'eng' },
+      { label: 'Sales', value: 'sales' },
+      { label: 'Marketing', value: 'marketing' },
+    ],
+  },
+]
+
+// Table columns
+const columnsConfig = [
+  { field: 'id', headerName: 'ID', enableSorting: true },
+  { field: 'name', headerName: 'Name', enableSorting: true },
+  { field: 'email', headerName: 'Email', enableSorting: true },
+  {
+    field: 'role',
+    headerName: 'Role',
+    enableSorting: true,
+    options: {
+      variant: 'select',
+      selectOptions: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'User', value: 'user' },
+        { label: 'Guest', value: 'guest' },
+      ],
+    },
+  },
+  { field: 'department', headerName: 'Department', enableSorting: true },
+]
+
+function Dashboard() {
+  const [users, setUsers] = useState([
+    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'admin', department: 'eng' },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'user', department: 'sales' },
+  ])
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const handleSubmit = (data) => {
+    const newUser = { id: users.length + 1, ...data }
+    setUsers([...users, newUser])
+    setSheetOpen(false)
+  }
+
+  // Chart data by department
+  const chartData = users.reduce((acc, user) => {
+    const existing = acc.find(d => d.department === user.department)
+    if (existing) {
+      existing.count += 1
+    } else {
+      acc.push({ department: user.department, count: 1 })
+    }
+    return acc
+  }, [])
+
+  return (
+    <div className="space-y-8 p-8">
+      <h1 className="text-3xl font-bold">User Management Dashboard</h1>
+
+      {/* Chart */}
+      <DynamicChart
+        title="Users by Department"
+        description="Distribution of users across departments"
+        chartType="bar"
+        data={chartData}
+        xAxisKey="department"
+        yAxisKeys={['count']}
+        config={{ count: { label: 'User Count' } }}
+        height={300}
+      />
+
+      {/* Table */}
+      <DynamicMaster
+        datatableConfig={{
+          columnsConfig,
+          columnActions: [
+            {
+              label: 'Edit',
+              onClick: (row) => console.log('Edit:', row),
+            },
+          ],
+          tableConfig: {},
+          actionConfig: {},
+          addItemData: { title: 'Add User' },
+        }}
+        data={users}
+        sheetOpen={sheetOpen}
+        onSheetOpenChange={setSheetOpen}
+        onClickAddItem={() => setSheetOpen(true)}>
+        {/* Form */}
+        <div className="p-6">
+          <h2 className="text-2xl font-bold mb-4">Add New User</h2>
+          <DynamicForm
+            formConfig={formConfig}
+            schema={userSchema}
+            onSubmit={handleSubmit}
+            submitButtonText="Add User"
+          />
+        </div>
+      </DynamicMaster>
+    </div>
+  )
+}
+
+export default Dashboard
+```
+
+
+## TypeScript Support
+
+All components are fully typed with TypeScript. Import types as needed:
+
+```tsx
+import type { FormFieldConfig, FormFieldType } from '@/components/form'
+import type { ColumnConfig } from '@/components/master-table'
+import type { ChartDataPoint, ChartType, ChartConfig } from '@/components/chart'
+```
+
+---
+
+## Troubleshooting
+
+### Form not validating
+
+- Ensure Zod schema matches field names
+- Check that validation rules are correct
+- Verify required fields have values
+
+### Table not filtering
+
+- This component supports client-side filtering only
+- Check that column variants are correctly set
+- Ensure data is properly formatted
+
+### Chart showing 0 values with "value" operation
+
+- "Value" operation works best with distinct X-axis values
+- For duplicate X-axis values, the last value is used
+- Consider using aggregation operations (sum, avg) instead
+
+### Chart not displaying data
+
+- Verify xAxisKey and yAxisKeys match data keys
+- Check that data is in correct format
+- Ensure chart type supports your data structure
+
+---

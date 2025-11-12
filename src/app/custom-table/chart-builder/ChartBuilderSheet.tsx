@@ -2,7 +2,7 @@
 
 import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
@@ -14,7 +14,10 @@ import {
 } from '@/components/ui/sheet'
 import { BarChart3 } from 'lucide-react'
 import { createContext, useContext, useState } from 'react'
-import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
+import {
+  ChartBuilder,
+  type ChartConfiguration,
+} from '../chart-builder/ChartBuilder'
 
 interface ChartBuilderSheetProps {
   data: Record<string, any>[]

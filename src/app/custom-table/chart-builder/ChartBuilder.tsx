@@ -25,13 +25,13 @@ import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useTableContext } from './TableContext'
+import { useTableContext } from '../card-builder/TableContext'
 import {
   type CardOperation,
   OPERATION_LABELS,
   applyFilters,
   getAvailableOperations,
-} from './card-utils'
+} from '../card-builder/card-utils'
 
 export interface YAxisFieldConfig {
   field: string
@@ -139,7 +139,29 @@ export function ChartBuilder({
     if (!xAxisField) return []
 
     if (splitMode === 'none' && yAxisFieldConfigs.length > 0) {
-      // Multiple Y-axis fields with individual operations
+      // Check if all operations are 'value' - if so, don't group
+      const allValuesOperation = yAxisFieldConfigs.every(
+        (config) => config.operation === 'value'
+      )
+
+      if (allValuesOperation) {
+        // Don't group - return raw data with labels
+        return filteredData.map((row) => {
+          const result: Record<string, any> = { [xAxisField]: row[xAxisField] }
+
+          yAxisFieldConfigs.forEach((config) => {
+            const label = `${config.field} (${
+              OPERATION_LABELS[config.operation]
+            })`
+            const value = row[config.field]
+            result[label] = Number(value) || 0
+          })
+
+          return result
+        })
+      }
+
+      // Multiple Y-axis fields with individual operations (with grouping)
       const grouped = filteredData.reduce((acc, row) => {
         const xValue = row[xAxisField]
 
@@ -147,11 +169,12 @@ export function ChartBuilder({
           acc[xValue] = { [xAxisField]: xValue }
           yAxisFieldConfigs.forEach((config) => {
             acc[xValue][`${config.field}_${config.operation}`] = {
+              directValue: 0, // Direct value for 'value' operation
               sum: 0,
               count: 0,
               min: Infinity,
               max: -Infinity,
-              values: new Set(),
+              uniqueValues: new Set(),
             }
           })
         }
@@ -162,11 +185,16 @@ export function ChartBuilder({
           const key = `${config.field}_${config.operation}`
           const stats = acc[xValue][key]
 
-          stats.sum += numValue
-          stats.count += 1
-          stats.min = Math.min(stats.min, numValue)
-          stats.max = Math.max(stats.max, numValue)
-          stats.values.add(value)
+          // For 'value' operation, just store the raw value directly (no aggregation needed)
+          if (config.operation === 'value') {
+            stats.directValue = numValue
+          } else {
+            stats.sum += numValue
+            stats.count += 1
+            stats.min = Math.min(stats.min, numValue)
+            stats.max = Math.max(stats.max, numValue)
+            stats.uniqueValues.add(value)
+          }
         })
 
         return acc
@@ -184,6 +212,10 @@ export function ChartBuilder({
           })`
 
           switch (config.operation) {
+            case 'value':
+              // For value operation, use the direct value from the field
+              result[label] = stats.directValue
+              break
             case 'sum':
               result[label] = stats.sum
               break
@@ -200,7 +232,7 @@ export function ChartBuilder({
               result[label] = stats.count
               break
             case 'uniqueCount':
-              result[label] = stats.values.size
+              result[label] = stats.uniqueValues.size
               break
           }
         })
@@ -219,11 +251,12 @@ export function ChartBuilder({
           grouped[xValue] = { [xAxisField]: xValue }
           seriesConfigs.forEach((series) => {
             grouped[xValue][series.label] = {
+              directValue: 0, // Direct value for 'value' operation
               sum: 0,
               count: 0,
               min: Infinity,
               max: -Infinity,
-              values: new Set(),
+              uniqueValues: new Set(),
             }
           })
         }
@@ -242,11 +275,16 @@ export function ChartBuilder({
             const numValue = Number(value) || 0
             const stats = grouped[xValue][series.label]
 
-            stats.sum += numValue
-            stats.count += 1
-            stats.min = Math.min(stats.min, numValue)
-            stats.max = Math.max(stats.max, numValue)
-            stats.values.add(value)
+            // For 'value' operation, just store the raw value directly (no aggregation needed)
+            if (series.operation === 'value') {
+              stats.directValue = numValue
+            } else {
+              stats.sum += numValue
+              stats.count += 1
+              stats.min = Math.min(stats.min, numValue)
+              stats.max = Math.max(stats.max, numValue)
+              stats.uniqueValues.add(value)
+            }
           }
         })
       })
@@ -259,6 +297,10 @@ export function ChartBuilder({
           const stats = row[series.label]
 
           switch (series.operation) {
+            case 'value':
+              // For value operation, use the direct value from the field
+              result[series.label] = stats.directValue
+              break
             case 'sum':
               result[series.label] = stats.sum
               break
@@ -276,7 +318,7 @@ export function ChartBuilder({
               result[series.label] = stats.count
               break
             case 'uniqueCount':
-              result[series.label] = stats.values.size
+              result[series.label] = stats.uniqueValues.size
               break
           }
         })

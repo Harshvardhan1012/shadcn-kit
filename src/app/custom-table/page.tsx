@@ -9,7 +9,7 @@ import { callApi } from './api'
 import { CardBuilder } from './card-builder/CardBuilder'
 import { generateColumnConfig } from './generateColumnConfig'
 import { SortableColumnConfigTable } from './sortable-column-config-table'
-import { ChartBuilderSheet } from './card-builder/ChartBuilderSheet'
+import { ChartBuilderSheet } from './chart-builder/ChartBuilderSheet'
 
 export default function ColumnConfigPage() {
   const [url, setUrl] = useState('')

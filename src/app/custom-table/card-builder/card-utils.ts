@@ -11,6 +11,7 @@ export type CardOperation =
   | "min"
   | "max"
   | "uniqueCount"
+  | "value"
 
 export type FilterVariant =
   | "text"
@@ -24,7 +25,7 @@ export type FilterVariant =
 
 export const ALL_OPERATIONS: Record<string, CardOperation[]> = {
   text: ["count", "uniqueCount"],
-  number: ["count", "sum", "avg", "min", "max", "uniqueCount"],
+  number: ["count", "sum", "avg", "min", "max", "uniqueCount", "value"],
   range: ["count", "sum", "avg", "min", "max", "uniqueCount"],
   date: ["count", "min", "max", "uniqueCount"],
   dateRange: ["count", "min", "max", "uniqueCount"],
@@ -41,6 +42,7 @@ export const OPERATION_LABELS: Record<CardOperation, string> = {
   min: "Minimum",
   max: "Maximum",
   uniqueCount: "Unique Count",
+  value: "Value",
 }
 
 /**
