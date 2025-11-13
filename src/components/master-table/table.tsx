@@ -1,8 +1,7 @@
 'use client'
 
 import {
-  TableProvider,
-  useTableContext,
+  useTableContext
 } from '@/app/custom-table/card-builder/TableContext'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,7 +24,6 @@ import { DataTableSortList } from '../data-table/data-table-sort-list'
 import { DataTableViewOptions } from '../data-table/data-table-view-options'
 import { useFeatureFlags } from './feature-flags-provider'
 import { TableActionBar } from './table-action-bar'
-import { DataTableToolbar } from '../data-table/data-table-toolbar'
 
 type TableProps = {
   data: any[]
@@ -105,7 +103,6 @@ export const Table = React.forwardRef(
         Array.isArray(filters) ? filters : []
       )
       if (validFilters.length === 0) return data
-
       return data.filter((row) => {
         if (joinOperator === 'or') {
           return validFilters.some((filter) => applyFilter(row, filter))

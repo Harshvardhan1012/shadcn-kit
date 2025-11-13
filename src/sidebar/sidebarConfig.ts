@@ -22,6 +22,10 @@ const Table = lazy(() =>
   }))
 )
 
+const CustomChart = lazy(() =>
+  import("../app/custom-chart/page")
+)
+
 const CustomTable = lazy(() =>
   import("../app/custom-table/page")
 )
@@ -71,7 +75,7 @@ export const sidebarConfig: SidebarConfig = {
               id: "custom_table",
               title: "Custom Table",
               url: AppRoutes.CUSTOM_TABLE,
-              component: CustomTable,
+              component: CustomChart,
               icon: Table2,
             }
           ],

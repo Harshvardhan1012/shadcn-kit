@@ -5,6 +5,7 @@ export type CardOperation =
   | "min"
   | "max"
   | "uniqueCount"
+  | "value"
 
 export type FilterVariant =
   | "text"

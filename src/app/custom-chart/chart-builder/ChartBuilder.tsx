@@ -1,5 +1,7 @@
 'use client'
 
+import { useTableContext, type CardOperation } from '@/app/custom-table/card-builder'
+import { applyFilters, getAvailableOperations, OPERATION_LABELS } from '@/app/custom-table/card-builder/card-utils'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,13 +27,6 @@ import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useTableContext } from '../card-builder/TableContext'
-import {
-  type CardOperation,
-  OPERATION_LABELS,
-  applyFilters,
-  getAvailableOperations,
-} from '../card-builder/card-utils'
 
 export interface YAxisFieldConfig {
   field: string
@@ -91,7 +86,7 @@ export function ChartBuilder({
   >([])
   const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>([])
 
-  const { table } = useTableContext()
+  const { table, setTable } = useTableContext()
 
   // Get available fields from columns
   const availableFields = useMemo(() => {

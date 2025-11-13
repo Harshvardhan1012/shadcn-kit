@@ -1,8 +1,11 @@
 'use client'
 
+import { callApi } from '@/app/custom-table/api'
 import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
@@ -12,12 +15,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { BarChart3 } from 'lucide-react'
-import { createContext, useContext, useState } from 'react'
-import {
-  ChartBuilder,
-  type ChartConfiguration,
-} from '../chart-builder/ChartBuilder'
+import { BarChart3, RefreshCw } from 'lucide-react'
+import { createContext, useContext, useMemo, useState } from 'react'
+import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
+import type { ColumnConfig } from '@/components/master-table/get-columns'
+import { generateColumnConfig } from '@/app/custom-table/generateColumnConfig'
+import DynamicMaster from '@/components/master-table/master-table'
+import { dataTableConfig } from '@/config/data-table'
+import datatableConfig from '@/app/table/table_config'
 
 interface ChartBuilderSheetProps {
   data: Record<string, any>[]
@@ -93,6 +98,26 @@ export function ChartBuilderSheet({
   )
 
   const handleSave = (config: ChartConfiguration) => {
+    // Save to localStorage
+    try {
+      const existingCharts = localStorage.getItem('saved-charts')
+      const charts = existingCharts ? JSON.parse(existingCharts) : []
+
+      // Add the new chart with an id
+      const chartWithId = {
+        ...config,
+        id: config.chartKey,
+      }
+
+      charts.push(chartWithId)
+      localStorage.setItem('saved-charts', JSON.stringify(charts))
+
+      // Trigger storage event for other tabs/windows
+      window.dispatchEvent(new Event('storage'))
+    } catch (e) {
+      console.error('Failed to save chart:', e)
+    }
+
     onSave?.(config)
     setOpen(false)
     // Reset preview
@@ -165,8 +190,8 @@ export function ChartBuilderSheet({
 
 // Wrapper component that updates preview
 function ChartBuilderWithPreview({
-  data,
-  columns,
+  data: initialData,
+  columns: initialColumns,
   onSave,
   onCancel,
 }: {
@@ -176,20 +201,80 @@ function ChartBuilderWithPreview({
   onCancel: () => void
 }) {
   const { setPreviewConfig } = useChartPreview()
-
+  const [url, setUrl] = useState('')
+  const [enableApi, setEnableApi] = useState(false)
+  
+  // Use the callApi hook
+  const { data: apiResponse, isLoading, error } = callApi(url, enableApi)
+  
+  // Determine which data to use - API data or initial data
+  const activeData = apiResponse?.data || initialData
+  
   // Update preview as user configures
   const handlePreviewUpdate = (config: ChartConfiguration) => {
     setPreviewConfig(config)
   }
+  const columnConfig: ColumnConfig[] = useMemo(() => {
+    return generateColumnConfig(apiResponse?.data)
+  }, [apiResponse])
 
+  
   return (
-    <ChartBuilder
-      data={data}
-      columns={columns}
-      onSave={onSave}
-      onCancel={onCancel}
-      onPreviewUpdate={handlePreviewUpdate}
-      compact={true}
-    />
+    <div className="space-y-6">
+      {/* API Configuration Section */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="api-url">API URL (Optional)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="api-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://api.example.com/data"
+                className="flex-1"
+              />
+              <Button
+                disabled={!url || isLoading}
+                onClick={() => setEnableApi(true)}
+                variant="outline"
+                size="icon">
+                <RefreshCw
+                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+                />
+              </Button>
+            </div>
+            {error && (
+              <p className="text-sm text-destructive">
+                Error fetching data: {error.message}
+              </p>
+            )}
+            {apiResponse?.data && (
+              <p className="text-sm text-muted-foreground">
+                ✓ Loaded {apiResponse.data.length} records from API
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <DynamicMaster
+        data={activeData}
+        datatableConfig={{
+          ...datatableConfig,
+          columnsConfig: columnConfig,
+        }}
+        
+      />
+
+      <ChartBuilder
+        data={activeData}
+        columns={columnConfig}
+        onSave={onSave}
+        onCancel={onCancel}
+        onPreviewUpdate={handlePreviewUpdate}
+        compact={true}
+      />
+    </div>
   )
 }

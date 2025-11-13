@@ -1,4 +1,5 @@
 export function applyFilter(data: any, filter: any) {
+  console.log(data,filter)
   const { id, value, operator, variant } = filter
   if (variant === "text") {
     if (operator === "iLike")
@@ -11,12 +12,30 @@ export function applyFilter(data: any, filter: any) {
     if (operator === "isNotEmpty") return !!data[id]
   }
   if (variant === "multiSelect") {
-    if (operator === "inArray")
-      return Array.isArray(value) ? value.includes(data[id]) : false
-    if (operator === "notInArray")
-      return Array.isArray(value) ? !value.includes(data[id]) : true
-    if (operator === "isEmpty") return !data[id]
-    if (operator === "isNotEmpty") return !!data[id]
+    const normalize = (v: any) => {
+      if (typeof v === "string") {
+        const s = v.trim().toLowerCase()
+        if (s === "true") return true
+        if (s === "false") return false
+        return s
+      }
+      return v
+    }
+
+    const dataVal = normalize(data[id])
+
+    if (operator === "inArray") {
+      if (!Array.isArray(value)) return false
+      const normalized = value.map(normalize)
+      return normalized.includes(dataVal)
+    }
+    if (operator === "notInArray") {
+      if (!Array.isArray(value)) return true
+      const normalized = value.map(normalize)
+      return !normalized.includes(dataVal)
+    }
+    if (operator === "isEmpty") return dataVal == null || dataVal === ""
+    if (operator === "isNotEmpty") return !(dataVal == null || dataVal === "")
   }
   if (variant === "number") {
     if (operator === "eq") return data[id] == value

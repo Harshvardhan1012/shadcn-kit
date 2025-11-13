@@ -4,12 +4,12 @@ import type { ColumnConfig } from '@/components/master-table/get-columns'
 import DynamicMaster from '@/components/master-table/master-table'
 import { Input } from '@/components/ui/input'
 import { useEffect, useMemo, useState } from 'react'
+import { ChartBuilderSheet } from '../custom-chart/chart-builder/ChartBuilderSheet'
 import datatableConfig from '../table/table_config'
 import { callApi } from './api'
 import { CardBuilder } from './card-builder/CardBuilder'
 import { generateColumnConfig } from './generateColumnConfig'
 import { SortableColumnConfigTable } from './sortable-column-config-table'
-import { ChartBuilderSheet } from './chart-builder/ChartBuilderSheet'
 
 export default function ColumnConfigPage() {
   const [url, setUrl] = useState('')
@@ -37,7 +37,6 @@ export default function ColumnConfigPage() {
         placeholder="Enter API URL to fetch data"
       />
       <button
-        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
         onClick={() => {
           // Trigger data fetch
           setapi(true)
@@ -46,13 +45,11 @@ export default function ColumnConfigPage() {
         Fetch data
       </button>
 
-      <div className="rounded-lg border bg-white p-4">
-        <SortableColumnConfigTable
-          key={columns.map((e) => e.field).join('')}
-          columns={columns}
-          onColumnsChange={setColumns}
-        />
-      </div>
+      <SortableColumnConfigTable
+        key={columns.map((e) => e.field).join('')}
+        columns={columns}
+        onColumnsChange={setColumns}
+      />
       <CardBuilder
         data={apiResponse?.data}
         availableFields={availableFields}
