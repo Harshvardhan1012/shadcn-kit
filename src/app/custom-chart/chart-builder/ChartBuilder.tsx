@@ -86,7 +86,7 @@ export function ChartBuilder({
   >([])
   const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>([])
 
-  const { table, setTable } = useTableContext()
+  const { table } = useTableContext()
 
   // Get available fields from columns
   const availableFields = useMemo(() => {

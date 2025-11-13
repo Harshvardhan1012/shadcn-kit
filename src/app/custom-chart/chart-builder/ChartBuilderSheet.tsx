@@ -1,28 +1,21 @@
 'use client'
 
 import { callApi } from '@/app/custom-table/api'
+import { generateColumnConfig } from '@/app/custom-table/generateColumnConfig'
+import datatableConfig from '@/app/table/table_config'
 import { DynamicChart } from '@/components/chart/DynamicChart'
+import type { ColumnConfig } from '@/components/master-table/get-columns'
+import DynamicMaster from '@/components/master-table/master-table'
+import SheetDemo from '@/components/sheet/page'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { BarChart3, RefreshCw } from 'lucide-react'
 import { createContext, useContext, useMemo, useState } from 'react'
 import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
-import type { ColumnConfig } from '@/components/master-table/get-columns'
-import { generateColumnConfig } from '@/app/custom-table/generateColumnConfig'
-import DynamicMaster from '@/components/master-table/master-table'
-import { dataTableConfig } from '@/config/data-table'
-import datatableConfig from '@/app/table/table_config'
+import { TitleDescription } from '@/components/ui/title-description'
 
 interface ChartBuilderSheetProps {
   data: Record<string, any>[]
@@ -96,6 +89,8 @@ export function ChartBuilderSheet({
   const [previewConfig, setPreviewConfig] = useState<ChartConfiguration | null>(
     null
   )
+  const [leftWidth, setLeftWidth] = useState(40) // percentage
+  const [isDragging, setIsDragging] = useState(false)
 
   const handleSave = (config: ChartConfiguration) => {
     // Save to localStorage
@@ -129,61 +124,102 @@ export function ChartBuilderSheet({
     setPreviewConfig(null)
   }
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+
+    const container = e.currentTarget as HTMLElement
+    const newLeftWidth = (e.clientX / container.clientWidth) * 100
+
+    // Constrain between 20% and 80%
+    if (newLeftWidth >= 20 && newLeftWidth <= 80) {
+      setLeftWidth(newLeftWidth)
+    }
+  }
+
   return (
     <ChartPreviewContext.Provider value={{ previewConfig, setPreviewConfig }}>
-      <Sheet
-        open={open}
-        onOpenChange={setOpen}>
-        <SheetTrigger asChild>
+      <>
+        <div onClick={() => setOpen(true)}>
           {triggerButton || (
             <Button>
               <BarChart3 className="w-4 h-4 mr-2" />
               Add Chart
             </Button>
           )}
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-full md:max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] p-0 flex flex-col">
-          <SheetHeader className="px-6 py-4 border-b">
-            <SheetTitle>Chart Builder</SheetTitle>
-            <SheetDescription>
-              Configure your chart with filters, series, and aggregations. Live
-              preview updates on the right.
-            </SheetDescription>
-          </SheetHeader>
+        </div>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Side - Form */}
-            <ScrollArea className="w-full md:w-1/2 lg:w-2/5 border-r">
-              <div className="p-6">
-                <ChartBuilderWithPreview
-                  data={data}
-                  columns={columns}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                />
+        <SheetDemo
+          open={open}
+          onOpenChange={setOpen}
+          size="3xl">
+          <div className="flex flex-col h-[calc(100vh-80px)]">
+            <TitleDescription
+              size="lg"
+              icon={<BarChart3 className="w-4 h-4" />}
+              title="Chart Builder"
+              description="Create and customize your chart using the options below. See a live preview as you configure."
+            />
+
+            <div
+              className="flex flex-1 overflow-hidden min-h-0"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseUp}
+              onMouseUp={handleMouseUp}>
+              {/* Left Side - Form */}
+              <div
+                style={{ width: `${leftWidth}%` }}
+                className="overflow-hidden border-r">
+                <ScrollArea className="h-full">
+                  <div className="p-6">
+                    <ChartBuilderWithPreview
+                      data={data}
+                      columns={columns}
+                      onSave={handleSave}
+                      onCancel={handleCancel}
+                    />
+                  </div>
+                </ScrollArea>
               </div>
-            </ScrollArea>
 
-            {/* Right Side - Preview */}
-            <div className="hidden md:flex md:w-1/2 lg:w-3/5 flex-col bg-muted/20">
-              <div className="p-6 border-b bg-background">
-                <h3 className="text-lg font-semibold">Live Preview</h3>
-                <p className="text-sm text-muted-foreground">
-                  Chart updates as you configure
-                </p>
-              </div>
+              {/* Resizable Divider */}
+              <div
+                onMouseDown={handleMouseDown}
+                className={`w-1 bg-border hover:bg-primary/50 cursor-col-resize transition-colors ${
+                  isDragging ? 'bg-primary' : ''
+                }`}
+                style={{ userSelect: isDragging ? 'none' : 'auto' }}
+              />
 
-              <ScrollArea className="flex-1">
-                <div className="p-6">
-                  <ChartPreview />
+              {/* Right Side - Preview */}
+              <div
+                style={{ width: `${100 - leftWidth}%` }}
+                className="hidden md:flex md:flex-col bg-muted/20 overflow-hidden">
+                <div className="p-6 border-b bg-background flex-shrink-0">
+                  <h3 className="text-lg font-semibold">Live Preview</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Chart updates as you configure
+                  </p>
                 </div>
-              </ScrollArea>
+
+                <ScrollArea className="flex-1 h-full">
+                  <div className="p-6">
+                    <ChartPreview />
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </SheetDemo>
+      </>
     </ChartPreviewContext.Provider>
   )
 }
@@ -191,7 +227,7 @@ export function ChartBuilderSheet({
 // Wrapper component that updates preview
 function ChartBuilderWithPreview({
   data: initialData,
-  columns: initialColumns,
+  columns: _initialColumns,
   onSave,
   onCancel,
 }: {
@@ -203,13 +239,13 @@ function ChartBuilderWithPreview({
   const { setPreviewConfig } = useChartPreview()
   const [url, setUrl] = useState('')
   const [enableApi, setEnableApi] = useState(false)
-  
+
   // Use the callApi hook
   const { data: apiResponse, isLoading, error } = callApi(url, enableApi)
-  
+
   // Determine which data to use - API data or initial data
   const activeData = apiResponse?.data || initialData
-  
+
   // Update preview as user configures
   const handlePreviewUpdate = (config: ChartConfiguration) => {
     setPreviewConfig(config)
@@ -218,45 +254,40 @@ function ChartBuilderWithPreview({
     return generateColumnConfig(apiResponse?.data)
   }, [apiResponse])
 
-  
   return (
     <div className="space-y-6">
       {/* API Configuration Section */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="api-url">API URL (Optional)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="api-url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://api.example.com/data"
-                className="flex-1"
-              />
-              <Button
-                disabled={!url || isLoading}
-                onClick={() => setEnableApi(true)}
-                variant="outline"
-                size="icon">
-                <RefreshCw
-                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-                />
-              </Button>
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">
-                Error fetching data: {error.message}
-              </p>
-            )}
-            {apiResponse?.data && (
-              <p className="text-sm text-muted-foreground">
-                ✓ Loaded {apiResponse.data.length} records from API
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        <Label htmlFor="api-url">API URL (Optional)</Label>
+        <div className="flex gap-2">
+          <Input
+            id="api-url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://api.example.com/data"
+            className="flex-1"
+          />
+          <Button
+            disabled={!url || isLoading}
+            onClick={() => setEnableApi(true)}
+            variant="outline"
+            size="icon">
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
+          </Button>
+        </div>
+        {error && (
+          <p className="text-sm text-destructive">
+            Error fetching data: {error.message}
+          </p>
+        )}
+        {apiResponse?.data && (
+          <p className="text-sm text-muted-foreground">
+            ✓ Loaded {apiResponse.data.length} records from API
+          </p>
+        )}
+      </div>
 
       <DynamicMaster
         data={activeData}
@@ -264,7 +295,6 @@ function ChartBuilderWithPreview({
           ...datatableConfig,
           columnsConfig: columnConfig,
         }}
-        
       />
 
       <ChartBuilder

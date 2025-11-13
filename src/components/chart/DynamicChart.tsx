@@ -1,6 +1,7 @@
+import SheetDemo from '@/components/sheet/page'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { Download, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
+import { Download, Edit, Expand, MoreVertical, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import {
   Area,
@@ -33,6 +34,12 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from './../ui/chart'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './../ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -214,6 +221,7 @@ export interface DynamicChartProps {
       row: ChartDataPoint
     ) => React.ReactNode
   }
+  onAction?: (action: 'edit' | 'delete') => void
 }
 
 function getColorForKey(
@@ -226,7 +234,7 @@ function getColorForKey(
   if (config[key]?.theme) {
     return cssVar
   }
-// Fallback to the non-theme color in the config
+  // Fallback to the non-theme color in the config
   if (typeof config[key]?.color === 'string') {
     return config[key]!.color!
   }
@@ -309,25 +317,13 @@ export function DynamicChart({
   config = defaultConfig,
   xAxisKey = 'name',
   yAxisKeys = ['value'],
-  // showGrid = true,
   showTooltip = true,
   showLegend = true,
   chartKey,
-  // tooltipFormatter,
-  // tooltipLabelFormatter,
-  // legendPosition = 'bottom',
   className,
   height = 400,
   chartProps = {},
   classNames,
-  zoom = {
-    enabled: true,
-    factor: 0.2,
-    minZoom: 0.5,
-    maxZoom: 3,
-    initialZoom: 1,
-    showControls: true,
-  },
   showTypeSelector = true,
   onChartTypeChange,
   pieColors = DEFAULT_PIE_COLORS,
@@ -337,16 +333,15 @@ export function DynamicChart({
   downloadFilename = 'chart-data',
   loading = false,
   tableConfig = {},
+  onAction,
 }: DynamicChartProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = React.useState(500)
+  const [isExpanded, setIsExpanded] = React.useState(false)
   const [currentChartType, setCurrentChartType] = React.useState<ChartType>(
     () => {
-      // Check if localStorage is available (for SSR safety)
       if (typeof window !== 'undefined') {
         const savedType = localStorage.getItem(`dynamic-chart-type-${chartKey}`)
-        console.log(savedType, chartKey)
-        // Ensure the saved type is a valid ChartType before using it
         if (
           savedType &&
           ['area', 'line', 'bar', 'pie', 'donut', 'table'].includes(savedType)
@@ -354,12 +349,10 @@ export function DynamicChart({
           return savedType as ChartType
         }
       }
-      // Fallback to the initial prop if nothing is saved
       return chartType
     }
   )
 
-  const [zoomLevel, setZoomLevel] = React.useState(zoom.initialZoom || 1)
   const [sortConfig, setSortConfig] = React.useState<{
     key: string
     direction: 'asc' | 'desc'
@@ -376,15 +369,6 @@ export function DynamicChart({
     }
   }, [])
 
-  const handleZoomIn = () =>
-    setZoomLevel((prev) =>
-      Math.min(zoom.maxZoom || 3, prev + (zoom.factor || 0.2))
-    )
-  const handleZoomOut = () =>
-    setZoomLevel((prev) =>
-      Math.max(zoom.minZoom || 0.5, prev - (zoom.factor || 0.2))
-    )
-  const handleZoomReset = () => setZoomLevel(zoom.initialZoom || 1)
   const handleChartTypeChange = (newType: ChartType) => {
     setCurrentChartType(newType)
     onChartTypeChange?.(newType) // Call the optional callback
@@ -424,10 +408,10 @@ export function DynamicChart({
 
   const chartDimensions = React.useMemo(
     () => ({
-      height: (typeof height === 'number' ? height : 400) * zoomLevel,
-      width: containerWidth * zoomLevel,
+      height: typeof height === 'number' ? height : 400,
+      width: containerWidth > 0 ? containerWidth : 500,
     }),
-    [containerWidth, height, zoomLevel]
+    [containerWidth, height]
   )
 
   const sortedData = React.useMemo(() => {
@@ -514,7 +498,7 @@ export function DynamicChart({
     )
     return (
       <div
-        className="w-full overflow-auto border rounded-md"
+        className="w-full overflow-auto border rounded-none"
         style={{ height: typeof height === 'number' ? height : '100%' }}>
         <Table>
           <TableHeader>
@@ -702,29 +686,10 @@ export function DynamicChart({
   return (
     <Card
       className={cn(
-        'group relative flex flex-col w-full h-full overflow-hidden',
-        'transition-all duration-500 ease-out',
-        'hover:shadow-2xl hover:shadow-primary/10',
-        'border border-border/50 hover:border-primary/30',
-        'bg-gradient-to-br from-background via-background to-primary/5',
-        'before:absolute before:inset-0 before:-translate-x-full',
-        'before:bg-gradient-to-r before:from-transparent before:via-primary/5 before:to-transparent',
-        'hover:before:translate-x-full before:transition-transform before:duration-1000',
+        'gap-0 py-3 rounded-none bg-secondary ',
         className,
         classNames?.card
       )}>
-      {/* Animated border accent */}
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/30 via-primary/60 to-primary/30 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out" />
-
-      {/* Side accent line */}
-      <div
-        className={cn(
-          'absolute left-0 top-0 bottom-0 w-0.5 transition-all duration-500',
-          'bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20',
-          'group-hover:w-1 group-hover:from-primary/60 group-hover:via-primary group-hover:to-primary/60'
-        )}
-      />
-
       {loading ? (
         <>
           <CardHeader
@@ -752,11 +717,7 @@ export function DynamicChart({
         </>
       ) : (
         <>
-          <CardHeader
-            className={cn(
-              'relative pb-4 border-b bg-gradient-to-r from-muted/5 to-transparent z-10 transition-colors duration-300',
-              classNames?.cardHeader
-            )}>
+          <CardHeader className={cn(classNames?.cardHeader)}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 {title && (
@@ -776,46 +737,11 @@ export function DynamicChart({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {zoom.enabled &&
-                  zoom.showControls &&
-                  currentChartType !== 'table' && (
-                    <div className="flex items-center p-1 border rounded-lg bg-background/50 backdrop-blur-sm shadow-sm">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleZoomOut}
-                        disabled={zoomLevel <= (zoom.minZoom || 0.5)}
-                        className="w-8 h-8 p-0 hover:bg-muted"
-                        title="Zoom Out">
-                        <ZoomOut className="w-4 h-4" />
-                      </Button>
-                      <span className="px-2 text-xs min-w-[3rem] text-center text-muted-foreground font-medium">
-                        {Math.round(zoomLevel * 100)}%
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleZoomIn}
-                        disabled={zoomLevel >= (zoom.maxZoom || 3)}
-                        className="w-8 h-8 p-0 hover:bg-muted"
-                        title="Zoom In">
-                        <ZoomIn className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleZoomReset}
-                        className="w-8 h-8 p-0 hover:bg-muted"
-                        title="Reset Zoom">
-                        <RotateCcw className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
                 {showTypeSelector && (
                   <Select
                     value={currentChartType}
                     onValueChange={handleChartTypeChange}>
-                    <SelectTrigger className="bg-background/50 backdrop-blur-sm border-muted-foreground/20">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -833,11 +759,40 @@ export function DynamicChart({
                     size="icon"
                     variant="outline"
                     onClick={handleDownload}
-                    className="ml-1 hover:bg-muted bg-background/50 backdrop-blur-sm"
+                    className="hover:bg-muted bg-background/50 backdrop-blur-sm"
                     title="Download CSV">
                     <Download className="w-4 h-4" />
                   </Button>
                 )}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => setIsExpanded(true)}
+                  className="hover:bg-muted bg-background/50 backdrop-blur-sm"
+                  title="Expand">
+                  <Expand className="w-4 h-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="hover:bg-muted bg-background/50 backdrop-blur-sm"
+                      title="Actions">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onAction?.('edit')}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction?.('delete')}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </CardHeader>
@@ -853,15 +808,16 @@ export function DynamicChart({
             ) : (
               <div
                 style={{
-                  height: typeof height === 'number' ? height : '100%',
+                  height: height ?? '100%',
                   width: '100%',
-                  overflow: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}>
                 <ChartContainer
                   config={config}
-                  className={cn('w-full h-full', classNames?.chart)}
+                  className={cn('w-full', classNames?.chart)}
                   style={{
-                    width: chartDimensions.width,
                     height: chartDimensions.height,
                   }}>
                   {renderChart()}
@@ -881,6 +837,26 @@ export function DynamicChart({
           )}
         </>
       )}
+
+      {/* Expanded View Sheet */}
+      <SheetDemo
+        open={isExpanded}
+        onOpenChange={setIsExpanded}
+        size="2xl">
+        <div className="space-y-6">
+          <ChartContainer
+            config={config}
+            className="w-full"
+            style={{
+              height: 420,
+            }}>
+            {renderChart()}
+          </ChartContainer>
+
+          {/* Table Section */}
+          <div>{renderTable()}</div>
+        </div>
+      </SheetDemo>
     </Card>
   )
 }

@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ChartConfiguration } from './chart-builder/ChartBuilder'
 import { ChartBuilderSheet } from './chart-builder/ChartBuilderSheet'
+import { TitleDescription } from '@/components/ui/title-description'
 
 interface StoredChart extends ChartConfiguration {
   id: string
@@ -22,32 +23,15 @@ function ChartItem({
   return (
     <div className="relative">
       <DynamicChart
-        title={
-          <div className="flex items-center justify-between w-full">
-            <span>{chart.title}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onDelete(chart.chartKey)}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        }
-        description={
-          <span className="text-xs text-muted-foreground">Chart Data</span>
-        }
+        title={chart.title}
         chartType="bar"
         data={chart.data || []}
         config={chart.config}
         xAxisKey={chart.xAxisKey}
         yAxisKeys={chart.yAxisKeys}
-        height={400}
-        showTypeSelector={true}
-        showDownload={true}
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
+        height={300}
       />
     </div>
   )
@@ -88,11 +72,14 @@ export default function ChartPage() {
     localStorage.setItem('saved-charts', JSON.stringify(updatedCharts))
   }
 
-
   return (
-    <div className="container mx-auto p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Charts Dashboard</h1>
+    <>
+      <div className="flex items-center p-2 justify-between">
+        <TitleDescription
+          title="Custom Charts"
+          description="Create and manage custom charts based on your data."
+          size="lg"
+        />
         <div className="flex items-center gap-2">
           <ChartBuilderSheet
             data={[]}
@@ -145,7 +132,7 @@ export default function ChartPage() {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid p-4 grid-cols-1 lg:grid-cols-2 gap-6">
           {charts.map((chart) => (
             <ChartItem
               key={chart.chartKey}
@@ -155,6 +142,6 @@ export default function ChartPage() {
           ))}
         </div>
       )}
-    </div>
+    </>
   )
 }
