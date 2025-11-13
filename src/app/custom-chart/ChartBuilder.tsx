@@ -1,13 +1,20 @@
 'use client'
 
-import { useTableContext, type CardOperation } from '@/app/custom-table/card-builder'
-import { applyFilters, getAvailableOperations, OPERATION_LABELS } from '@/app/custom-table/card-builder/card-utils'
+import {
+  useTableContext,
+  type CardOperation,
+} from '@/app/custom-table/card-builder'
+import {
+  applyFilters,
+  getAvailableOperations,
+  OPERATION_LABELS,
+} from '@/app/custom-table/card-builder/card-utils'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { TextInput } from '@/components/form/TextInput'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ChartConfig } from '@/components/ui/chart'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   MultiSelect,
@@ -62,6 +69,7 @@ interface ChartBuilderProps {
   onCancel?: () => void
   onPreviewUpdate?: (chartConfig: ChartConfiguration) => void
   compact?: boolean // For use in sheet layout
+  initialConfig?: ChartConfiguration
 }
 
 export function ChartBuilder({
@@ -71,20 +79,26 @@ export function ChartBuilder({
   onCancel,
   onPreviewUpdate,
   compact = false,
+  initialConfig,
 }: ChartBuilderProps) {
-  const [chartTitle, setChartTitle] = useState('')
+  const [chartTitle, setChartTitle] = useState(initialConfig?.title || '')
   const [globalFilters, setGlobalFilters] = useState<
     ExtendedColumnFilter<any>[]
-  >([])
-  const [globalJoinOperator, setGlobalJoinOperator] =
-    useState<JoinOperator>('and')
-  const [xAxisField, setXAxisField] = useState('')
+  >(initialConfig?.globalFilters || [])
+  const [globalJoinOperator, setGlobalJoinOperator] = useState<JoinOperator>(
+    initialConfig ? 'and' : 'and'
+  )
+  const [xAxisField, setXAxisField] = useState(initialConfig?.xAxisKey || '')
   const [splitMode, setSplitMode] = useState<SplitMode>('none')
-  const [yAxisFields, setYAxisFields] = useState<string[]>([])
+  const [yAxisFields, setYAxisFields] = useState<string[]>(
+    initialConfig?.yAxisKeys || []
+  )
   const [yAxisFieldConfigs, setYAxisFieldConfigs] = useState<
     YAxisFieldConfig[]
   >([])
-  const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>([])
+  const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>(
+    initialConfig?.seriesConfigs || []
+  )
 
   const { table } = useTableContext()
 
@@ -463,12 +477,11 @@ export function ChartBuilder({
           <CardTitle>Chart Configuration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Label htmlFor="chart-title">Chart Title</Label>
-          <Input
-            id="chart-title"
+          <TextInput
+            label="Chart Title"
             placeholder="Enter chart title"
             value={chartTitle}
-            onChange={(e) => setChartTitle(e.target.value)}
+            onChange={(value) => setChartTitle(String(value))}
           />
           {/* Global Filters */}
           <Label>Global Filters</Label>
@@ -479,23 +492,25 @@ export function ChartBuilder({
             internalJoinOperator={globalJoinOperator}
             onInternalJoinOperatorChange={setGlobalJoinOperator}
           />
-          <Label>X-Axis Field</Label>
-          <Select
-            value={xAxisField}
-            onValueChange={setXAxisField}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select X-axis field" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableFields.map((field) => (
-                <SelectItem
-                  key={field}
-                  value={field}>
-                  {field}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <Label>X-Axis Field</Label>
+            <Select
+              value={xAxisField}
+              onValueChange={(value: string) => setXAxisField(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select X-axis field" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableFields.map((field) => (
+                  <SelectItem
+                    key={field}
+                    value={field}>
+                    {field}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
@@ -687,14 +702,13 @@ export function ChartBuilder({
                     </div>
 
                     <div>
-                      <Label className="text-xs">Series Label</Label>
-                      <Input
-                        className="h-8"
+                      <TextInput
+                        label="Series Label"
                         placeholder="Enter series label"
                         value={series.label}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           handleUpdateSeries(series.id, {
-                            label: e.target.value,
+                            label: String(value),
                           })
                         }
                       />
@@ -738,26 +752,6 @@ export function ChartBuilder({
         </CardContent>
       </Card>
 
-      {/* Preview */}
-      {/* {processedChartData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DynamicChart
-              title={chartTitle || 'Chart Preview'}
-              description={`${processedChartData.length} data points`}
-              data={processedChartData}
-              config={chartConfig}
-              xAxisKey={xAxisField}
-              yAxisKeys={yAxisKeys}
-              chartType="bar"
-              height={400}
-            />
-          </CardContent>
-        </Card>
-      )} */}
 
       {/* Summary */}
       <Card>

@@ -12,16 +12,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { TitleDescription } from '@/components/ui/title-description'
 import { BarChart3, RefreshCw } from 'lucide-react'
 import { createContext, useContext, useMemo, useState } from 'react'
 import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
-import { TitleDescription } from '@/components/ui/title-description'
 
 interface ChartBuilderSheetProps {
   data: Record<string, any>[]
   columns: any[]
   onSave?: (chartConfig: ChartConfiguration) => void
+  onCancel?: () => void
   triggerButton?: React.ReactNode
+  initialConfig?: ChartConfiguration
+  autoOpen?: boolean
 }
 
 interface ChartPreviewContextType {
@@ -83,34 +86,40 @@ export function ChartBuilderSheet({
   data,
   columns,
   onSave,
+  onCancel,
   triggerButton,
+  initialConfig,
+  autoOpen = false,
 }: ChartBuilderSheetProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen)
   const [previewConfig, setPreviewConfig] = useState<ChartConfiguration | null>(
-    null
+    initialConfig || null
   )
   const [leftWidth, setLeftWidth] = useState(40) // percentage
   const [isDragging, setIsDragging] = useState(false)
 
   const handleSave = (config: ChartConfiguration) => {
-    // Save to localStorage
-    try {
-      const existingCharts = localStorage.getItem('saved-charts')
-      const charts = existingCharts ? JSON.parse(existingCharts) : []
+    // If editing, don't add to localStorage (let the parent handle it)
+    if (!initialConfig) {
+      // Save to localStorage
+      try {
+        const existingCharts = localStorage.getItem('saved-charts')
+        const charts = existingCharts ? JSON.parse(existingCharts) : []
 
-      // Add the new chart with an id
-      const chartWithId = {
-        ...config,
-        id: config.chartKey,
+        // Add the new chart with an id
+        const chartWithId = {
+          ...config,
+          id: config.chartKey,
+        }
+
+        charts.push(chartWithId)
+        localStorage.setItem('saved-charts', JSON.stringify(charts))
+
+        // Trigger storage event for other tabs/windows
+        window.dispatchEvent(new Event('storage'))
+      } catch (e) {
+        console.error('Failed to save chart:', e)
       }
-
-      charts.push(chartWithId)
-      localStorage.setItem('saved-charts', JSON.stringify(charts))
-
-      // Trigger storage event for other tabs/windows
-      window.dispatchEvent(new Event('storage'))
-    } catch (e) {
-      console.error('Failed to save chart:', e)
     }
 
     onSave?.(config)
@@ -122,6 +131,7 @@ export function ChartBuilderSheet({
   const handleCancel = () => {
     setOpen(false)
     setPreviewConfig(null)
+    onCancel?.()
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -148,14 +158,16 @@ export function ChartBuilderSheet({
   return (
     <ChartPreviewContext.Provider value={{ previewConfig, setPreviewConfig }}>
       <>
-        <div onClick={() => setOpen(true)}>
-          {triggerButton || (
-            <Button>
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Add Chart
-            </Button>
-          )}
-        </div>
+        {triggerButton !== null && (
+          <div onClick={() => setOpen(true)}>
+            {triggerButton || (
+              <Button>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Add Chart
+              </Button>
+            )}
+          </div>
+        )}
 
         <SheetDemo
           open={open}
@@ -185,6 +197,7 @@ export function ChartBuilderSheet({
                       columns={columns}
                       onSave={handleSave}
                       onCancel={handleCancel}
+                      initialConfig={initialConfig}
                     />
                   </div>
                 </ScrollArea>
@@ -230,11 +243,13 @@ function ChartBuilderWithPreview({
   columns: _initialColumns,
   onSave,
   onCancel,
+  initialConfig,
 }: {
   data: Record<string, any>[]
   columns: any[]
   onSave: (config: ChartConfiguration) => void
   onCancel: () => void
+  initialConfig?: ChartConfiguration
 }) {
   const { setPreviewConfig } = useChartPreview()
   const [url, setUrl] = useState('')
@@ -304,6 +319,7 @@ function ChartBuilderWithPreview({
         onCancel={onCancel}
         onPreviewUpdate={handlePreviewUpdate}
         compact={true}
+        initialConfig={initialConfig}
       />
     </div>
   )

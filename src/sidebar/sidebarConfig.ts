@@ -59,10 +59,6 @@ export const sidebarConfig: SidebarConfig = {
               icon: ChartScatter,
               component: Chart,
               url: AppRoutes.CHARTS,
-              isProtected: true,
-              showIf() {
-                return true
-              },
             },
             {
               id: "table",

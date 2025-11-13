@@ -2,11 +2,11 @@
 
 import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
+import { TitleDescription } from '@/components/ui/title-description'
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { ChartConfiguration } from './chart-builder/ChartBuilder'
-import { ChartBuilderSheet } from './chart-builder/ChartBuilderSheet'
-import { TitleDescription } from '@/components/ui/title-description'
+import type { ChartConfiguration } from './ChartBuilder'
+import { ChartBuilderSheet } from './ChartBuilderSheet'
 
 interface StoredChart extends ChartConfiguration {
   id: string
@@ -16,9 +16,11 @@ interface StoredChart extends ChartConfiguration {
 function ChartItem({
   chart,
   onDelete,
+  onEdit,
 }: {
   chart: StoredChart
   onDelete: (key: string) => void
+  onEdit: (chart: StoredChart) => void
 }) {
   return (
     <div className="relative">
@@ -32,6 +34,13 @@ function ChartItem({
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
         height={300}
+        onAction={(action) => {
+          if (action === 'edit') {
+            onEdit(chart)
+          } else if (action === 'delete') {
+            onDelete(chart.chartKey)
+          }
+        }}
       />
     </div>
   )
@@ -39,6 +48,7 @@ function ChartItem({
 
 export default function ChartPage() {
   const [charts, setCharts] = useState<StoredChart[]>([])
+  const [editingChart, setEditingChart] = useState<StoredChart | null>(null)
 
   // Load charts from localStorage
   useEffect(() => {
@@ -70,6 +80,11 @@ export default function ChartPage() {
     const updatedCharts = charts.filter((c) => c.chartKey !== chartKey)
     setCharts(updatedCharts)
     localStorage.setItem('saved-charts', JSON.stringify(updatedCharts))
+  }
+
+  // Edit a chart
+  const handleEditChart = (chart: StoredChart) => {
+    setEditingChart(chart)
   }
 
   return (
@@ -138,9 +153,31 @@ export default function ChartPage() {
               key={chart.chartKey}
               chart={chart}
               onDelete={handleDeleteChart}
+              onEdit={handleEditChart}
             />
           ))}
         </div>
+      )}
+
+      {/* Chart Builder Sheet for Editing */}
+      {editingChart && (
+        <ChartBuilderSheet
+          data={editingChart.data || []}
+          columns={[]}
+          initialConfig={editingChart}
+          onSave={(config) => {
+            // Update the edited chart in localStorage
+            const updatedCharts = charts.map((c) =>
+              c.chartKey === editingChart.chartKey ? { ...c, ...config } : c
+            )
+            setCharts(updatedCharts)
+            localStorage.setItem('saved-charts', JSON.stringify(updatedCharts))
+            setEditingChart(null)
+          }}
+          onCancel={() => setEditingChart(null)}
+          triggerButton={null}
+          autoOpen={true}
+        />
       )}
     </>
   )

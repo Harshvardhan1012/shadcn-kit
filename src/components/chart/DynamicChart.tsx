@@ -18,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { TooltipWrapper } from '../ui/tooltip-wrapper'
 import { Button } from './../ui/button'
 import {
   Card,
@@ -222,6 +223,8 @@ export interface DynamicChartProps {
     ) => React.ReactNode
   }
   onAction?: (action: 'edit' | 'delete') => void
+  sortable?: boolean
+  onSortableChange?: (chartKey: string, position: number) => void
 }
 
 function getColorForKey(
@@ -392,6 +395,7 @@ export function DynamicChart({
       'text/csv'
     )
   }
+
   const handleSort = (key: string) => {
     if (!tableConfig.sortable) return
     setSortConfig((current) =>
@@ -686,7 +690,7 @@ export function DynamicChart({
   return (
     <Card
       className={cn(
-        'gap-0 py-3 rounded-none bg-secondary ',
+        'gap-0 py-3 rounded-none bg-secondary',
         className,
         classNames?.card
       )}>
@@ -719,31 +723,40 @@ export function DynamicChart({
         <>
           <CardHeader className={cn(classNames?.cardHeader)}>
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                {title && (
-                  <CardTitle
-                    className={cn(
-                      'text-lg font-semibold',
-                      classNames?.cardTitle
-                    )}>
-                    {title}
-                  </CardTitle>
-                )}
-                {description && (
-                  <CardDescription
-                    className={cn('text-sm mt-1', classNames?.cardDescription)}>
-                    {description}
-                  </CardDescription>
-                )}
+              <div className="flex items-center gap-2 flex-1">
+                <div>
+                  {title && (
+                    <CardTitle
+                      className={cn(
+                        'text-lg font-semibold',
+                        classNames?.cardTitle
+                      )}>
+                      {title}
+                    </CardTitle>
+                  )}
+                  {description && (
+                    <CardDescription
+                      className={cn(
+                        'text-sm mt-1',
+                        classNames?.cardDescription
+                      )}>
+                      {description}
+                    </CardDescription>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {showTypeSelector && (
                   <Select
                     value={currentChartType}
                     onValueChange={handleChartTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <TooltipWrapper
+                      content="Select Chart Type"
+                      side="top">
+                      <SelectTrigger className="border-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </TooltipWrapper>
                     <SelectContent>
                       <SelectItem value="area">Area</SelectItem>
                       <SelectItem value="line">Line</SelectItem>
@@ -755,33 +768,42 @@ export function DynamicChart({
                   </Select>
                 )}
                 {showDownload && (
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={handleDownload}
-                    className="hover:bg-muted bg-background/50 backdrop-blur-sm"
-                    title="Download CSV">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => setIsExpanded(true)}
-                  className="hover:bg-muted bg-background/50 backdrop-blur-sm"
-                  title="Expand">
-                  <Expand className="w-4 h-4" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <TooltipWrapper
+                    content="Download Excel"
+                    side="top">
                     <Button
                       size="icon"
-                      variant="outline"
-                      className="hover:bg-muted bg-background/50 backdrop-blur-sm"
-                      title="Actions">
-                      <MoreVertical className="w-4 h-4" />
+                      variant="ghost"
+                      onClick={handleDownload}
+                      title="Download CSV">
+                      <Download className="w-4 h-4" />
                     </Button>
-                  </DropdownMenuTrigger>
+                  </TooltipWrapper>
+                )}
+                <TooltipWrapper
+                  content="Expand Chart"
+                  side="top">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setIsExpanded(true)}
+                    title="Expand">
+                    <Expand className="w-4 h-4" />
+                  </Button>
+                </TooltipWrapper>
+                <DropdownMenu>
+                  <TooltipWrapper
+                    content="More actions"
+                    side="top">
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Actions">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipWrapper>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onAction?.('edit')}>
                       <Edit className="w-4 h-4 mr-2" />
