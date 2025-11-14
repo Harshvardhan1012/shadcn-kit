@@ -19,6 +19,7 @@ import {
   YAxis,
 } from 'recharts'
 import { TooltipWrapper } from '../ui/tooltip-wrapper'
+import { Badge } from './../ui/badge'
 import { Button } from './../ui/button'
 import {
   Card,
@@ -225,6 +226,7 @@ export interface DynamicChartProps {
   onAction?: (action: 'edit' | 'delete') => void
   sortable?: boolean
   onSortableChange?: (chartKey: string, position: number) => void
+  chartIndex?: number
 }
 
 function getColorForKey(
@@ -337,10 +339,9 @@ export function DynamicChart({
   loading = false,
   tableConfig = {},
   onAction,
+  chartIndex,
 }: DynamicChartProps) {
-
-
-  if(!data){
+  if (!data) {
     return <div>No data available</div>
   }
 
@@ -749,6 +750,20 @@ export function DynamicChart({
                       {description}
                     </CardDescription>
                   )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {chartIndex !== undefined && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs">
+                      #{chartIndex + 1}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant="secondary"
+                    className="text-xs capitalize">
+                    {currentChartType}
+                  </Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">

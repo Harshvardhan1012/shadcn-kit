@@ -8,7 +8,6 @@ import type { ColumnConfig } from '@/components/master-table/get-columns'
 import DynamicMaster from '@/components/master-table/master-table'
 import SheetDemo from '@/components/sheet/page'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -60,25 +59,13 @@ function ChartPreview() {
   }
 
   return (
-    <Card>
-      <CardContent>
-        <DynamicChart
-          title={previewConfig.title}
-          data={previewConfig?.data}
-          config={previewConfig.config}
-          xAxisKey={previewConfig.xAxisKey}
-          yAxisKeys={previewConfig.yAxisKeys}
-        />
-        <div className="mt-4 text-sm text-muted-foreground">
-          <p>
-            <strong>Data Points:</strong> {previewConfig?.data?.length}
-          </p>
-          <p>
-            <strong>Series:</strong> {previewConfig?.yAxisKeys?.join(', ')}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <DynamicChart
+      title={previewConfig.title}
+      data={previewConfig?.data}
+      config={previewConfig.config}
+      xAxisKey={previewConfig.xAxisKey}
+      yAxisKeys={previewConfig.yAxisKeys}
+    />
   )
 }
 
@@ -106,10 +93,11 @@ export function ChartBuilderSheet({
         const existingCharts = localStorage.getItem('saved-charts')
         const charts = existingCharts ? JSON.parse(existingCharts) : []
 
-        // Add the new chart with an id
+        // Add the new chart with an id and index
         const chartWithId = {
           ...config,
           id: config.chartKey,
+          index: charts.length, // Set index to the current length
         }
 
         charts.push(chartWithId)

@@ -192,6 +192,7 @@ export interface ChartConfiguration {
   data?: Record<string, any>[]
   config?: ChartConfig
   yAxisKeys?: string[]
+  index: number
 }
 
 interface ChartBuilderProps {
@@ -224,6 +225,7 @@ export function ChartBuilder({
     seriesConfigs: initialConfig?.seriesConfigs || [],
     globalFilters: initialConfig?.globalFilters || [],
     globalJoinOperator: initialConfig?.globalJoinOperator || 'and',
+    index: initialConfig?.index || 1,
   }))
 
   // Pending filters (not applied yet)
@@ -594,6 +596,7 @@ export function ChartBuilder({
       seriesConfigs: [],
       globalFilters: [],
       globalJoinOperator: 'and',
+      index: 1,
     })
     setPendingGlobalFilters([])
     setPendingGlobalJoinOperator('and')

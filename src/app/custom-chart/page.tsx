@@ -2,8 +2,15 @@
 
 import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
+import {
+  Sortable,
+  SortableContent,
+  SortableItem,
+  SortableItemHandle,
+  SortableOverlay,
+} from '@/components/ui/sortable'
 import { TitleDescription } from '@/components/ui/title-description'
-import { Plus } from 'lucide-react'
+import { GripVertical, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ChartConfiguration } from './ChartBuilder'
 import { ChartBuilderSheet } from './ChartBuilderSheet'
@@ -17,10 +24,12 @@ function ChartItem({
   chart,
   onDelete,
   onEdit,
+  index,
 }: {
   chart: StoredChart
   onDelete: (key: string) => void
   onEdit: (chart: StoredChart) => void
+  index?: number
 }) {
   return (
     <div className="relative">
@@ -34,6 +43,7 @@ function ChartItem({
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
         height={300}
+        chartIndex={index}
         onAction={(action) => {
           if (action === 'edit') {
             onEdit(chart)
@@ -57,7 +67,9 @@ export default function ChartPage() {
         const storedCharts = localStorage.getItem('saved-charts')
         if (storedCharts) {
           const parsed = JSON.parse(storedCharts) as StoredChart[]
-          setCharts(parsed)
+          // Sort by index if available
+          const sorted = parsed.sort((a, b) => (a.index || 0) - (b.index || 0))
+          setCharts(sorted)
         }
       } catch (e) {
         console.error('Failed to load charts:', e)
@@ -78,13 +90,29 @@ export default function ChartPage() {
   // Delete a chart
   const handleDeleteChart = (chartKey: string) => {
     const updatedCharts = charts.filter((c) => c.chartKey !== chartKey)
-    setCharts(updatedCharts)
-    localStorage.setItem('saved-charts', JSON.stringify(updatedCharts))
+    // Update indices after deletion
+    const reindexed = updatedCharts.map((chart, idx) => ({
+      ...chart,
+      index: idx,
+    }))
+    setCharts(reindexed)
+    localStorage.setItem('saved-charts', JSON.stringify(reindexed))
   }
 
   // Edit a chart
   const handleEditChart = (chart: StoredChart) => {
     setEditingChart(chart)
+  }
+
+  // Handle chart reordering
+  const handleChartsReorder = (newCharts: StoredChart[]) => {
+    // Update indices based on new order
+    const reindexed = newCharts.map((chart, idx) => ({
+      ...chart,
+      index: idx,
+    }))
+    setCharts(reindexed)
+    localStorage.setItem('saved-charts', JSON.stringify(reindexed))
   }
 
   return (
@@ -147,15 +175,60 @@ export default function ChartPage() {
           />
         </div>
       ) : (
-        <div className="grid p-4 grid-cols-1 lg:grid-cols-2 gap-6">
-          {charts.map((chart) => (
-            <ChartItem
-              key={chart.chartKey}
-              chart={chart}
-              onDelete={handleDeleteChart}
-              onEdit={handleEditChart}
-            />
-          ))}
+        <div className="p-4">
+          <Sortable
+            value={charts}
+            onValueChange={handleChartsReorder}
+            getItemValue={(chart) => chart.chartKey}
+            orientation="mixed">
+            <SortableContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {charts.map((chart, index) => (
+                <SortableItem
+                  key={chart.chartKey}
+                  value={chart.chartKey}
+                  className={`group relative ${
+                    index === 0 ? 'lg:col-span-2' : ''
+                  }`}>
+                  <div className="absolute top-8 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <SortableItemHandle
+                      asChild
+                      className="cursor-grab active:cursor-grabbing">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 hover:bg-muted/80">
+                        <GripVertical className="h-4 w-4" />
+                        <span className="sr-only">Drag to reorder</span>
+                      </Button>
+                    </SortableItemHandle>
+                  </div>
+                  <ChartItem
+                    chart={chart}
+                    onDelete={handleDeleteChart}
+                    onEdit={handleEditChart}
+                    index={index}
+                  />
+                </SortableItem>
+              ))}
+            </SortableContent>
+
+            <SortableOverlay>
+              {({ value }) => {
+                const chart = charts.find((c) => c.chartKey === value)
+                const chartIndex = charts.findIndex((c) => c.chartKey === value)
+                return chart ? (
+                  <div className="opacity-50">
+                    <ChartItem
+                      chart={chart}
+                      onDelete={() => {}}
+                      onEdit={() => {}}
+                      index={chartIndex}
+                    />
+                  </div>
+                ) : null
+              }}
+            </SortableOverlay>
+          </Sortable>
         </div>
       )}
 
