@@ -575,7 +575,7 @@ export function DynamicChart({
             <XAxis dataKey={xAxisKey} />
             <YAxis />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend />
+            <ChartLegend layout="horizontal" />
             {validYAxisKeys.map((key, i) => (
               <Area
                 key={key}
@@ -602,6 +602,8 @@ export function DynamicChart({
                 key={key}
                 dataKey={key}
                 stroke={getColorForKey(key, i, config)}
+                dot={false}
+                type="monotone"
               />
             ))}
           </LineChart>
@@ -658,7 +660,7 @@ export function DynamicChart({
               dataKey={dataKey}
               cx="50%"
               cy="50%"
-              outerRadius="80%"
+              outerRadius="90%"
               innerRadius={currentChartType === 'donut' ? '60%' : '0%'}
               activeShape={highlightActive ? renderActiveShape : undefined}
               onClick={handleClick}>
@@ -682,7 +684,13 @@ export function DynamicChart({
               })}
             </Pie>
             {showTooltip && <ChartTooltip content={<ChartTooltipContent />} />}
-            {showLegend && <ChartLegend />}
+            {showLegend && (
+              <ChartLegend
+                layout="vertical"
+                align="right"
+                verticalAlign="middle"
+              />
+            )}
           </PieChart>
         )
       default:

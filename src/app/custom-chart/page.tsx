@@ -43,6 +43,7 @@ function ChartItem({
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
         height={300}
+        legendPosition='top'
         chartIndex={index}
         onAction={(action) => {
           if (action === 'edit') {
