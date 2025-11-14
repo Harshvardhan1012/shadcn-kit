@@ -1,34 +1,29 @@
-import React, { useRef, useState, useEffect } from 'react'
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter
-} from '@/components/ui/sheet'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { PanelRightClose } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
 
 interface SheetDemoProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
   size?: 'sm' | 'md' | 'xl' | '2xl' | '3xl' | string
-  minWidth?: number
-  maxWidth?: number
   storageKey?: string // Optional key to uniquely identify this sheet's width
 }
 
-const sizeMap: Record<string, number | 'full'> = {
-  sm: 384,
-  md: 512,
-  xl: 640,
-  '2xl': 768,
-  '3xl': 'full',
+// Size map as percentages of screen width
+const sizeMap: Record<string, number> = {
+  sm: 0.3, // 30% of screen width
+  md: 0.5, // 50% of screen width
+  xl: 0.65, // 65% of screen width
+  '2xl': 0.8, // 80% of screen width
+  '3xl': 0.95, // 95% of screen width (almost full)
 }
 
 export default function SheetDemo({
@@ -36,16 +31,21 @@ export default function SheetDemo({
   onOpenChange,
   children,
   size = 'md',
-  minWidth = 320,
-  maxWidth = 2400,
   storageKey = 'sheet-width', // Default storage key
 }: SheetDemoProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const isFullWidth = size === '3xl'
   const shouldPersist = !isFullWidth // Only persist for sizes <= 2xl
 
+  // Calculate min and max widths based on screen size
+  const getMinWidth = () => window.innerWidth * 0.25 // 1/4 of screen
+  const getMaxWidth = () => window.innerWidth * 0.95 // Almost full screen
+
   // Calculate initial width with localStorage support
   const getInitialWidth = () => {
+    const minWidth = getMinWidth()
+    const maxWidth = getMaxWidth()
+
     // Check localStorage first if persistence is enabled
     if (shouldPersist) {
       const savedWidth = localStorage.getItem(storageKey)
@@ -57,18 +57,12 @@ export default function SheetDemo({
       }
     }
 
-    // Fall back to size map
-    const mappedSize = sizeMap[size]
-    if (mappedSize === 'full') {
-      return window.innerWidth
-    }
-    if (mappedSize) {
-      return mappedSize
-    }
-    if (typeof size === 'string') {
-      return parseInt(size) || 512
-    }
-    return 512
+    // Fall back to size map (now as percentage of screen width)
+    const sizePercentage = sizeMap[size] || 0.5
+    const calculatedWidth = window.innerWidth * sizePercentage
+
+    // Ensure width is within bounds
+    return Math.max(minWidth, Math.min(maxWidth, calculatedWidth))
   }
 
   const [width, setWidth] = useState(getInitialWidth())
@@ -88,6 +82,8 @@ export default function SheetDemo({
   const handleResizing = (e: MouseEvent) => {
     if (!isResizing || !sheetRef.current) return
     const newWidth = window.innerWidth - e.clientX
+    const minWidth = getMinWidth()
+    const maxWidth = getMaxWidth()
     if (newWidth >= minWidth && newWidth <= maxWidth) {
       setWidth(newWidth)
     }
@@ -107,7 +103,22 @@ export default function SheetDemo({
       // Save to localStorage when resizing stops
       localStorage.setItem(storageKey, width.toString())
     }
-  }, [isResizing, minWidth, maxWidth, width, shouldPersist, storageKey])
+  }, [isResizing, width, shouldPersist, storageKey])
+
+  // Handle window resize to adjust width constraints
+  useEffect(() => {
+    const handleWindowResize = () => {
+      const minWidth = getMinWidth()
+      const maxWidth = getMaxWidth()
+      setWidth((currentWidth) => {
+        // Adjust width to stay within new bounds
+        return Math.max(minWidth, Math.min(maxWidth, currentWidth))
+      })
+    }
+
+    window.addEventListener('resize', handleWindowResize)
+    return () => window.removeEventListener('resize', handleWindowResize)
+  }, [])
 
   return (
     <Sheet

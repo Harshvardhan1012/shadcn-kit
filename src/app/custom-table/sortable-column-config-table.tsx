@@ -33,14 +33,7 @@ const variantOptions = [
   { value: 'text', label: 'Text' },
   { value: 'number', label: 'Number' },
   { value: 'dateRange', label: 'Date Range' },
-  { value: 'switch', label: 'Switch' },
   { value: 'multiSelect', label: 'Multi Select' },
-  { value: 'range', label: 'Range' },
-]
-
-const valueTypeOptions = [
-  { value: 'date', label: 'Date' },
-  { value: 'array', label: 'Array' },
 ]
 
 export function SortableColumnConfigTable({

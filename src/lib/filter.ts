@@ -1,5 +1,4 @@
 export function applyFilter(data: any, filter: any) {
-  console.log(data,filter)
   const { id, value, operator, variant } = filter
   if (variant === "text") {
     if (operator === "iLike")

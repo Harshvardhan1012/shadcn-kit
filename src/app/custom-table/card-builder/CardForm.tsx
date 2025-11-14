@@ -1,46 +1,19 @@
 'use client'
-
-/**
- * CardForm - Form for creating/editing metric cards with filters
- *
- * This component integrates the powerful data-table filter system directly
- * for defining card filters. Instead of building custom filter UI, it reuses:
- *
- * - DataTableFilterList: Advanced filter UI with sortable list and AND/OR operators
- *
- * Features inherited from data-table filters:
- * - Field selection with search
- * - Smart operator selection based on field type
- * - Variant-aware value inputs (text, number, date, multiSelect, etc.)
- * - Date pickers, range inputs, multi-select checkboxes
- * - Keyboard shortcuts (press 'f' to open filter menu)
- * - Full accessibility support
- *
- * Note: Filters are managed internally (not in URL) to support editing cards
- * with pre-existing filters.
- *
- * Dynamic Date Intervals:
- * - Interval operators (isToday, isThisMonth, lastNDays, etc.) automatically
- *   recalculate based on the current date each time the card is displayed
- * - Example: A card with "This Month" filter will show different results each month
- * - No need to update saved cards - they adapt to the current date automatically
- */
-
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { FormFieldType } from '@/components/form/DynamicForm'
+import { SelectInput } from '@/components/form/SelectInput'
+import { TextInput } from '@/components/form/TextInput'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
+import { Label } from '@/components/ui/label'
+import type {
+  ExtendedColumnFilter,
+  FilterVariant,
+  JoinOperator,
+} from '@/types/data-table'
 import { useEffect, useState } from 'react'
+import { useTableContext } from '../../../context/TableContext'
 import { ALL_OPERATIONS, OPERATION_LABELS, getFieldVariant } from './card-utils'
-import { useTableContext } from './TableContext'
-import type { Card, CardFilter, CardOperation, FilterVariant } from './types'
+import type { Card, CardFilter, CardOperation } from './types'
 
 interface CardFormProps {
   availableFields: string[]
@@ -50,17 +23,6 @@ interface CardFormProps {
   onCancel: () => void
   initialCard?: Card
 }
-
-// const COLORS = [
-//   { name: 'red', value: '#ef4444' },
-//   { name: 'orange', value: '#f97316' },
-//   { name: 'yellow', value: '#eab308' },
-//   { name: 'green', value: '#22c55e' },
-//   { name: 'blue', value: '#3b82f6' },
-//   { name: 'purple', value: '#a855f7' },
-//   { name: 'pink', value: '#ec4899' },
-//   { name: 'slate', value: '#64748b' },
-// ]
 
 export function CardForm({
   availableFields,
@@ -143,11 +105,6 @@ export function CardForm({
   }
 
   const handleSave = () => {
-    if (!title || !field) {
-      alert('Please fill in all required fields')
-      return
-    }
-
     const cardFilters = convertToCardFilters(filters)
 
     onSave({
@@ -166,80 +123,52 @@ export function CardForm({
 
   return (
     <div className="space-y-4 p-4">
-      <div>
-        <label className="text-sm font-medium">Card Title *</label>
-        <Input
-          placeholder="e.g., Total Orders"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1"
-        />
-      </div>
+      <TextInput
+        label="Card Title"
+        placeholder="e.g., Total Orders"
+        value={title}
+        onChange={(value) => setTitle(value as string)}
+      />
+
+      <SelectInput
+        fieldName="field"
+        fieldLabel="Select Field"
+        fieldType={FormFieldType.SELECT}
+        label="Select Field"
+        placeholder="Choose a field"
+        value={field}
+        onChange={(value) => setField(value)}
+        options={availableFields.map((f) => ({
+          label: f,
+          value: f,
+        }))}
+      />
+
+      <SelectInput
+        fieldName="operation"
+        fieldLabel="Operation"
+        fieldType={FormFieldType.SELECT}
+        label="Operation"
+        value={operation}
+        onChange={(value) => setOperation(value as CardOperation)}
+        options={availableOperations.map((op) => ({
+          label: OPERATION_LABELS[op],
+          value: op,
+        }))}
+      />
 
       <div>
-        <label className="text-sm font-medium">Select Field *</label>
-        <Select
-          value={field}
-          onValueChange={setField}>
-          <SelectTrigger className="mt-1">
-            <SelectValue placeholder="Choose a field" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableFields.map((f) => (
-              <SelectItem
-                key={f}
-                value={f}>
-                {f}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium">Operation</label>
-        <Select
-          value={operation}
-          onValueChange={(v) => setOperation(v as CardOperation)}>
-          <SelectTrigger className="mt-1">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableOperations.map((op) => (
-              <SelectItem
-                key={op}
-                value={op}>
-                {OPERATION_LABELS[op]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {field && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Available operations for {getFieldVariantLocal(field)} field
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="text-sm font-medium mb-2 block">
+        <Label className="text-sm font-medium mb-2 block">
           Filters (Optional)
-        </label>
-        <div className="mt-2 rounded-lg border p-3 bg-muted/20 space-y-3">
-          <DataTableFilterList
-            table={table}
-            internalFilters={filters}
-            onInternalFiltersChange={setFilters}
-            internalJoinOperator={joinOperator}
-            onInternalJoinOperatorChange={setJoinOperator}
-          />
-
-          <p className="text-xs text-muted-foreground mt-2">
-            💡 Add filters to refine your card calculations. Interval filters
-            (like "This Month" or "Last 30 Days") dynamically update based on
-            the current date.
-          </p>
-        </div>
+        </Label>
+        <DataTableFilterList
+          table={table}
+          internalFilters={filters}
+          onInternalFiltersChange={setFilters}
+          internalJoinOperator={joinOperator}
+          onInternalJoinOperatorChange={setJoinOperator}
+          filterOpen={true}
+        />
       </div>
 
       <div className="flex gap-2 pt-4">

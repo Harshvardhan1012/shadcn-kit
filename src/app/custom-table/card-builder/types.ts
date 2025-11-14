@@ -1,3 +1,5 @@
+import type { FilterOperator, FilterVariant } from "@/types/data-table"
+
 export type CardOperation =
   | "count"
   | "sum"
@@ -6,50 +8,6 @@ export type CardOperation =
   | "max"
   | "uniqueCount"
   | "value"
-
-export type FilterVariant =
-  | "text"
-  | "number"
-  | "range"
-  | "multiSelect"
-  | "select"
-  | "array"
-  | "boolean"
-  | "dateRange"
-  | "date"
-
-export type FilterOperator =
-  // Text operators
-  | "iLike"
-  | "notILike"
-  | "eq"
-  | "ne"
-  | "isEmpty"
-  | "isNotEmpty"
-  // Number operators
-  | "lt"
-  | "lte"
-  | "gt"
-  | "gte"
-  // MultiSelect operators
-  | "inArray"
-  | "notInArray"
-  // Array operators
-  | "inAll"
-  // DateRange operators
-  | "isBetween"
-  | "isToday"
-  | "isYesterday"
-  | "isThisWeek"
-  | "isThisMonth"
-  | "isThisQuarter"
-  | "isThisYear"
-  | "lastNDays"
-  | "nextNDays"
-  | "lastNWeeks"
-  | "lastNMonths"
-  | "lastNYears"
-  | "isRelativeToToday"
 
 export interface CardFilter {
   field: string

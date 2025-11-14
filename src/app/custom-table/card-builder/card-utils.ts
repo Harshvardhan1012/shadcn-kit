@@ -3,25 +3,8 @@
  */
 
 import { applyFilter } from "@/lib/filter"
-
-export type CardOperation =
-  | "count"
-  | "sum"
-  | "avg"
-  | "min"
-  | "max"
-  | "uniqueCount"
-  | "value"
-
-export type FilterVariant =
-  | "text"
-  | "number"
-  | "range"
-  | "date"
-  | "dateRange"
-  | "boolean"
-  | "select"
-  | "multiSelect"
+import type { CardOperation } from "./types"
+import type { FilterVariant } from "@/types/data-table"
 
 export const ALL_OPERATIONS: Record<string, CardOperation[]> = {
   text: ["count", "uniqueCount"],

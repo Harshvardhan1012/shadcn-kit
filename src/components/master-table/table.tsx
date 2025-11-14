@@ -1,14 +1,12 @@
 'use client'
 
-import {
-  useTableContext
-} from '@/app/custom-table/card-builder/TableContext'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useTableContext } from '@/context/TableContext'
 import { useDataTable } from '@/hooks/use-data-table'
 import { getValidFilters } from '@/lib/data-table'
 import { applyFilter, getFilterFields } from '@/lib/filter'

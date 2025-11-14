@@ -1,28 +1,5 @@
 import { applyFilter } from "@/lib/filter"
-import type { Card, CardFilter } from "./types"
-
-// Operators that use dynamic date intervals (recalculated each time)
-const INTERVAL_OPERATORS = [
-  "isToday",
-  "isYesterday",
-  "isThisWeek",
-  "isThisMonth",
-  "isThisQuarter",
-  "isThisYear",
-  "lastNDays",
-  "nextNDays",
-  "lastNWeeks",
-  "lastNMonths",
-  "lastNYears",
-]
-
-/**
- * Check if a filter uses dynamic date intervals
- * These filters recalculate based on current date each time
- */
-export const isIntervalFilter = (filter: CardFilter): boolean => {
-  return INTERVAL_OPERATORS.includes(filter.operator as any)
-}
+import type { Card, CardOperation } from "./types"
 
 export const calculateCardValue = (
   data: Record<string, any>[],
@@ -82,31 +59,23 @@ export const calculateCardValue = (
     case "uniqueCount":
       return new Set(values).size
 
+    case "value":
+      return values[0]
+
     default:
       return 0
   }
 }
 
-export const getOperationLabel = (operation: string): string => {
-  const labels: Record<string, string> = {
+export const getOperationLabel = (operation: CardOperation): string => {
+  const labels: Record<CardOperation, string> = {
     count: "Count",
     sum: "Sum",
     avg: "Average",
     min: "Minimum",
     max: "Maximum",
     uniqueCount: "Unique Count",
+    value: "Value",
   }
-  return labels[operation] || operation
-}
-
-export const getOperationIcon = (operation: string): string => {
-  const icons: Record<string, string> = {
-    count: "Hash",
-    sum: "Plus",
-    avg: "BarChart3",
-    min: "ArrowDown",
-    max: "ArrowUp",
-    uniqueCount: "Layers",
-  }
-  return icons[operation] || "Square"
+  return labels[operation]
 }

@@ -10,10 +10,13 @@ import {
   OPERATION_LABELS,
 } from '@/app/custom-table/card-builder/card-utils'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { FormFieldType } from '@/components/form/DynamicForm'
+import { SelectInput } from '@/components/form/SelectInput'
 import { TextInput } from '@/components/form/TextInput'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfigCard } from '@/components/ui/card/ConfigCard'
 import type { ChartConfig } from '@/components/ui/chart'
 import { Label } from '@/components/ui/label'
 import {
@@ -23,17 +26,143 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from '@/components/ui/multi-select'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+
+interface SeriesItemProps {
+  series: SeriesConfig
+  index: number
+  availableFields: string[]
+  table: any
+  onUpdate: (id: string, updates: Partial<SeriesConfig>) => void
+  onRemove: (id: string) => void
+  onApplyFilters: (
+    seriesId: string,
+    filters: ExtendedColumnFilter<any>[],
+    joinOperator: JoinOperator
+  ) => void
+  getAvailableOperationsForField: (fieldName: string) => CardOperation[]
+}
+
+function SeriesItem({
+  series,
+  index,
+  availableFields,
+  table,
+  onUpdate,
+  onRemove,
+  onApplyFilters,
+  getAvailableOperationsForField,
+}: SeriesItemProps) {
+  const [pendingSeriesFilters, setPendingSeriesFilters] = useState<
+    ExtendedColumnFilter<any>[]
+  >(series.filters)
+  const [pendingSeriesJoinOp, setPendingSeriesJoinOp] = useState<JoinOperator>(
+    series.joinOperator
+  )
+
+  // Update pending filters when series filters change
+  useEffect(() => {
+    setPendingSeriesFilters(series.filters)
+    setPendingSeriesJoinOp(series.joinOperator)
+  }, [series.filters, series.joinOperator])
+
+  return (
+    <ConfigCard
+      key={series.id}
+      title={`Series ${index + 1}`}
+      actions={
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onRemove(series.id)}>
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      }>
+      <div className="space-y-3">
+        <SelectInput
+          fieldName="field"
+          fieldLabel="Field"
+          fieldType={FormFieldType.SELECT}
+          label="Field"
+          placeholder="Select field"
+          value={series.field}
+          onChange={(value) => {
+            const availableOps = getAvailableOperationsForField(value)
+            onUpdate(series.id, {
+              field: value,
+              operation: availableOps[0] || 'sum',
+            })
+          }}
+          options={availableFields.map((field) => ({
+            label: field,
+            value: field,
+          }))}
+        />
+
+        <SelectInput
+          fieldName="operation"
+          fieldLabel="Operation"
+          fieldType={FormFieldType.SELECT}
+          label="Operation"
+          value={series.operation}
+          onChange={(value) =>
+            onUpdate(series.id, {
+              operation: value as CardOperation,
+            })
+          }
+          options={getAvailableOperationsForField(series.field).map((op) => ({
+            label: OPERATION_LABELS[op],
+            value: op,
+          }))}
+        />
+
+        <TextInput
+          label="Series Label"
+          placeholder="Enter series label"
+          value={series.label}
+          onChange={(value) =>
+            onUpdate(series.id, {
+              label: String(value),
+            })
+          }
+        />
+
+        <div>
+          <Label className="text-xs mb-2 block">Series Filters</Label>
+          <DataTableFilterList
+            table={table}
+            internalFilters={pendingSeriesFilters}
+            onInternalFiltersChange={setPendingSeriesFilters}
+            internalJoinOperator={pendingSeriesJoinOp}
+            onInternalJoinOperatorChange={setPendingSeriesJoinOp}
+            filterOpen
+          />
+          <Button
+            onClick={() =>
+              onApplyFilters(
+                series.id,
+                pendingSeriesFilters,
+                pendingSeriesJoinOp
+              )
+            }
+            variant="outline"
+            size="sm"
+            className="w-full mt-2">
+            Apply Series Filters
+          </Button>
+          {series.filters.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {series.filters.length} filter(s) applied
+            </p>
+          )}
+        </div>
+      </div>
+    </ConfigCard>
+  )
+}
 
 export interface YAxisFieldConfig {
   field: string
@@ -52,15 +181,18 @@ export interface SeriesConfig {
 export interface ChartConfiguration {
   chartKey: string
   title: string
-  data: Record<string, any>[]
-  config: ChartConfig
   xAxisKey: string
-  yAxisKeys: string[]
-  globalFilters?: ExtendedColumnFilter<any>[]
-  seriesConfigs?: SeriesConfig[]
+  yAxisFields: string[]
+  yAxisFieldConfigs: YAxisFieldConfig[]
+  splitMode: 'none' | 'split'
+  seriesConfigs: SeriesConfig[]
+  globalFilters: ExtendedColumnFilter<any>[]
+  globalJoinOperator: JoinOperator
+  // Computed/derived properties
+  data?: Record<string, any>[]
+  config?: ChartConfig
+  yAxisKeys?: string[]
 }
-
-type SplitMode = 'none' | 'split'
 
 interface ChartBuilderProps {
   data: Record<string, any>[]
@@ -68,7 +200,7 @@ interface ChartBuilderProps {
   onSave?: (chartConfig: ChartConfiguration) => void
   onCancel?: () => void
   onPreviewUpdate?: (chartConfig: ChartConfiguration) => void
-  compact?: boolean // For use in sheet layout
+  compact?: boolean
   initialConfig?: ChartConfiguration
 }
 
@@ -81,43 +213,71 @@ export function ChartBuilder({
   compact = false,
   initialConfig,
 }: ChartBuilderProps) {
-  const [chartTitle, setChartTitle] = useState(initialConfig?.title || '')
-  const [globalFilters, setGlobalFilters] = useState<
+  // Single state object for all chart configuration
+  const [chartConfig, setChartConfig] = useState<ChartConfiguration>(() => ({
+    chartKey: initialConfig?.chartKey || generateId({ length: 12 }),
+    title: initialConfig?.title || '',
+    xAxisKey: initialConfig?.xAxisKey || '',
+    yAxisFields: initialConfig?.yAxisFields || [],
+    yAxisFieldConfigs: initialConfig?.yAxisFieldConfigs || [],
+    splitMode: initialConfig?.splitMode || 'none',
+    seriesConfigs: initialConfig?.seriesConfigs || [],
+    globalFilters: initialConfig?.globalFilters || [],
+    globalJoinOperator: initialConfig?.globalJoinOperator || 'and',
+  }))
+
+  // Pending filters (not applied yet)
+  const [pendingGlobalFilters, setPendingGlobalFilters] = useState<
     ExtendedColumnFilter<any>[]
-  >(initialConfig?.globalFilters || [])
-  const [globalJoinOperator, setGlobalJoinOperator] = useState<JoinOperator>(
-    initialConfig ? 'and' : 'and'
-  )
-  const [xAxisField, setXAxisField] = useState(initialConfig?.xAxisKey || '')
-  const [splitMode, setSplitMode] = useState<SplitMode>('none')
-  const [yAxisFields, setYAxisFields] = useState<string[]>(
-    initialConfig?.yAxisKeys || []
-  )
-  const [yAxisFieldConfigs, setYAxisFieldConfigs] = useState<
-    YAxisFieldConfig[]
-  >([])
-  const [seriesConfigs, setSeriesConfigs] = useState<SeriesConfig[]>(
-    initialConfig?.seriesConfigs || []
-  )
+  >(chartConfig.globalFilters)
+  const [pendingGlobalJoinOperator, setPendingGlobalJoinOperator] =
+    useState<JoinOperator>(chartConfig.globalJoinOperator)
 
   const { table } = useTableContext()
 
-  // Get available fields from columns
+  // Available fields from columns
   const availableFields = useMemo(() => {
     return columns.map((col) => col.field)
   }, [columns])
 
-  // Get available operations for a field using shared utility
+  // Get available operations for a field
   const getAvailableOperationsForField = (
     fieldName: string
   ): CardOperation[] => {
     return getAvailableOperations(fieldName, columns)
   }
 
+  // Update helper function
+  const updateChartConfig = (updates: Partial<ChartConfiguration>) => {
+    setChartConfig((prev) => ({ ...prev, ...updates }))
+  }
+
+  // Apply global filters
+  const handleApplyGlobalFilters = () => {
+    updateChartConfig({
+      globalFilters: pendingGlobalFilters,
+      globalJoinOperator: pendingGlobalJoinOperator,
+    })
+  }
+
+  // Apply series filters
+  const handleApplySeriesFilters = (
+    seriesId: string,
+    filters: ExtendedColumnFilter<any>[],
+    joinOperator: JoinOperator
+  ) => {
+    const updatedSeries = chartConfig.seriesConfigs.map((s) =>
+      s.id === seriesId ? { ...s, filters, joinOperator } : s
+    )
+    updateChartConfig({ seriesConfigs: updatedSeries })
+  }
+
   // Sync yAxisFieldConfigs with yAxisFields
   useEffect(() => {
-    const newConfigs = yAxisFields.map((field) => {
-      const existingConfig = yAxisFieldConfigs.find((c) => c.field === field)
+    const newConfigs = chartConfig.yAxisFields.map((field) => {
+      const existingConfig = chartConfig.yAxisFieldConfigs.find(
+        (c) => c.field === field
+      )
       if (existingConfig) return existingConfig
 
       const availableOps = getAvailableOperationsForField(field)
@@ -127,58 +287,65 @@ export function ChartBuilder({
       }
     })
     if (
-      JSON.stringify(newConfigs) !== JSON.stringify(yAxisFieldConfigs) &&
+      JSON.stringify(newConfigs) !==
+        JSON.stringify(chartConfig.yAxisFieldConfigs) &&
       newConfigs.length > 0
     ) {
-      setYAxisFieldConfigs(newConfigs)
+      updateChartConfig({ yAxisFieldConfigs: newConfigs })
     }
-  }, [yAxisFields])
+  }, [chartConfig.yAxisFields])
 
-  // Apply global filters to data using shared utility
+  // Apply global filters to data
   const filteredData = useMemo(() => {
-    if (globalFilters.length === 0) return data
+    if (chartConfig.globalFilters.length === 0) return data
 
     return data.filter((row) =>
-      applyFilters(row, globalFilters, globalJoinOperator)
+      applyFilters(
+        row,
+        chartConfig.globalFilters,
+        chartConfig.globalJoinOperator
+      )
     )
-  }, [data, globalFilters, globalJoinOperator])
+  }, [data, chartConfig.globalFilters, chartConfig.globalJoinOperator])
 
-  // Apply series-specific filters and aggregate
+  // Process chart data
   const processedChartData = useMemo(() => {
-    if (!xAxisField) return []
+    if (!chartConfig.xAxisKey) return []
 
-    if (splitMode === 'none' && yAxisFieldConfigs.length > 0) {
-      // Check if all operations are 'value' - if so, don't group
-      const allValuesOperation = yAxisFieldConfigs.every(
+    if (
+      chartConfig.splitMode === 'none' &&
+      chartConfig.yAxisFieldConfigs.length > 0
+    ) {
+      const allValuesOperation = chartConfig.yAxisFieldConfigs.every(
         (config) => config.operation === 'value'
       )
 
       if (allValuesOperation) {
-        // Don't group - return raw data with labels
         return filteredData.map((row) => {
-          const result: Record<string, any> = { [xAxisField]: row[xAxisField] }
+          const result: Record<string, any> = {
+            [chartConfig.xAxisKey]: row[chartConfig.xAxisKey],
+          }
 
-          yAxisFieldConfigs.forEach((config) => {
+          chartConfig.yAxisFieldConfigs.forEach((config) => {
             const label = `${config.field} (${
               OPERATION_LABELS[config.operation]
             })`
-            const value = row[config.field]
-            result[label] = Number(value) || 0
+            result[label] = Number(row[config.field]) || 0
           })
 
           return result
         })
       }
 
-      // Multiple Y-axis fields with individual operations (with grouping)
+      // Grouped aggregation
       const grouped = filteredData.reduce((acc, row) => {
-        const xValue = row[xAxisField]
+        const xValue = row[chartConfig.xAxisKey]
 
         if (!acc[xValue]) {
-          acc[xValue] = { [xAxisField]: xValue }
-          yAxisFieldConfigs.forEach((config) => {
+          acc[xValue] = { [chartConfig.xAxisKey]: xValue }
+          chartConfig.yAxisFieldConfigs.forEach((config) => {
             acc[xValue][`${config.field}_${config.operation}`] = {
-              directValue: 0, // Direct value for 'value' operation
+              directValue: 0,
               sum: 0,
               count: 0,
               min: Infinity,
@@ -188,13 +355,12 @@ export function ChartBuilder({
           })
         }
 
-        yAxisFieldConfigs.forEach((config) => {
+        chartConfig.yAxisFieldConfigs.forEach((config) => {
           const value = row[config.field]
           const numValue = Number(value) || 0
           const key = `${config.field}_${config.operation}`
           const stats = acc[xValue][key]
 
-          // For 'value' operation, just store the raw value directly (no aggregation needed)
           if (config.operation === 'value') {
             stats.directValue = numValue
           } else {
@@ -209,11 +375,12 @@ export function ChartBuilder({
         return acc
       }, {} as Record<string, any>)
 
-      // Calculate final values based on operation
       return Object.values(grouped).map((row) => {
-        const result: Record<string, any> = { [xAxisField]: row[xAxisField] }
+        const result: Record<string, any> = {
+          [chartConfig.xAxisKey]: row[chartConfig.xAxisKey],
+        }
 
-        yAxisFieldConfigs.forEach((config) => {
+        chartConfig.yAxisFieldConfigs.forEach((config) => {
           const key = `${config.field}_${config.operation}`
           const stats = row[key]
           const label = `${config.field} (${
@@ -222,7 +389,6 @@ export function ChartBuilder({
 
           switch (config.operation) {
             case 'value':
-              // For value operation, use the direct value from the field
               result[label] = stats.directValue
               break
             case 'sum':
@@ -250,17 +416,19 @@ export function ChartBuilder({
       })
     }
 
-    if (splitMode === 'split' && seriesConfigs.length > 0) {
-      // Apply filters for each series and aggregate with operations
+    if (
+      chartConfig.splitMode === 'split' &&
+      chartConfig.seriesConfigs.length > 0
+    ) {
       const grouped: Record<string, any> = {}
 
       filteredData.forEach((row) => {
-        const xValue = row[xAxisField]
+        const xValue = row[chartConfig.xAxisKey]
         if (!grouped[xValue]) {
-          grouped[xValue] = { [xAxisField]: xValue }
-          seriesConfigs.forEach((series) => {
+          grouped[xValue] = { [chartConfig.xAxisKey]: xValue }
+          chartConfig.seriesConfigs.forEach((series) => {
             grouped[xValue][series.label] = {
-              directValue: 0, // Direct value for 'value' operation
+              directValue: 0,
               sum: 0,
               count: 0,
               min: Infinity,
@@ -270,9 +438,7 @@ export function ChartBuilder({
           })
         }
 
-        // Process each series
-        seriesConfigs.forEach((series) => {
-          // Apply series-specific filters using shared utility
+        chartConfig.seriesConfigs.forEach((series) => {
           const passesFilters = applyFilters(
             row,
             series.filters,
@@ -284,7 +450,6 @@ export function ChartBuilder({
             const numValue = Number(value) || 0
             const stats = grouped[xValue][series.label]
 
-            // For 'value' operation, just store the raw value directly (no aggregation needed)
             if (series.operation === 'value') {
               stats.directValue = numValue
             } else {
@@ -298,16 +463,16 @@ export function ChartBuilder({
         })
       })
 
-      // Calculate final values based on operation
       return Object.values(grouped).map((row) => {
-        const result: Record<string, any> = { [xAxisField]: row[xAxisField] }
+        const result: Record<string, any> = {
+          [chartConfig.xAxisKey]: row[chartConfig.xAxisKey],
+        }
 
-        seriesConfigs.forEach((series) => {
+        chartConfig.seriesConfigs.forEach((series) => {
           const stats = row[series.label]
 
           switch (series.operation) {
             case 'value':
-              // For value operation, use the direct value from the field
               result[series.label] = stats.directValue
               break
             case 'sum':
@@ -337,114 +502,117 @@ export function ChartBuilder({
     }
 
     return []
-  }, [filteredData, xAxisField, yAxisFieldConfigs, splitMode, seriesConfigs])
+  }, [filteredData, chartConfig])
 
   // Generate chart config
-  const chartConfig = useMemo((): ChartConfig => {
+  const generatedChartConfig = useMemo((): ChartConfig => {
     const config: ChartConfig = {}
 
-    if (splitMode === 'none' && yAxisFieldConfigs.length > 0) {
-      yAxisFieldConfigs.forEach((fieldConfig) => {
+    if (
+      chartConfig.splitMode === 'none' &&
+      chartConfig.yAxisFieldConfigs.length > 0
+    ) {
+      chartConfig.yAxisFieldConfigs.forEach((fieldConfig) => {
         const label = `${fieldConfig.field} (${
           OPERATION_LABELS[fieldConfig.operation]
         })`
-        config[label] = {
-          label,
-        }
+        config[label] = { label }
       })
     }
 
-    if (splitMode === 'split') {
-      seriesConfigs.forEach((series) => {
-        config[series.label] = {
-          label: series.label,
-        }
+    if (chartConfig.splitMode === 'split') {
+      chartConfig.seriesConfigs.forEach((series) => {
+        config[series.label] = { label: series.label }
       })
     }
 
     return config
-  }, [splitMode, yAxisFieldConfigs, seriesConfigs])
+  }, [chartConfig])
 
   const yAxisKeys = useMemo(() => {
-    if (splitMode === 'none' && yAxisFieldConfigs.length > 0) {
-      return yAxisFieldConfigs.map(
+    if (
+      chartConfig.splitMode === 'none' &&
+      chartConfig.yAxisFieldConfigs.length > 0
+    ) {
+      return chartConfig.yAxisFieldConfigs.map(
         (config) => `${config.field} (${OPERATION_LABELS[config.operation]})`
       )
     }
-    if (splitMode === 'split') {
-      return seriesConfigs.map((s) => s.label)
+    if (chartConfig.splitMode === 'split') {
+      return chartConfig.seriesConfigs.map((s) => s.label)
     }
     return []
-  }, [splitMode, yAxisFieldConfigs, seriesConfigs])
+  }, [chartConfig])
 
+  // Handle series operations
   const handleAddSeries = () => {
-    setSeriesConfigs([
-      ...seriesConfigs,
-      {
-        id: generateId({ length: 8 }),
-        field: '',
-        operation: 'sum',
-        label: '',
-        filters: [],
-        joinOperator: 'and',
-      },
-    ])
+    const newSeries: SeriesConfig = {
+      id: generateId({ length: 8 }),
+      field: '',
+      operation: 'sum',
+      label: '',
+      filters: [],
+      joinOperator: 'and',
+    }
+    updateChartConfig({
+      seriesConfigs: [...chartConfig.seriesConfigs, newSeries],
+    })
   }
 
   const handleRemoveSeries = (id: string) => {
-    setSeriesConfigs(seriesConfigs.filter((s) => s.id !== id))
+    updateChartConfig({
+      seriesConfigs: chartConfig.seriesConfigs.filter((s) => s.id !== id),
+    })
   }
 
   const handleUpdateSeries = (id: string, updates: Partial<SeriesConfig>) => {
-    setSeriesConfigs(
-      seriesConfigs.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    const updatedSeries = chartConfig.seriesConfigs.map((s) =>
+      s.id === id ? { ...s, ...updates } : s
     )
+    updateChartConfig({ seriesConfigs: updatedSeries })
   }
 
   const handleSave = () => {
     const configuration: ChartConfiguration = {
-      chartKey: generateId({ length: 12 }),
-      title: chartTitle,
+      ...chartConfig,
       data: processedChartData,
-      config: chartConfig,
-      xAxisKey: xAxisField,
+      config: generatedChartConfig,
       yAxisKeys,
-      globalFilters,
-      seriesConfigs: splitMode === 'split' ? seriesConfigs : undefined,
     }
 
     onSave?.(configuration)
   }
 
-  // Use ref to track if this is the first render
-  const isFirstRender = useRef(true)
+  const handleReset = () => {
+    setChartConfig({
+      chartKey: generateId({ length: 12 }),
+      title: '',
+      xAxisKey: '',
+      yAxisFields: [],
+      yAxisFieldConfigs: [],
+      splitMode: 'none',
+      seriesConfigs: [],
+      globalFilters: [],
+      globalJoinOperator: 'and',
+    })
+    setPendingGlobalFilters([])
+    setPendingGlobalJoinOperator('and')
+  }
 
-  // Create stable configuration object
+  // Preview update
+  const isFirstRender = useRef(true)
   const currentConfiguration = useMemo((): ChartConfiguration | null => {
-    if (!chartTitle || !xAxisField || yAxisKeys.length === 0) return null
+    if (!chartConfig.title || !chartConfig.xAxisKey || yAxisKeys.length === 0)
+      return null
 
     return {
-      chartKey: generateId({ length: 12 }),
-      title: chartTitle,
+      ...chartConfig,
       data: processedChartData,
-      config: chartConfig,
-      xAxisKey: xAxisField,
+      config: generatedChartConfig,
       yAxisKeys,
-      globalFilters,
-      seriesConfigs: splitMode === 'split' ? seriesConfigs : undefined,
     }
-  }, [
-    chartTitle,
-    xAxisField,
-    yAxisKeys.length,
-    processedChartData,
-    Object.keys(chartConfig).length,
-    globalFilters.length,
-    seriesConfigs.length,
-    splitMode,
-  ])
+  }, [chartConfig, processedChartData, generatedChartConfig, yAxisKeys])
 
-  // Update preview with stable configuration
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
@@ -456,7 +624,8 @@ export function ChartBuilder({
     }
   }, [currentConfiguration, onPreviewUpdate])
 
-  const isValid = chartTitle && xAxisField && yAxisKeys.length > 0
+  const isValid =
+    chartConfig.title && chartConfig.xAxisKey && yAxisKeys.length > 0
 
   if (!table) {
     return (
@@ -471,48 +640,59 @@ export function ChartBuilder({
 
   return (
     <div className="space-y-6">
-      {/* Chart Title */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Chart Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Chart Title & Basic Config */}
+      <ConfigCard title="Chart Configuration">
+        <div className="space-y-4">
           <TextInput
             label="Chart Title"
             placeholder="Enter chart title"
-            value={chartTitle}
-            onChange={(value) => setChartTitle(String(value))}
+            value={chartConfig.title}
+            onChange={(value) => updateChartConfig({ title: String(value) })}
           />
-          {/* Global Filters */}
-          <Label>Global Filters</Label>
+
+          <SelectInput
+            fieldName="xAxis"
+            fieldLabel="X-Axis Field"
+            fieldType={FormFieldType.SELECT}
+            label="X-Axis Field"
+            placeholder="Select X-axis field"
+            value={chartConfig.xAxisKey}
+            onChange={(value) => updateChartConfig({ xAxisKey: value })}
+            options={availableFields.map((field) => ({
+              label: field,
+              value: field,
+            }))}
+          />
+        </div>
+      </ConfigCard>
+
+      {/* Global Filters */}
+      <ConfigCard
+        title="Global Filters"
+        description="Apply filters to all data before aggregation">
+        <div className="space-y-3">
           <DataTableFilterList
             table={table}
-            internalFilters={globalFilters}
-            onInternalFiltersChange={setGlobalFilters}
-            internalJoinOperator={globalJoinOperator}
-            onInternalJoinOperatorChange={setGlobalJoinOperator}
+            internalFilters={pendingGlobalFilters}
+            onInternalFiltersChange={setPendingGlobalFilters}
+            internalJoinOperator={pendingGlobalJoinOperator}
+            onInternalJoinOperatorChange={setPendingGlobalJoinOperator}
+            filterOpen
           />
-          <div className="space-y-2">
-            <Label>X-Axis Field</Label>
-            <Select
-              value={xAxisField}
-              onValueChange={(value: string) => setXAxisField(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select X-axis field" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableFields.map((field) => (
-                  <SelectItem
-                    key={field}
-                    value={field}>
-                    {field}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+          <Button
+            onClick={handleApplyGlobalFilters}
+            variant="outline"
+            size="sm"
+            className="w-full">
+            Apply Global Filters
+          </Button>
+          {chartConfig.globalFilters.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {chartConfig.globalFilters.length} filter(s) applied
+            </p>
+          )}
+        </div>
+      </ConfigCard>
 
       {/* Split Mode Selection */}
       <Card>
@@ -521,48 +701,32 @@ export function ChartBuilder({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
-            <Card
-              className={`flex-1 cursor-pointer transition-all ${
-                splitMode === 'none'
-                  ? 'border-primary ring-2 ring-primary'
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => setSplitMode('none')}>
-              <CardHeader>
-                <CardTitle className="text-base">No Splitting</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Simple aggregation with single Y-axis field
-                </p>
-              </CardContent>
-            </Card>
+            <ConfigCard
+              title="No Splitting"
+              description="Simple aggregation with multiple Y-axis fields"
+              selected={chartConfig.splitMode === 'none'}
+              onClick={() => updateChartConfig({ splitMode: 'none' })}
+              className="flex-1"
+            />
 
-            <Card
-              className={`flex-1 cursor-pointer transition-all ${
-                splitMode === 'split'
-                  ? 'border-primary ring-2 ring-primary'
-                  : 'hover:border-primary/50'
-              }`}
-              onClick={() => setSplitMode('split')}>
-              <CardHeader>
-                <CardTitle className="text-base">Split by Series</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Multiple series with individual filters
-                </p>
-              </CardContent>
-            </Card>
+            <ConfigCard
+              title="Split by Series"
+              description="Multiple series with individual filters"
+              selected={chartConfig.splitMode === 'split'}
+              onClick={() => updateChartConfig({ splitMode: 'split' })}
+              className="flex-1"
+            />
           </div>
 
-          {splitMode === 'none' && (
+          {chartConfig.splitMode === 'none' && (
             <div className="space-y-4">
               <div>
                 <Label>Y-Axis Fields</Label>
                 <MultiSelect
-                  values={yAxisFields}
-                  onValuesChange={setYAxisFields}>
+                  values={chartConfig.yAxisFields}
+                  onValuesChange={(values) =>
+                    updateChartConfig({ yAxisFields: values })
+                  }>
                   <MultiSelectTrigger className="w-full mt-1">
                     <MultiSelectValue placeholder="Select Y-axis fields" />
                   </MultiSelectTrigger>
@@ -578,8 +742,7 @@ export function ChartBuilder({
                 </MultiSelect>
               </div>
 
-              {/* Operation selectors for each selected Y-axis field */}
-              {yAxisFieldConfigs.map((fieldConfig) => {
+              {chartConfig.yAxisFieldConfigs.map((fieldConfig) => {
                 const availableOps = getAvailableOperationsForField(
                   fieldConfig.field
                 )
@@ -590,35 +753,30 @@ export function ChartBuilder({
                     <Label className="flex-1 text-sm font-medium">
                       {fieldConfig.field}
                     </Label>
-                    <Select
+                    <SelectInput
+                      fieldName="operation"
+                      fieldLabel="Operation"
+                      fieldType={FormFieldType.SELECT}
                       value={fieldConfig.operation}
-                      onValueChange={(value) => {
-                        setYAxisFieldConfigs((prev) =>
-                          prev.map((c) =>
-                            c.field === fieldConfig.field
-                              ? { ...c, operation: value as CardOperation }
-                              : c
-                          )
+                      onChange={(value) => {
+                        const updated = chartConfig.yAxisFieldConfigs.map((c) =>
+                          c.field === fieldConfig.field
+                            ? { ...c, operation: value as CardOperation }
+                            : c
                         )
-                      }}>
-                      <SelectTrigger className="w-40 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableOps.map((op) => (
-                          <SelectItem
-                            key={op}
-                            value={op}>
-                            {OPERATION_LABELS[op]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        updateChartConfig({ yAxisFieldConfigs: updated })
+                      }}
+                      options={availableOps.map((op) => ({
+                        label: OPERATION_LABELS[op],
+                        value: op,
+                      }))}
+                      className="w-40"
+                    />
                   </div>
                 )
               })}
 
-              {yAxisFieldConfigs.length === 0 && (
+              {chartConfig.yAxisFieldConfigs.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   Select Y-axis fields above to configure operations
                 </p>
@@ -626,118 +784,22 @@ export function ChartBuilder({
             </div>
           )}
 
-          {splitMode === 'split' && (
+          {chartConfig.splitMode === 'split' && (
             <div className="space-y-4">
-              {seriesConfigs.map((series, index) => (
-                <Card
+              {chartConfig.seriesConfigs.map((series, index) => (
+                <SeriesItem
                   key={series.id}
-                  className="border-dashed">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">
-                        Series {index + 1}
-                      </CardTitle>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleRemoveSeries(series.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <Label className="text-xs">Field</Label>
-                      <Select
-                        value={series.field}
-                        onValueChange={(value) => {
-                          // Reset operation to first available when field changes
-                          const availableOps =
-                            getAvailableOperationsForField(value)
-                          handleUpdateSeries(series.id, {
-                            field: value,
-                            operation: availableOps[0] || 'sum',
-                          })
-                        }}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue placeholder="Select field" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableFields.map((field) => (
-                            <SelectItem
-                              key={field}
-                              value={field}>
-                              {field}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label className="text-xs">Operation</Label>
-                      <Select
-                        value={series.operation}
-                        onValueChange={(value) =>
-                          handleUpdateSeries(series.id, {
-                            operation: value as CardOperation,
-                          })
-                        }>
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(series.field
-                            ? getAvailableOperationsForField(series.field)
-                            : (['sum', 'avg', 'count'] as CardOperation[])
-                          ).map((op) => (
-                            <SelectItem
-                              key={op}
-                              value={op}>
-                              {OPERATION_LABELS[op]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <TextInput
-                        label="Series Label"
-                        placeholder="Enter series label"
-                        value={series.label}
-                        onChange={(value) =>
-                          handleUpdateSeries(series.id, {
-                            label: String(value),
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-xs mb-2 block">
-                        Series Filters
-                      </Label>
-                      <div className="border rounded-md p-2 bg-muted/20">
-                        {table && (
-                          <DataTableFilterList
-                            table={table}
-                            internalFilters={series.filters}
-                            onInternalFiltersChange={(filters) =>
-                              handleUpdateSeries(series.id, { filters })
-                            }
-                            internalJoinOperator={series.joinOperator}
-                            onInternalJoinOperatorChange={(op) =>
-                              handleUpdateSeries(series.id, {
-                                joinOperator: op,
-                              })
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  series={series}
+                  index={index}
+                  availableFields={availableFields}
+                  table={table}
+                  onUpdate={handleUpdateSeries}
+                  onRemove={handleRemoveSeries}
+                  onApplyFilters={handleApplySeriesFilters}
+                  getAvailableOperationsForField={
+                    getAvailableOperationsForField
+                  }
+                />
               ))}
 
               <Button
@@ -752,26 +814,26 @@ export function ChartBuilder({
         </CardContent>
       </Card>
 
-
       {/* Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <ConfigCard title="Configuration Summary">
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Title:</span>
-            <Badge variant="secondary">{chartTitle || 'Not set'}</Badge>
+            <Badge variant="secondary">{chartConfig.title || 'Not set'}</Badge>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               Global Filters:
             </span>
-            <Badge variant="secondary">{globalFilters.length}</Badge>
+            <Badge variant="secondary">
+              {chartConfig.globalFilters.length}
+            </Badge>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">X-Axis:</span>
-            <Badge variant="secondary">{xAxisField || 'Not set'}</Badge>
+            <Badge variant="secondary">
+              {chartConfig.xAxisKey || 'Not set'}
+            </Badge>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Y-Axis:</span>
@@ -789,8 +851,8 @@ export function ChartBuilder({
             <span className="text-sm text-muted-foreground">Data Points:</span>
             <Badge variant="secondary">{processedChartData.length}</Badge>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ConfigCard>
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
@@ -803,15 +865,7 @@ export function ChartBuilder({
         )}
         <Button
           variant="outline"
-          onClick={() => {
-            setChartTitle('')
-            setGlobalFilters([])
-            setXAxisField('')
-            setYAxisFields([])
-            setYAxisFieldConfigs([])
-            setSeriesConfigs([])
-            setSplitMode('none')
-          }}>
+          onClick={handleReset}>
           Reset
         </Button>
         <Button

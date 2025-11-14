@@ -149,7 +149,7 @@ export interface DynamicChartProps {
   description?: React.ReactNode
   footer?: React.ReactNode
   chartType?: ChartType
-  data: ChartDataPoint[]
+  data?: ChartDataPoint[]
   config?: ChartConfig
   xAxisKey?: string
   yAxisKeys?: string[]
@@ -338,6 +338,12 @@ export function DynamicChart({
   tableConfig = {},
   onAction,
 }: DynamicChartProps) {
+
+
+  if(!data){
+    return <div>No data available</div>
+  }
+
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = React.useState(500)
   const [isExpanded, setIsExpanded] = React.useState(false)
@@ -711,7 +717,7 @@ export function DynamicChart({
           <CardContent
             ref={containerRef}
             className={cn(
-              'flex-1 p-6 w-full relative z-10',
+              'flex-1 p-3 w-full relative z-10',
               classNames?.cardContent
             )}>
             <div className="flex items-center justify-center h-full rounded-lg bg-muted/20">
@@ -822,7 +828,7 @@ export function DynamicChart({
           <CardContent
             ref={containerRef}
             className={cn(
-              'flex-1 p-4 w-full bg-gradient-to-b from-transparent to-muted/5',
+              'flex-1 p-1 w-full bg-gradient-to-b from-transparent to-muted/5',
               classNames?.cardContent
             )}>
             {currentChartType === 'table' ? (

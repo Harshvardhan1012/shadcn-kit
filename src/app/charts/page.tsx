@@ -3,13 +3,6 @@
 import { DynamicChart } from '@/components/chart/DynamicChart'
 import { Button } from '@/components/ui/button'
 import {
-  Sortable,
-  SortableContent,
-  SortableItem,
-  SortableItemHandle,
-  SortableOverlay,
-} from '@/components/ui/sortable'
-import {
   DownloadIcon,
   InfoIcon,
   TrendingDownIcon,

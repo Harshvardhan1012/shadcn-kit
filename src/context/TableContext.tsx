@@ -8,6 +8,8 @@ interface TableContextValue {
   columns: any[]
   setTable: (table: Table<any> | null) => void
   setColumns: (columns: any[]) => void
+  sheetOpen: boolean
+  setSheetOpen: (open: boolean) => void
 }
 
 const TableContext = createContext<TableContextValue | undefined>(undefined)
@@ -15,9 +17,11 @@ const TableContext = createContext<TableContextValue | undefined>(undefined)
 export function TableProvider({ children }: { children: ReactNode }) {
   const [table, setTable] = useState<Table<any> | null>(null)
   const [columns, setColumns] = useState<any[]>([])
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   return (
-    <TableContext.Provider value={{ table, columns, setTable, setColumns }}>
+    <TableContext.Provider
+      value={{ table, columns, setTable, setColumns, sheetOpen, setSheetOpen }}>
       {children}
     </TableContext.Provider>
   )

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TitleDescription } from '@/components/ui/title-description'
-import { BarChart3, RefreshCw } from 'lucide-react'
+import { BarChart3, RefreshCw, Table } from 'lucide-react'
 import { createContext, useContext, useMemo, useState } from 'react'
 import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
 
@@ -64,17 +64,17 @@ function ChartPreview() {
       <CardContent>
         <DynamicChart
           title={previewConfig.title}
-          data={previewConfig.data}
+          data={previewConfig?.data}
           config={previewConfig.config}
           xAxisKey={previewConfig.xAxisKey}
           yAxisKeys={previewConfig.yAxisKeys}
         />
         <div className="mt-4 text-sm text-muted-foreground">
           <p>
-            <strong>Data Points:</strong> {previewConfig.data.length}
+            <strong>Data Points:</strong> {previewConfig?.data?.length}
           </p>
           <p>
-            <strong>Series:</strong> {previewConfig.yAxisKeys.join(', ')}
+            <strong>Series:</strong> {previewConfig?.yAxisKeys?.join(', ')}
           </p>
         </div>
       </CardContent>
@@ -253,6 +253,7 @@ function ChartBuilderWithPreview({
 }) {
   const { setPreviewConfig } = useChartPreview()
   const [url, setUrl] = useState('')
+  const [open, setOpen] = useState(false)
   const [enableApi, setEnableApi] = useState(false)
 
   // Use the callApi hook
@@ -297,21 +298,35 @@ function ChartBuilderWithPreview({
             Error fetching data: {error.message}
           </p>
         )}
-        {apiResponse?.data && (
-          <p className="text-sm text-muted-foreground">
-            ✓ Loaded {apiResponse.data.length} records from API
-          </p>
-        )}
       </div>
 
-      <DynamicMaster
-        data={activeData}
-        datatableConfig={{
-          ...datatableConfig,
-          columnsConfig: columnConfig,
-        }}
-      />
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          {apiResponse?.data
+            ? `Loaded ${apiResponse.data.length} records from API`
+            : `Local records: ${activeData.length}`}
+        </div>
 
+        <Button
+          variant="outline"
+          onClick={() => setOpen(true)}
+          aria-label="View table">
+          <Table /> View Table
+        </Button>
+      </div>
+
+      <SheetDemo
+        open={open}
+        size="2xl"
+        onOpenChange={() => setOpen(false)}>
+        <DynamicMaster
+          data={activeData}
+          datatableConfig={{
+            ...datatableConfig,
+            columnsConfig: columnConfig,
+          }}
+        />
+      </SheetDemo>
       <ChartBuilder
         data={activeData}
         columns={columnConfig}

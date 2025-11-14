@@ -88,6 +88,7 @@ interface DataTableFilterListProps<TData>
   onInternalFiltersChange?: (filters: ExtendedColumnFilter<TData>[]) => void
   internalJoinOperator?: JoinOperator
   onInternalJoinOperatorChange?: (operator: JoinOperator) => void
+  filterOpen?: boolean // If true, filter dialog is always open and button is hidden
 }
 
 export function DataTableFilterList<TData>({
@@ -99,12 +100,13 @@ export function DataTableFilterList<TData>({
   onInternalFiltersChange,
   internalJoinOperator,
   onInternalJoinOperatorChange,
+  filterOpen = false,
   ...props
 }: DataTableFilterListProps<TData>) {
   const id = React.useId()
   const labelId = React.useId()
   const descriptionId = React.useId()
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(filterOpen)
   const addButtonRef = React.useRef<HTMLButtonElement>(null)
 
   const columns = React.useMemo(() => {
@@ -281,6 +283,65 @@ export function DataTableFilterList<TData>({
     [filters, onFilterRemove]
   )
 
+  const filterContent = (
+    <>
+      <div className="flex flex-col gap-1">
+        <h4
+          id={labelId}
+          className="font-medium leading-none">
+          {filters.length > 0 ? 'Filters' : 'No filters applied'}
+        </h4>
+        <p
+          id={descriptionId}
+          className={cn(
+            'text-muted-foreground text-sm',
+            filters.length > 0 && 'sr-only'
+          )}>
+          {filters.length > 0
+            ? 'Modify filters to refine your rows.'
+            : 'Add filters to refine your rows.'}
+        </p>
+      </div>
+      {filters.length > 0 ? (
+        <SortableContent asChild>
+          <ul className="flex max-h-[300px] flex-col gap-2 overflow-y-auto p-1">
+            {filters.map((filter, index) => (
+              <DataTableFilterItem<TData>
+                key={filter.filterId}
+                filter={filter}
+                index={index}
+                filterItemId={`${id}-filter-${filter.filterId}`}
+                joinOperator={joinOperator}
+                setJoinOperator={setJoinOperator}
+                columns={columns}
+                onFilterUpdate={onFilterUpdate}
+                onFilterRemove={onFilterRemove}
+              />
+            ))}
+          </ul>
+        </SortableContent>
+      ) : null}
+      <div className="flex w-full items-center gap-2">
+        <Button
+          size="sm"
+          className="rounded"
+          ref={addButtonRef}
+          onClick={onFilterAdd}>
+          Add filter
+        </Button>
+        {filters.length > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded"
+            onClick={onFiltersReset}>
+            Reset filters
+          </Button>
+        ) : null}
+      </div>
+    </>
+  )
+
   return (
     <>
       {columns
@@ -296,86 +357,43 @@ export function DataTableFilterList<TData>({
         value={filters}
         onValueChange={setFilters}
         getItemValue={(item) => item.filterId}>
-        <Popover
-          open={open}
-          onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onKeyDown={onTriggerKeyDown}>
-              <ListFilter />
-              Filter
-              {filters.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="h-[18.24px] rounded-[3.2px] px-[5.12px] font-mono font-normal text-[10.4px]">
-                  {filters.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
+        {filterOpen ? (
+          <div
             aria-describedby={descriptionId}
             aria-labelledby={labelId}
-            className="flex w-full max-w-[var(--radix-popover-content-available-width)] origin-[var(--radix-popover-content-transform-origin)] flex-col gap-3.5 p-4 sm:min-w-[380px]"
+            className="flex w-full flex-col gap-3.5 rounded-md border bg-card p-4 shadow-sm"
             {...props}>
-            <div className="flex flex-col gap-1">
-              <h4
-                id={labelId}
-                className="font-medium leading-none">
-                {filters.length > 0 ? 'Filters' : 'No filters applied'}
-              </h4>
-              <p
-                id={descriptionId}
-                className={cn(
-                  'text-muted-foreground text-sm',
-                  filters.length > 0 && 'sr-only'
-                )}>
-                {filters.length > 0
-                  ? 'Modify filters to refine your rows.'
-                  : 'Add filters to refine your rows.'}
-              </p>
-            </div>
-            {filters.length > 0 ? (
-              <SortableContent asChild>
-                <ul className="flex max-h-[300px] flex-col gap-2 overflow-y-auto p-1">
-                  {filters.map((filter, index) => (
-                    <DataTableFilterItem<TData>
-                      key={filter.filterId}
-                      filter={filter}
-                      index={index}
-                      filterItemId={`${id}-filter-${filter.filterId}`}
-                      joinOperator={joinOperator}
-                      setJoinOperator={setJoinOperator}
-                      columns={columns}
-                      onFilterUpdate={onFilterUpdate}
-                      onFilterRemove={onFilterRemove}
-                    />
-                  ))}
-                </ul>
-              </SortableContent>
-            ) : null}
-            <div className="flex w-full items-center gap-2">
+            {filterContent}
+          </div>
+        ) : (
+          <Popover
+            open={open}
+            onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
               <Button
+                variant="outline"
                 size="sm"
-                className="rounded"
-                ref={addButtonRef}
-                onClick={onFilterAdd}>
-                Add filter
+                onKeyDown={onTriggerKeyDown}>
+                <ListFilter />
+                Filter
+                {filters.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="h-[18.24px] rounded-[3.2px] px-[5.12px] font-mono font-normal text-[10.4px]">
+                    {filters.length}
+                  </Badge>
+                )}
               </Button>
-              {filters.length > 0 ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded"
-                  onClick={onFiltersReset}>
-                  Reset filters
-                </Button>
-              ) : null}
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent
+              aria-describedby={descriptionId}
+              aria-labelledby={labelId}
+              className="flex w-full max-w-[var(--radix-popover-content-available-width)] origin-[var(--radix-popover-content-transform-origin)] flex-col gap-3.5 p-4 sm:min-w-[380px]"
+              {...props}>
+              {filterContent}
+            </PopoverContent>
+          </Popover>
+        )}
         <SortableOverlay>
           <div className="flex items-center gap-2">
             <div className="h-8 min-w-[72px] rounded-sm bg-primary/10" />
@@ -387,7 +405,7 @@ export function DataTableFilterList<TData>({
           </div>
         </SortableOverlay>
       </Sortable>
-      {filters.length > 0 && (
+      {filters.length > 0 && !filterOpen && (
         <Button
           aria-label="Reset filters"
           variant="outline"

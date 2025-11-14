@@ -1,24 +1,27 @@
 'use client'
 
+import SheetDemo from '@/components/sheet/page'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CardForm } from './CardForm'
 import { CardGrid } from './CardGrid'
-import type { Card, FilterVariant } from './types'
+import type { Card } from './types'
 import { useCardStorage } from './useCardStorage'
-import SheetDemo from '@/components/sheet/page'
+import type { FilterVariant } from '@/types/data-table'
 
 interface CardBuilderProps {
   data: Record<string, any>[]
   availableFields: string[]
   columnConfig?: any[] // Optional: for detecting field variants
+  showActions?: boolean // Optional: show edit/delete actions (default: true)
 }
 
 export function CardBuilder({
   data,
   availableFields,
   columnConfig,
+  showActions = true,
 }: CardBuilderProps) {
   const { cards, isHydrated, addCard, updateCard, deleteCard, reorderCards } =
     useCardStorage()
@@ -38,28 +41,8 @@ export function CardBuilder({
       })
     }
 
-    // Fallback: detect from data types
-    availableFields.forEach((field) => {
-      if (variants[field]) return // Already set from columnConfig
-
-      const sample = data?.[0]?.[field]
-      if (sample === null || sample === undefined) {
-        variants[field] = 'text'
-      } else if (typeof sample === 'boolean') {
-        variants[field] = 'boolean'
-      } else if (typeof sample === 'number') {
-        variants[field] = 'number'
-      } else if (Array.isArray(sample)) {
-        variants[field] = 'array'
-      } else if (sample instanceof Date || !isNaN(Date.parse(sample))) {
-        variants[field] = 'dateRange'
-      } else {
-        variants[field] = 'text'
-      }
-    })
-
     return variants
-  }, [availableFields, data, columnConfig])
+  }, [data, columnConfig])
 
   const handleSave = (card: Card) => {
     if (editingCard) {
@@ -83,7 +66,6 @@ export function CardBuilder({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Cards</h2>
         <Button
           size="sm"
           onClick={() => {
@@ -101,9 +83,12 @@ export function CardBuilder({
         onEdit={handleEdit}
         onDelete={deleteCard}
         onReorder={reorderCards}
+        showActions={showActions}
       />
 
-      <SheetDemo open={showForm} onOpenChange={setShowForm}>
+      <SheetDemo
+        open={showForm}
+        onOpenChange={setShowForm}>
         <CardForm
           availableFields={availableFields}
           fieldVariants={fieldVariants}

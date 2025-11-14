@@ -1,15 +1,8 @@
 import { Edit2, Trash2, TrendingDown, TrendingUp } from 'lucide-react'
-import { Badge } from './badge'
-import { Button } from './button'
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from './card'
-import { Skeleton } from './skeleton' // Assume you have a Skeleton component
+import { Button } from '../button'
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from '../card'
+import { Skeleton } from '../skeleton'
+import { Badge } from '../badge'
 
 interface CardDashboardProps {
   title: string

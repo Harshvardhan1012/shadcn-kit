@@ -1,6 +1,5 @@
 'use client'
 
-import { CardDashboard } from '@/components/ui/CardDashboard'
 import {
   Sortable,
   SortableContent,
@@ -11,6 +10,7 @@ import {
 import { GripVertical } from 'lucide-react'
 import { calculateCardValue } from './cardUtils'
 import type { Card } from './types'
+import { CardDashboard } from '@/components/ui/card/index'
 
 interface CardGridProps {
   cards: Card[]
@@ -18,6 +18,7 @@ interface CardGridProps {
   onEdit: (card: Card) => void
   onDelete: (id: string) => void
   onReorder: (cards: Card[]) => void
+  showActions?: boolean // Optional: show edit/delete actions (default: true)
 }
 
 export function CardGrid({
@@ -26,6 +27,7 @@ export function CardGrid({
   onEdit,
   onDelete,
   onReorder,
+  showActions = true,
 }: CardGridProps) {
   if (cards.length === 0) {
     return (
@@ -59,10 +61,14 @@ export function CardGrid({
                 <CardDashboard
                   title={card.title}
                   value={value}
-                  editDelete={{
-                    onEdit: () => onEdit(card),
-                    onDelete: () => onDelete(card.id),
-                  }}
+                  editDelete={
+                    showActions
+                      ? {
+                          onEdit: () => onEdit(card),
+                          onDelete: () => onDelete(card.id),
+                        }
+                      : undefined
+                  }
                   dragHandle={
                     <SortableItemHandle
                       className="p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
