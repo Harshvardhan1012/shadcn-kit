@@ -2,7 +2,9 @@
 
 import type { ColumnConfig } from '@/components/master-table/get-columns'
 import DynamicMaster from '@/components/master-table/master-table'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TabWrapper, type TabItem } from '@/components/ui/tab-wrapper'
 import { useEffect, useMemo, useState } from 'react'
 import { ChartBuilderSheet } from '../custom-chart/ChartBuilderSheet'
 import datatableConfig from '../table/table_config'
@@ -29,55 +31,74 @@ export default function ColumnConfigPage() {
     return Object.keys(apiResponse?.data[0])
   }, [apiResponse])
 
+  const tabs: TabItem[] = useMemo(
+    () => [
+      {
+        name: 'Configuration',
+        value: 'configuration',
+        content: (
+          <div className="space-y-6">
+            <SortableColumnConfigTable
+              key={columns.map((e) => e.field).join('')}
+              columns={columns}
+              onColumnsChange={setColumns}
+            />
+          </div>
+        ),
+      },
+      {
+        name: 'Preview',
+        value: 'preview',
+        content: (
+          <>
+            <CardBuilder
+              data={apiResponse?.data}
+              availableFields={availableFields}
+              columnConfig={columns}
+            />
+            <ChartBuilderSheet
+              data={apiResponse?.data}
+              columns={columns}
+              onSave={(config) => {
+                console.log('Chart Configuration:', config)
+              }}
+            />
+            <DynamicMaster<any>
+              data={apiResponse?.data}
+              datatableConfig={{
+                ...datatableConfig,
+                columnsConfig: columns,
+              }}
+            />
+          </>
+        ),
+      },
+    ],
+    [columns, apiResponse?.data, availableFields]
+  )
+
   return (
     <div className="space-y-6 p-6 h-screen overflow-y-scroll">
-      <Input
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter API URL to fetch data"
-      />
-      <button
-        onClick={() => {
-          // Trigger data fetch
-          setapi(true)
-          setUrl(url)
-        }}>
-        Fetch data
-      </button>
-
-      <SortableColumnConfigTable
-        key={columns.map((e) => e.field).join('')}
-        columns={columns}
-        onColumnsChange={setColumns}
-      />
-      <CardBuilder
-        data={apiResponse?.data}
-        availableFields={availableFields}
-        columnConfig={columns}
-      />
-      <ChartBuilderSheet
-        data={apiResponse?.data}
-        columns={columns}
-        onSave={(config) => {
-          console.log('Chart Configuration:', config)
-        }}
-      />
-
-      {apiResponse?.data && (
-        <DynamicMaster<any>
-          data={apiResponse.data}
-          datatableConfig={{
-            ...datatableConfig,
-            columnsConfig: columns,
-          }}></DynamicMaster>
-      )}
-
-      <div className="rounded-lg border bg-slate-50 p-4">
-        <h2 className="mb-4 font-semibold">Current Configuration</h2>
-        <pre className="overflow-auto rounded p-4 text-xs">
-          {JSON.stringify(columns, null, 2)}
-        </pre>
+      <div className="space-y-4">
+        <Input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Enter API URL to fetch data"
+        />
+        <Button
+          onClick={() => {
+            // Trigger data fetch
+            setapi(true)
+            setUrl(url)
+          }}>
+          Fetch data
+        </Button>
       </div>
+
+      <TabWrapper
+        tabs={tabs}
+        defaultValue="configuration"
+      />
     </div>
   )
 }

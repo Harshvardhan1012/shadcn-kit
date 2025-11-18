@@ -2,27 +2,28 @@ import federation from "@originjs/vite-plugin-federation"
 import react from "@vitejs/plugin-react"
 import path from "path"
 import { defineConfig } from "vite"
-import dts from "vite-plugin-dts"
 
 export default defineConfig({
   plugins: [
     react(),
-    dts({
-      insertTypesEntry: true,
-      include: ["src/components/form/**/*.ts", "src/components/form/**/*.tsx"],
-      outDir: "dist/types",
-      staticImport: true,
-      rollupTypes: true,
-    }),
     federation({
-      name: "form",
+      name: "hostApp",
       filename: "remoteEntry.js",
       exposes: {
-        "./Forms": "./src/components/form/index.ts",
+        "./card": "./src/components/ui/card.tsx",
       },
       shared: ["react", "react-dom"],
     }),
   ],
+  server: {
+    port: 3001,
+    cors: true,
+    strictPort: true,
+  },
+  preview: {
+    port: 3001,
+    strictPort: true,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

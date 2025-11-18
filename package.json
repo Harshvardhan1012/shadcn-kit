@@ -17,12 +17,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "yarn build",
+    "build": "vite build",
+    "start": "webpack serve --config webpack.config.cjs",
+    "preview": "vite preview --port 3001",
     "lint": "next lint",
-    "build:lib": "tsc -p tsconfig.lib.json",
+    "build:lib": "tsc -p tsconfig.app.json",
     "publish:lib": "yarn build:lib && yarn publish",
-    "postbuild": "tsc-alias -p tsconfig.lib.json",
-    "preview": "vite preview"
+    "postbuild": "tsc-alias -p tsconfig.app.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
