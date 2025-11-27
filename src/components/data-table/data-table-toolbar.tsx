@@ -79,14 +79,20 @@ export function DataTableToolbar<TData>({
     </div>
   )
 }
+
 interface DataTableToolbarFilterProps<TData> {
   column: Column<TData>
   table: Table<TData>
+  // Optional: for sharing filter state with DataTableFilterList
+  externalFilters?: ExtendedColumnFilter<TData>[]
+  onExternalFiltersChange?: (filters: ExtendedColumnFilter<TData>[]) => void
 }
 
 export function DataTableToolbarFilter<TData>({
   column,
   table,
+  externalFilters,
+  onExternalFiltersChange,
 }: DataTableToolbarFilterProps<TData>) {
   const columnMeta = column.columnDef.meta
   const [value, setValue] = React.useState<string>('')
@@ -98,8 +104,12 @@ export function DataTableToolbarFilter<TData>({
       .filter((col) => col.columnDef.enableColumnFilter)
   }, [table])
 
-  // Use URL-based filter state
-  const [filters, setFilters] = useQueryState(
+  // Determine if using external state or own URL state
+  const useExternalState =
+    externalFilters !== undefined && onExternalFiltersChange !== undefined
+
+  // Use URL-based filter state (only if not using external state)
+  const [urlFilters, setUrlFilters] = useQueryState(
     FILTERS_KEY,
     getFiltersStateParser<TData>(columns.map((field) => field.id))
       .withDefault([])
@@ -109,14 +119,24 @@ export function DataTableToolbarFilter<TData>({
         throttleMs: THROTTLE_MS,
       })
   )
-  const debouncedSetFilters = useDebouncedCallback(setFilters, DEBOUNCE_MS)
+  const debouncedSetUrlFilters = useDebouncedCallback(
+    setUrlFilters,
+    DEBOUNCE_MS
+  )
+
+  // Use external or URL filters
+  const filters = useExternalState ? externalFilters : urlFilters
+  const setFilters = useExternalState ? onExternalFiltersChange : setUrlFilters
+  const debouncedSetFilters = useExternalState
+    ? onExternalFiltersChange
+    : debouncedSetUrlFilters
 
   // Find existing filter for this column
   const existingFilter = React.useMemo(() => {
     return filters.find((f) => f.id === column.id)
   }, [filters, column.id])
 
-  // Sync local state with existing filter
+  // Sync local state with existing filter for text/number inputs
   React.useEffect(() => {
     if (existingFilter && typeof existingFilter.value === 'string') {
       setValue(existingFilter.value)
@@ -126,38 +146,80 @@ export function DataTableToolbarFilter<TData>({
   }, [existingFilter])
 
   const handleValueChange = React.useCallback(
-    (newValue: string) => {
-      setValue(newValue)
+    (newValue: any) => {
+      // Handle text/number filters (string values)
+      if (typeof newValue === 'string') {
+        setValue(newValue)
 
-      if (!newValue.trim()) {
-        // Remove filter if value is empty
-        const updatedFilters = filters.filter((f) => f.id !== column.id)
-        debouncedSetFilters(updatedFilters)
-      } else {
-        // Update or add filter
-        const filterExists = filters.some((f) => f.id === column.id)
-
-        if (filterExists) {
-          // Update existing filter
-          const updatedFilters = filters.map((f) =>
-            f.id === column.id ? { ...f, value: newValue } : f
-          )
+        if (!newValue.trim()) {
+          // Remove filter if value is empty
+          const updatedFilters = filters.filter((f) => f.id !== column.id)
           debouncedSetFilters(updatedFilters)
         } else {
-          // Add new filter
-          const newFilter: ExtendedColumnFilter<TData> = {
-            id: column.id as Extract<keyof TData, string>,
-            value: newValue,
-            variant: columnMeta?.variant ?? 'text',
-            operator: getDefaultFilterOperator(columnMeta?.variant ?? 'text'),
-            filterId: generateId({ length: 8 }),
+          // Update or add filter
+          const filterExists = filters.some((f) => f.id === column.id)
+
+          if (filterExists) {
+            // Update existing filter
+            const updatedFilters = filters.map((f) =>
+              f.id === column.id ? { ...f, value: newValue } : f
+            )
+            debouncedSetFilters(updatedFilters)
+          } else {
+            // Add new filter
+            const newFilter: ExtendedColumnFilter<TData> = {
+              id: column.id as Extract<keyof TData, string>,
+              value: newValue,
+              variant: columnMeta?.variant ?? 'text',
+              operator: getDefaultFilterOperator(columnMeta?.variant ?? 'text'),
+              filterId: generateId({ length: 8 }),
+            }
+            debouncedSetFilters([...filters, newFilter])
           }
-          debouncedSetFilters([...filters, newFilter])
+        }
+      }
+      // Handle select/multiSelect filters (array values)
+      else if (Array.isArray(newValue) || newValue === undefined) {
+        if (!newValue || newValue.length === 0) {
+          // Remove filter if no values selected
+          const updatedFilters = filters.filter((f) => f.id !== column.id)
+          setFilters(updatedFilters)
+        } else {
+          // Update or add filter
+          const filterExists = filters.some((f) => f.id === column.id)
+
+          if (filterExists) {
+            // Update existing filter
+            const updatedFilters = filters.map((f) =>
+              f.id === column.id ? { ...f, value: newValue } : f
+            )
+            setFilters(updatedFilters as ExtendedColumnFilter<TData>[])
+          } else {
+            // Add new filter
+            const newFilter: ExtendedColumnFilter<TData> = {
+              id: column.id as Extract<keyof TData, string>,
+              value: newValue as Array<string | number>,
+              variant: columnMeta?.variant ?? 'select',
+              operator: getDefaultFilterOperator(
+                columnMeta?.variant ?? 'select'
+              ),
+              filterId: generateId({ length: 8 }),
+            }
+            setFilters([...filters, newFilter])
+          }
         }
       }
     },
-    [column.id, columnMeta, filters, debouncedSetFilters]
+    [column.id, columnMeta, filters, debouncedSetFilters, setFilters]
   )
+
+  // Get current filter value for select/multiSelect
+  const selectValue = React.useMemo(() => {
+    if (existingFilter && Array.isArray(existingFilter.value)) {
+      return existingFilter.value as Array<string | number | boolean>
+    }
+    return undefined
+  }, [existingFilter])
 
   if (!columnMeta?.variant) return null
 
@@ -217,6 +279,8 @@ export function DataTableToolbarFilter<TData>({
           title={columnMeta.label ?? column.id}
           options={columnMeta.options ?? []}
           multiple={columnMeta.variant === 'multiSelect'}
+          value={selectValue}
+          onValueChange={handleValueChange}
         />
       )
 

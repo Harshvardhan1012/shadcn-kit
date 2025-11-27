@@ -1,5 +1,5 @@
 import type { ColumnConfig } from "@/components/master-table/get-columns"
-import { CheckCheck, LampCeilingIcon, Newspaper } from "lucide-react"
+import { Newspaper } from "lucide-react"
 
 // JSON-based column configuration for the table
 // Supports features like: isHide, is_switch, CircleCheckBig icon, sorting, etc.
@@ -9,9 +9,24 @@ export const columnConfig: ColumnConfig[] = [
     field: "id",
     header: "ID",
     options: {
-      variant: "number",
+      variant: "multiSelect",
       index: 0,
       sortable: true,
+      values: [
+        {
+          label: "1",
+          value: 1,
+        },
+        {
+          label: "2",
+          value: 2,
+        },
+        {
+          label: "3",
+          value: 3,
+        },
+      ],
+      main: true,
       isHide: false, // Set to true to hide this column
       text_size: "small",
     },
@@ -40,6 +55,7 @@ export const columnConfig: ColumnConfig[] = [
       variant: "multiSelect",
       isHide: false,
       sortable: true,
+      main: true,
       values: [
         {
           label: "completed",
@@ -71,28 +87,29 @@ export const columnConfig: ColumnConfig[] = [
       isHide: false,
       hideable: false,
       text_size: "large",
+      main: true,
     },
   },
   {
     field: "email",
     header: "Email",
-    options:{
-      index:4,
-      variant:"text",
-      isHide:false,
-      text_size:"medium",
-    }
+    options: {
+      index: 4,
+      variant: "text",
+      isHide: false,
+      text_size: "medium",
+    },
   },
   {
     field: "name",
     header: "Name",
-    options:{
-      index:5,
-      variant:"text",
-      isHide:false,
-      text_size:"medium",
-    }
-  }
+    options: {
+      index: 5,
+      variant: "text",
+      isHide: false,
+      text_size: "medium",
+    },
+  },
   // Example of a hidden column
   // Uncomment to see how isHide works
   // {

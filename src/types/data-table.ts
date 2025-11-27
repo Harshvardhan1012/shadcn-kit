@@ -18,7 +18,7 @@ declare module "@tanstack/react-table" {
 
 export interface Option {
   label: string
-  value: string | number | boolean
+  value: string 
   count?: number
   icon?: React.FC<React.SVGProps<SVGSVGElement>>
 }

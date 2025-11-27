@@ -139,6 +139,7 @@ export function DataTableFilterList<TData>({
     })
   )
 
+  console.log(internalFilters, urlFilters)
   // Use internal state if provided, otherwise use URL state
   const filters = useInternalState ? internalFilters : urlFilters
   const setFilters = useInternalState
@@ -165,6 +166,7 @@ export function DataTableFilterList<TData>({
       ),
       filterId: generateId({ length: 8 }),
     }
+    console.log({ newFilter })
 
     if (useInternalState && onInternalFiltersChange) {
       onInternalFiltersChange([...filters, newFilter])
@@ -351,6 +353,10 @@ export function DataTableFilterList<TData>({
             key={column.id}
             column={column}
             table={table}
+            externalFilters={filters}
+            onExternalFiltersChange={
+              useInternalState ? onInternalFiltersChange : setUrlFilters
+            }
           />
         ))}
       <Sortable
@@ -780,7 +786,7 @@ function onFilterInputRender<TData>({
         <Select
           open={showValueSelector}
           onOpenChange={setShowValueSelector}
-          value={filter.value}
+          value={String(filter.value)}
           onValueChange={(value) =>
             onFilterUpdate(filter.filterId, {
               value,
@@ -814,11 +820,13 @@ function onFilterInputRender<TData>({
         ? filter.value
         : undefined
 
+        console.log({ selectedValues })
+
       return (
         <Faceted
           open={showValueSelector}
           onOpenChange={setShowValueSelector}
-          value={selectedValues}
+          value={selectedValues as any}
           onValueChange={(value) => {
             onFilterUpdate(filter.filterId, {
               value,
@@ -838,7 +846,7 @@ function onFilterInputRender<TData>({
               <FacetedBadgeList
                 options={columnMeta?.options?.map((opt) => ({
                   label: opt.label,
-                  value: String(opt.value),
+                  value: opt.value,
                 }))}
                 placeholder={
                   columnMeta?.placeholder ??
@@ -859,8 +867,8 @@ function onFilterInputRender<TData>({
               <FacetedGroup>
                 {columnMeta?.options?.map((option) => (
                   <FacetedItem
-                    key={String(option.value)}
-                    value={String(option.value)}>
+                    key={option.value}
+                    value={option.value}>
                     {option.icon && <option.icon />}
                     <span>{option.label}</span>
                     {option.count && (

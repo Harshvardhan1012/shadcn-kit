@@ -1,4 +1,3 @@
-import { TableProvider } from '@/app/custom-table/card-builder'
 import type { RowData } from '@tanstack/react-table'
 import * as React from 'react'
 import { z } from 'zod'
