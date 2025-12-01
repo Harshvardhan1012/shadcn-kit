@@ -577,10 +577,12 @@ export function ChartBuilder({
   const handleSave = () => {
     const configuration: ChartConfiguration = {
       ...chartConfig,
-      data: processedChartData,
       config: generatedChartConfig,
       yAxisKeys,
     }
+
+    
+
 
     onSave?.(configuration)
   }

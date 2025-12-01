@@ -166,7 +166,6 @@ export function DataTableFilterList<TData>({
       ),
       filterId: generateId({ length: 8 }),
     }
-    console.log({ newFilter })
 
     if (useInternalState && onInternalFiltersChange) {
       onInternalFiltersChange([...filters, newFilter])
