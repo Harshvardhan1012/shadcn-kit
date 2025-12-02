@@ -7,7 +7,7 @@ import type { Option } from "@/types/data-table"
 /**
  * Auto-detects the data type of a value and returns the appropriate variant
  */
-function getVariantFromValue(value: any): ColumnConfigOptions["variant"] {
+export function getVariantFromValue(value: any): ColumnConfigOptions["variant"] {
   if (typeof value === "boolean") {
     return "multiSelect"
   }

@@ -733,7 +733,7 @@ function onFilterInputRender<TData>({
                     {selectedOptions.map((selectedOption) =>
                       selectedOption.icon ? (
                         <div
-                          key={selectedOption.value}
+                          key={String(selectedOption.value)}
                           className="rounded-full border bg-background p-0.5"
                         >
                           <selectedOption.icon className="size-3.5" />

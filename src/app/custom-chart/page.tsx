@@ -10,40 +10,155 @@ import {
   SortableOverlay,
 } from '@/components/ui/sortable'
 import { TitleDescription } from '@/components/ui/title-description'
-import { GripVertical, Plus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { DataTableToolbarFilter } from '@/components/data-table/data-table-toolbar'
+import { GripVertical, Plus, X } from 'lucide-react'
+import { useState, useMemo } from 'react'
 import type { ChartConfiguration } from './ChartBuilder'
 import { ChartBuilderSheet } from './ChartBuilderSheet'
+import { bulkUpdateCharts, deleteChartConfig, getAllCharts } from './api'
+import type { ExtendedColumnFilter, FilterVariant } from '@/types/data-table'
+import {
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+  type ColumnDef,
+} from '@tanstack/react-table'
+import { getVariantFromValue } from '../custom-table/generateColumnConfig'
 
-interface StoredChart extends ChartConfiguration {
-  id: string
+// Get unique options for select/multiSelect variants
+function getUniqueOptions(data: any[], key: string) {
+  const uniqueValues = new Set<string | number>()
+  data.forEach((item) => {
+    const value = item[key]
+    if (value !== null && value !== undefined) {
+      uniqueValues.add(value)
+    }
+  })
+  return Array.from(uniqueValues).map((value) => ({
+    label: String(value),
+    value: value,
+  }))
 }
 
-// Component for each chart that uses TanStack Query
+// Component for each chart with DataTable filtering
 function ChartItem({
   chart,
   onDelete,
   onEdit,
   index,
 }: {
-  chart: StoredChart
+  chart: ChartConfiguration
   onDelete: (key: string) => void
-  onEdit: (chart: StoredChart) => void
+  onEdit: (chart: ChartConfiguration) => void
   index?: number
 }) {
+  const [filters, setFilters] = useState<ExtendedColumnFilter<any>[]>([])
+
+  // Determine the variant for the xAxisKey
+  const xAxisVariant = useMemo(() => {
+    if (!chart.data || chart.data.length === 0 || !chart.xAxisKey) {
+      return 'text'
+    }
+    const sampleValue = chart.data[0][chart.xAxisKey]
+    return getVariantFromValue(sampleValue)
+  }, [chart.data, chart.xAxisKey])
+
+  // Get unique options for select/multiSelect
+  const xAxisOptions = useMemo(() => {
+    if (!chart.data || !chart.xAxisKey) return []
+    if (xAxisVariant === 'multiSelect') {
+      return getUniqueOptions(chart.data, chart.xAxisKey)
+    }
+    return []
+  }, [chart.data, chart.xAxisKey, xAxisVariant])
+
+  // Create a column definition for the xAxisKey
+  const columns = useMemo<ColumnDef<any>[]>(() => {
+    if (!chart.xAxisKey) return []
+
+    return [
+      {
+        accessorKey: chart.xAxisKey,
+        header: chart.xAxisKey,
+        enableColumnFilter: true,
+        meta: {
+          label: chart.xAxisKey,
+          variant: xAxisVariant,
+          options: xAxisOptions.length > 0 ? xAxisOptions : undefined,
+        },
+      } as any,
+    ]
+  }, [chart.xAxisKey, xAxisVariant, xAxisOptions])
+
+  // Create a table instance for filtering
+  const table = useReactTable({
+    data: chart.data || [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      columnFilters: filters.map((f) => ({
+        id: f.id,
+        value: f.value,
+      })),
+    },
+  })
+
+  // Get filtered data from the table
+  const filteredData = useMemo(() => {
+    if (filters.length === 0) {
+      return chart.data || []
+    }
+    return table.getFilteredRowModel().rows.map((row) => row.original)
+  }, [chart.data, table, filters])
+
+  const handleClearFilters = () => {
+    setFilters([])
+  }
+
+  const xAxisColumn = table.getColumn(chart.xAxisKey || '')
+
   return (
-    <div className="relative">
+    <div className="relative space-y-2">
+      {/* Filter toolbar using DataTableToolbarFilter */}
+      {xAxisColumn && chart.data && chart.data.length > 0 && (
+        <div className="flex items-center gap-2 px-2 py-1 ">
+          <DataTableToolbarFilter
+            column={xAxisColumn}
+            table={table}
+            externalFilters={filters}
+            onExternalFiltersChange={setFilters}
+          />
+          {filters.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-8 px-2">
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Showing {filteredData.length} of {chart.data.length} items
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Chart */}
       <DynamicChart
         title={chart.title}
         chartType="bar"
-        data={chart.data || []}
+        data={filteredData}
         config={chart.config}
         xAxisKey={chart.xAxisKey}
         yAxisKeys={chart.yAxisKeys}
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
         height={300}
-        legendPosition='top'
+        legendPosition="top"
         chartIndex={index}
         onAction={(action) => {
           if (action === 'edit') {
@@ -58,62 +173,43 @@ function ChartItem({
 }
 
 export default function ChartPage() {
-  const [charts, setCharts] = useState<StoredChart[]>([])
-  const [editingChart, setEditingChart] = useState<StoredChart | null>(null)
+  const [editingChart, setEditingChart] = useState<ChartConfiguration | null>(
+    null
+  )
+  const [open, setOpen] = useState(false)
+  const { data: charts } = getAllCharts()
+  const bulkUpdateMutation = bulkUpdateCharts()
+  const deleteChartMutation = deleteChartConfig()
 
-  // Load charts from localStorage
-  useEffect(() => {
-    const loadCharts = () => {
-      try {
-        const storedCharts = localStorage.getItem('saved-charts')
-        if (storedCharts) {
-          const parsed = JSON.parse(storedCharts) as StoredChart[]
-          // Sort by index if available
-          const sorted = parsed.sort((a, b) => (a.index || 0) - (b.index || 0))
-          setCharts(sorted)
-        }
-      } catch (e) {
-        console.error('Failed to load charts:', e)
-      }
-    }
-
-    loadCharts()
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadCharts()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
-
-  // Delete a chart
   const handleDeleteChart = (chartKey: string) => {
-    const updatedCharts = charts.filter((c) => c.chartKey !== chartKey)
-    // Update indices after deletion
-    const reindexed = updatedCharts.map((chart, idx) => ({
-      ...chart,
-      index: idx,
-    }))
-    setCharts(reindexed)
-    localStorage.setItem('saved-charts', JSON.stringify(reindexed))
+    if (!chartKey) return
+    const confirmed = confirm('Are you sure you want to delete this chart?')
+    if (!confirmed) return
+
+    deleteChartMutation.mutate(
+      { chartKey },
+      {
+        onSuccess: () => {
+          console.log('Chart deleted:', chartKey)
+        },
+        onError: (err) => {
+          console.error('Failed to delete chart', err)
+        },
+      }
+    )
   }
 
-  // Edit a chart
-  const handleEditChart = (chart: StoredChart) => {
+  const handleEditChart = (chart: ChartConfiguration) => {
+    setOpen(true)
     setEditingChart(chart)
   }
 
-  // Handle chart reordering
-  const handleChartsReorder = (newCharts: StoredChart[]) => {
-    // Update indices based on new order
+  const handleChartsReorder = (newCharts: ChartConfiguration[]) => {
     const reindexed = newCharts.map((chart, idx) => ({
       ...chart,
       index: idx,
     }))
-    setCharts(reindexed)
-    localStorage.setItem('saved-charts', JSON.stringify(reindexed))
+    bulkUpdateMutation.mutate({ data: reindexed })
   }
 
   return (
@@ -128,13 +224,9 @@ export default function ChartPage() {
           <ChartBuilderSheet
             data={[]}
             columns={[]}
-            onSave={(config) => {
-              console.log('Chart saved:', config)
-              // Reload charts from localStorage
-              const storedCharts = localStorage.getItem('saved-charts')
-              if (storedCharts) {
-                setCharts(JSON.parse(storedCharts))
-              }
+            onSave={() => {
+              console.log('Chart created')
+              setEditingChart(null)
             }}
             triggerButton={
               <Button variant="default">
@@ -146,7 +238,7 @@ export default function ChartPage() {
         </div>
       </div>
 
-      {charts.length === 0 ? (
+      {charts?.data?.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-96 space-y-4 border-2 border-dashed rounded-lg">
           <h2 className="text-2xl font-semibold text-muted-foreground">
             No Charts Available
@@ -157,13 +249,9 @@ export default function ChartPage() {
           <ChartBuilderSheet
             data={[]}
             columns={[]}
-            onSave={(config) => {
-              console.log('Chart saved:', config)
-              // Reload charts from localStorage
-              const storedCharts = localStorage.getItem('saved-charts')
-              if (storedCharts) {
-                setCharts(JSON.parse(storedCharts))
-              }
+            onSave={() => {
+              console.log('Chart created')
+              setEditingChart(null)
             }}
             triggerButton={
               <Button
@@ -176,21 +264,27 @@ export default function ChartPage() {
           />
         </div>
       ) : (
-        <div className="p-4">
+        <div className="p-6">
           <Sortable
-            value={charts}
+            value={charts?.data || []}
             onValueChange={handleChartsReorder}
             getItemValue={(chart) => chart.chartKey}
             orientation="mixed">
             <SortableContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {charts.map((chart, index) => (
+              {charts?.data?.map((chart, index) => (
                 <SortableItem
                   key={chart.chartKey}
                   value={chart.chartKey}
                   className={`group relative ${
                     index === 0 ? 'lg:col-span-2' : ''
                   }`}>
-                  <div className="absolute top-8 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChartItem
+                    chart={chart}
+                    onDelete={handleDeleteChart}
+                    onEdit={handleEditChart}
+                    index={index}
+                  />
+                  <div className="absolute top-14 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                     <SortableItemHandle
                       asChild
                       className="cursor-grab active:cursor-grabbing">
@@ -203,20 +297,16 @@ export default function ChartPage() {
                       </Button>
                     </SortableItemHandle>
                   </div>
-                  <ChartItem
-                    chart={chart}
-                    onDelete={handleDeleteChart}
-                    onEdit={handleEditChart}
-                    index={index}
-                  />
                 </SortableItem>
               ))}
             </SortableContent>
 
             <SortableOverlay>
               {({ value }) => {
-                const chart = charts.find((c) => c.chartKey === value)
-                const chartIndex = charts.findIndex((c) => c.chartKey === value)
+                const chart = charts?.data?.find((c) => c.chartKey === value)
+                const chartIndex = charts?.data?.findIndex(
+                  (c) => c.chartKey === value
+                )
                 return chart ? (
                   <div className="opacity-50">
                     <ChartItem
@@ -233,24 +323,23 @@ export default function ChartPage() {
         </div>
       )}
 
-      {/* Chart Builder Sheet for Editing */}
       {editingChart && (
         <ChartBuilderSheet
           data={editingChart.data || []}
-          columns={[]}
+          columns={Object.keys(
+            (editingChart.data && editingChart.data[0]) || {}
+          )}
           initialConfig={editingChart}
-          onSave={(config) => {
-            // Update the edited chart in localStorage
-            const updatedCharts = charts.map((c) =>
-              c.chartKey === editingChart.chartKey ? { ...c, ...config } : c
-            )
-            setCharts(updatedCharts)
-            localStorage.setItem('saved-charts', JSON.stringify(updatedCharts))
+          onSave={() => {
             setEditingChart(null)
+            setOpen(false)
           }}
-          onCancel={() => setEditingChart(null)}
+          onCancel={() => {
+            setEditingChart(null)
+            setOpen(false)
+          }}
           triggerButton={null}
-          autoOpen={true}
+          autoOpen={open}
         />
       )}
     </>

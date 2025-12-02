@@ -1,6 +1,6 @@
 'use client'
 
-import { callApi } from '@/app/custom-table/api'
+// Removed unused callApi import
 import { generateColumnConfig } from '@/app/custom-table/generateColumnConfig'
 import datatableConfig from '@/app/table/table_config'
 import { DynamicChart } from '@/components/chart/DynamicChart'
@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TitleDescription } from '@/components/ui/title-description'
-import { BarChart3, RefreshCw, Table } from 'lucide-react'
+import { BarChart3, Table } from 'lucide-react'
 import { createContext, useContext, useMemo, useState } from 'react'
 import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
+import { execSp } from './api'
 
 interface ChartBuilderSheetProps {
   data: Record<string, any>[]
@@ -78,7 +79,8 @@ export function ChartBuilderSheet({
   initialConfig,
   autoOpen = false,
 }: ChartBuilderSheetProps) {
-  const [open, setOpen] = useState(autoOpen)
+  const isAutoOpenMode = triggerButton === null
+  const [open, setOpen] = useState(isAutoOpenMode ? false : autoOpen)
   const [previewConfig, setPreviewConfig] = useState<ChartConfiguration | null>(
     initialConfig || null
   )
@@ -86,40 +88,22 @@ export function ChartBuilderSheet({
   const [isDragging, setIsDragging] = useState(false)
 
   const handleSave = (config: ChartConfiguration) => {
-    // If editing, don't add to localStorage (let the parent handle it)
-    if (!initialConfig) {
-      // Save to localStorage
-      try {
-        const existingCharts = localStorage.getItem('saved-charts')
-        const charts = existingCharts ? JSON.parse(existingCharts) : []
-
-        // Add the new chart with an id and index
-        const chartWithId = {
-          ...config,
-          id: config.chartKey,
-          index: charts.length, // Set index to the current length
-        }
-
-        charts.push(chartWithId)
-        localStorage.setItem('saved-charts', JSON.stringify(charts))
-
-        // Trigger storage event for other tabs/windows
-        window.dispatchEvent(new Event('storage'))
-      } catch (e) {
-        console.error('Failed to save chart:', e)
-      }
-    }
-
+    // Delegate persistence to API layer; parent will handle state refresh.
     onSave?.(config)
-    setOpen(false)
+    if (!isAutoOpenMode) {
+      setOpen(false)
+    }
     // Reset preview
     setPreviewConfig(null)
   }
 
   const handleCancel = () => {
-    setOpen(false)
+    if (isAutoOpenMode) {
+      onCancel?.()
+    } else {
+      setOpen(false)
+    }
     setPreviewConfig(null)
-    onCancel?.()
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -158,8 +142,14 @@ export function ChartBuilderSheet({
         )}
 
         <SheetDemo
-          open={open}
-          onOpenChange={setOpen}
+          open={isAutoOpenMode ? autoOpen : open}
+          onOpenChange={
+            isAutoOpenMode
+              ? (isOpen) => {
+                  if (!isOpen) onCancel?.()
+                }
+              : setOpen
+          }
           size="3xl">
           <div className="flex flex-col h-[calc(100vh-80px)]">
             <TitleDescription
@@ -183,6 +173,7 @@ export function ChartBuilderSheet({
                     <ChartBuilderWithPreview
                       data={data}
                       columns={columns}
+                      spName={initialConfig?.spName || ''}
                       onSave={handleSave}
                       onCancel={handleCancel}
                       initialConfig={initialConfig}
@@ -231,21 +222,21 @@ function ChartBuilderWithPreview({
   columns: _initialColumns,
   onSave,
   onCancel,
+  spName,
   initialConfig,
 }: {
   data: Record<string, any>[]
   columns: any[]
   onSave: (config: ChartConfiguration) => void
   onCancel: () => void
+  spName?: string
   initialConfig?: ChartConfiguration
 }) {
   const { setPreviewConfig } = useChartPreview()
-  const [url, setUrl] = useState('')
   const [open, setOpen] = useState(false)
-  const [enableApi, setEnableApi] = useState(false)
-
+  const [sp, setSP] = useState(spName || '')
   // Use the callApi hook
-  const { data: apiResponse, isLoading, error } = callApi(url, enableApi)
+  const { data: apiResponse, error } = execSp(sp)
 
   // Determine which data to use - API data or initial data
   const activeData = apiResponse?.data || initialData
@@ -262,24 +253,20 @@ function ChartBuilderWithPreview({
     <div className="space-y-6">
       {/* API Configuration Section */}
       <div className="space-y-2">
-        <Label htmlFor="api-url">API URL (Optional)</Label>
+        <Label htmlFor="api-url">SP NAME</Label>
         <div className="flex gap-2">
           <Input
             id="api-url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://api.example.com/data"
+            value={sp}
+            onChange={(e) => setSP(e.target.value)}
             className="flex-1"
+            placeholder="Enter SP Name"
           />
-          <Button
-            disabled={!url || isLoading}
-            onClick={() => setEnableApi(true)}
-            variant="outline"
-            size="icon">
-            <RefreshCw
-              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-            />
-          </Button>
+          {/* <Button
+            disabled={!sp || isLoading}
+            onClick={() => setSpName(sp)}>
+            Execute SP
+          </Button> */}
         </div>
         {error && (
           <p className="text-sm text-destructive">
@@ -320,6 +307,7 @@ function ChartBuilderWithPreview({
         columns={columnConfig}
         onSave={onSave}
         onCancel={onCancel}
+        spName={sp}
         onPreviewUpdate={handlePreviewUpdate}
         compact={true}
         initialConfig={initialConfig}

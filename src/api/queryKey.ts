@@ -22,6 +22,12 @@ export const queryKeys = {
   },
   custom_table:{
     all: ["custom_table"] 
+  },
+  sp:{
+    all: ["sp"]
+  },
+  charts:{
+    all: ["charts"]
   }
 } as const
 

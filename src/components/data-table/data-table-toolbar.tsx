@@ -4,6 +4,7 @@ import type { Column, Table } from '@tanstack/react-table'
 import { X } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import * as React from 'react'
+import type { DateRange } from 'react-day-picker'
 
 import { DataTableDateFilter } from '@/components/data-table/data-table-date-filter'
 import { DataTableFacetedFilter } from '@/components/data-table/data-table-faceted-filter'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { getDefaultFilterOperator } from '@/lib/data-table'
+import { applyFilter } from '@/lib/filter'
 import { generateId } from '@/lib/id'
 import { getFiltersStateParser } from '@/lib/parsers'
 import { cn } from '@/lib/utils'
@@ -213,6 +215,64 @@ export function DataTableToolbarFilter<TData>({
     [column.id, columnMeta, filters, debouncedSetFilters, setFilters]
   )
 
+  // Handle date filter changes
+  const handleDateChange = React.useCallback(
+    (date: Date | DateRange | undefined) => {
+      console.log('Date selected:', date)
+      if (!date) {
+        // Remove filter
+        const updatedFilters = filters.filter((f) => f.id !== column.id)
+        setFilters(updatedFilters)
+        return
+      }
+
+      // Convert date to filter object
+      let filterValue: any
+      let operator: string
+      if (date && typeof date === 'object' && 'from' in date) {
+        // DateRange
+        const from = date.from?.getTime()
+        const to = date.to?.getTime()
+        filterValue = [from, to]
+        operator = 'isBetween'
+      } else if (date instanceof Date) {
+        // Single date
+        filterValue = date.getTime()
+        operator = 'eq'
+      } else {
+        return
+      }
+
+      // Update or add filter
+      const filterExists = filters.some((f) => f.id === column.id)
+
+      if (filterExists) {
+        // Update existing filter
+        const updatedFilters = filters.map((f) =>
+          f.id === column.id
+            ? { ...f, value: { value: filterValue, operator } as any }
+            : f
+        )
+        console.log('Updated Filters:', updatedFilters)
+        setFilters(updatedFilters as ExtendedColumnFilter<TData>[])
+      } else {
+        // Add new filter
+        const newFilter: ExtendedColumnFilter<TData> = {
+          id: column.id as Extract<keyof TData, string>,
+          value: { value: filterValue, operator } as any,
+          variant: columnMeta?.variant ?? 'dateRange',
+          operator: getDefaultFilterOperator(
+            columnMeta?.variant ?? 'dateRange'
+          ),
+          filterId: generateId({ length: 8 }),
+        }
+        setFilters([...filters, newFilter])
+        console.log(newFilter)
+      }
+    },
+    [column.id, columnMeta, filters, setFilters]
+  )
+
   // Get current filter value for select/multiSelect
   const selectValue = React.useMemo(() => {
     if (existingFilter && Array.isArray(existingFilter.value)) {
@@ -263,11 +323,28 @@ export function DataTableToolbarFilter<TData>({
 
     case 'date':
     case 'dateRange':
+      // Set custom filter function using applyFilter
+      ;(column as any).columnDef.filterFn = (
+        row: any,
+        columnId: any,
+        filterValue: any
+      ) => {
+        if (
+          !filterValue ||
+          typeof filterValue !== 'object' ||
+          !('value' in filterValue)
+        )
+          return true
+        const { value, operator } = filterValue
+        const filter = { id: columnId, value, operator, variant: 'dateRange' }
+        return applyFilter(row.original, filter)
+      }
       return (
         <DataTableDateFilter
           column={column}
           title={columnMeta.label ?? column.id}
           multiple={columnMeta.variant === 'dateRange'}
+          onValueChange={handleDateChange}
         />
       )
 
