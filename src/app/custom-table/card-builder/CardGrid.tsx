@@ -16,8 +16,9 @@ interface CardGridProps {
   cards: Card[]
   data: Record<string, any>[]
   onEdit: (card: Card) => void
-  onDelete: (id: string) => void
+  onDelete: (id: number) => void
   onReorder: (cards: Card[]) => void
+  sp?: boolean
   showActions?: boolean // Optional: show edit/delete actions (default: true)
 }
 
@@ -27,8 +28,10 @@ export function CardGrid({
   onEdit,
   onDelete,
   onReorder,
+  sp = false,
   showActions = true,
 }: CardGridProps) {
+  console.log(cards)
   if (cards.length === 0) {
     return (
       <div className="flex items-center justify-center py-12 text-center">
@@ -47,25 +50,26 @@ export function CardGrid({
       value={cards}
       onValueChange={onReorder}
       orientation="mixed"
-      getItemValue={(card) => card.id}>
+      getItemValue={(card) => card.cardId}>
       <SortableContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((card) => {
-          const value = calculateCardValue(data, card)
+          const value = sp ? card.value : calculateCardValue(data, card)
 
           return (
             <SortableItem
-              key={card.id}
-              value={card.id}
+              key={card.cardId}
+              value={card.cardId}
               asChild>
               <div className="group">
                 <CardDashboard
                   title={card.title}
                   value={value}
+                  description={card.description}
                   editDelete={
                     showActions
                       ? {
                           onEdit: () => onEdit(card),
-                          onDelete: () => onDelete(card.id),
+                          onDelete: () => onDelete(card.cardId),
                         }
                       : undefined
                   }
@@ -85,13 +89,14 @@ export function CardGrid({
 
       <SortableOverlay>
         {({ value }) => {
-          const card = cards.find((c) => c.id === value)
+          const card = cards.find((c) => c.cardId === value)
           if (!card) return null
           const cardValue = calculateCardValue(data, card)
           return (
             <CardDashboard
               title={card.title}
-              value={cardValue}
+              description={card.description}
+              value={sp ? card.value : cardValue}
               className="shadow-lg"
             />
           )

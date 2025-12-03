@@ -13,8 +13,18 @@ import { GripVertical, Plus } from 'lucide-react'
 import { useState } from 'react'
 import type { ChartConfiguration } from './ChartBuilder'
 import { ChartBuilderSheet } from './ChartBuilderSheet'
-import { bulkUpdateCharts, deleteChartConfig, getAllCharts } from './api'
+import {
+  bulkUpdateCards,
+  bulkUpdateCharts,
+  deleteCard,
+  deleteChartConfig,
+  editCard,
+  getAllCards,
+  getAllCharts,
+  postCard,
+} from './api'
 import { ChartItem } from './ChartItem'
+import { CardBuilder } from '../custom-table/card-builder'
 
 export default function ChartPage() {
   const [editingChart, setEditingChart] = useState<ChartConfiguration | null>(
@@ -22,14 +32,41 @@ export default function ChartPage() {
   )
   const [open, setOpen] = useState(false)
   const { data: charts } = getAllCharts()
-  const bulkUpdateMutation = bulkUpdateCharts()
-  const deleteChartMutation = deleteChartConfig()
+  const { data: cards } = getAllCards()
+  const { mutate: bulkUpdateCardsMutation } = bulkUpdateCards()
+  const { mutate: createCardMutation } = postCard()
+  const { mutate: editCardMutation } = editCard()
+  const { mutate: deleteCardMutation } = deleteCard()
+  const handleDeleteCard = (id: number) => {
+    if (!id) return
+    const confirmed = confirm('Are you sure you want to delete this card?')
+    if (!confirmed) return
+    deleteCardMutation({ cardId: id })
+  }
 
+  const editCardHandler = (id: number, cardData: any) => {
+    editCardMutation({ id, ...cardData })
+  }
+
+  const createCardHandler = (cardData: any) => {
+    createCardMutation(cardData)
+  }
+
+  const handleCardsReorder = (newCards: any[]) => {
+    const reindexed = newCards.map((card, idx) => ({
+      ...card,
+      order: idx,
+    }))
+    bulkUpdateCardsMutation({ data: reindexed })
+  }
+
+  const { mutate: bulkUpdateMutation } = bulkUpdateCharts()
+  const { mutate: deleteChartMutation } = deleteChartConfig()
   const handleDeleteChart = (chartKey: string) => {
     if (!chartKey) return
     const confirmed = confirm('Are you sure you want to delete this chart?')
     if (!confirmed) return
-    deleteChartMutation.mutate(chartKey)
+    deleteChartMutation({ chartKey })
   }
 
   const handleEditChart = (chart: ChartConfiguration) => {
@@ -42,7 +79,7 @@ export default function ChartPage() {
       ...chart,
       index: idx,
     }))
-    bulkUpdateMutation.mutate({ data: reindexed })
+    bulkUpdateMutation({ data: reindexed })
   }
 
   return (
@@ -53,6 +90,7 @@ export default function ChartPage() {
           description="Create and manage custom charts based on your data."
           size="lg"
         />
+
         <div className="flex items-center gap-2">
           <ChartBuilderSheet
             data={[]}
@@ -70,6 +108,16 @@ export default function ChartPage() {
           />
         </div>
       </div>
+      <CardBuilder
+        cards={cards?.data || []}
+        onAddCard={createCardHandler}
+        onUpdateCard={editCardHandler}
+        onReorderCards={handleCardsReorder}
+        onDeleteCard={handleDeleteCard}
+        data={[]}
+        showActions
+        sp
+      />
 
       {charts?.data?.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-96 space-y-4 border-2 border-dashed rounded-lg">

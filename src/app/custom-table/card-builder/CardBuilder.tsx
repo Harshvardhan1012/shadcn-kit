@@ -2,29 +2,52 @@
 
 import SheetDemo from '@/components/sheet/page'
 import { Button } from '@/components/ui/button'
+import type { FilterVariant } from '@/types/data-table'
 import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CardForm } from './CardForm'
 import { CardGrid } from './CardGrid'
 import type { Card } from './types'
 import { useCardStorage } from './useCardStorage'
-import type { FilterVariant } from '@/types/data-table'
 
 interface CardBuilderProps {
   data: Record<string, any>[]
-  availableFields: string[]
+  sp: boolean
+  availableFields?: string[]
   columnConfig?: any[] // Optional: for detecting field variants
   showActions?: boolean // Optional: show edit/delete actions (default: true)
+  // Props for SP mode (when sp=true, cards are managed externally)
+  cards?: Card[]
+  onAddCard?: (card: Card) => void
+  onUpdateCard?: (id: number, card: Card) => void
+  onDeleteCard?: (id: number) => void
+  onReorderCards?: (cards: Card[]) => void
 }
 
 export function CardBuilder({
   data,
   availableFields,
+  sp,
   columnConfig,
   showActions = true,
+  cards: externalCards,
+  onAddCard,
+  onUpdateCard,
+  onDeleteCard,
+  onReorderCards,
 }: CardBuilderProps) {
-  const { cards, isHydrated, addCard, updateCard, deleteCard, reorderCards } =
-    useCardStorage()
+  // Use external cards and callbacks when sp=true, otherwise use localStorage
+  const storageResult = useCardStorage()
+
+  const cards = sp ? externalCards || [] : storageResult.cards
+  const isHydrated = sp ? true : storageResult.isHydrated
+  const addCard = sp ? onAddCard || (() => {}) : storageResult.addCard
+  const updateCard = sp ? onUpdateCard || (() => {}) : storageResult.updateCard
+  const deleteCard = sp ? onDeleteCard || (() => {}) : storageResult.deleteCard
+  const reorderCards = sp
+    ? onReorderCards || (() => {})
+    : storageResult.reorderCards
+
   const [showForm, setShowForm] = useState(false)
   const [editingCard, setEditingCard] = useState<Card | undefined>()
 
@@ -46,7 +69,7 @@ export function CardBuilder({
 
   const handleSave = (card: Card) => {
     if (editingCard) {
-      updateCard(editingCard.id, card)
+      updateCard(editingCard.cardId, card)
       setEditingCard(undefined)
     } else {
       addCard(card)
@@ -64,8 +87,8 @@ export function CardBuilder({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 px-6">
+      <div className="flex items-center justify-end">
         <Button
           size="sm"
           onClick={() => {
@@ -83,6 +106,7 @@ export function CardBuilder({
         onEdit={handleEdit}
         onDelete={deleteCard}
         onReorder={reorderCards}
+        sp={sp}
         showActions={showActions}
       />
 
@@ -96,6 +120,7 @@ export function CardBuilder({
           onSave={handleSave}
           onCancel={() => setShowForm(false)}
           initialCard={editingCard}
+          sp={sp}
         />
       </SheetDemo>
     </div>

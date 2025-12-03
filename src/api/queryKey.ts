@@ -28,6 +28,9 @@ export const queryKeys = {
   },
   charts:{
     all: ["charts"]
+  },
+  cards:{
+    all: ["cards"]
   }
 } as const
 

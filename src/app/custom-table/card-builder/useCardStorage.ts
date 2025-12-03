@@ -31,14 +31,14 @@ export const useCardStorage = () => {
     setCards((prev) => [...prev, card])
   }, [])
 
-  const updateCard = useCallback((id: string, updates: Partial<Card>) => {
+  const updateCard = useCallback((id: number, updates: Partial<Card>) => {
     setCards((prev) =>
-      prev.map((card) => (card.id === id ? { ...card, ...updates } : card))
+      prev.map((card) => (card.cardId === id ? { ...card, ...updates } : card))
     )
   }, [])
 
-  const deleteCard = useCallback((id: string) => {
-    setCards((prev) => prev.filter((card) => card.id !== id))
+  const deleteCard = useCallback((id: number) => {
+    setCards((prev) => prev.filter((card) => card.cardId !== id))
   }, [])
 
   const reorderCards = useCallback((newOrder: Card[]) => {

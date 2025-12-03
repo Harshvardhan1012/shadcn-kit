@@ -12,17 +12,21 @@ export type CardOperation =
 export interface CardFilter {
   field: string
   operator: FilterOperator
-  value: string | number | boolean | (string | number)[]
+  value: string | number | boolean | (string | number | boolean)[]
   variant?: FilterVariant
 }
 
 export interface Card {
-  id: string
+  cardId: number
+  order?: number
   title: string
+  description?: string
   field: string
+  value?: string | number
   operation: CardOperation
   filters?: CardFilter[]
-  order?: number
+  sp?: boolean
+  spName?: string
 }
 
 export interface CardData {

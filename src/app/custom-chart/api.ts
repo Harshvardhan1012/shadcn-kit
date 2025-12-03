@@ -34,3 +34,38 @@ export const bulkUpdateCharts = () => {
     queryKeys.charts.all
   )
 }
+
+export const postCard = () => {
+  return useApiPost<any>(
+    "http://localhost:3000/cards/create",
+    [queryKeys.cards.all]
+  )
+}
+
+export const bulkUpdateCards = () => {
+  return useApiPost<any>(
+    "http://localhost:3000/cards/bulk-update",
+    queryKeys.cards.all
+  )
+}
+
+export const editCard = () => {
+  return useApiPost<any>(
+    "http://localhost:3000/cards/update",
+    queryKeys.cards.all
+  )
+}
+
+export const deleteCard = () => {
+  return useApiPost<any>(
+    "http://localhost:3000/cards/delete",
+    queryKeys.cards.all
+  )
+}
+
+export const getAllCards = () => {
+  return useApiGet<any>(
+    queryKeys.cards.all,
+    "http://localhost:3000/cards/get"
+  )
+}
