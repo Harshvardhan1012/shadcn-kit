@@ -51,13 +51,12 @@ export const CardDashboard = ({
   dragHandle,
   editDelete,
 }: CardDashboardProps) => {
-  const TrendIcon = trend?.isPositive === false ? TrendingDown : TrendingUp
-  const [displayValue, setDisplayValue] = useState<string | number>(value)
-  const countingRef = useRef(false)
-
   if (value === null || value === undefined) {
     return <div>no data found</div>
   }
+  const TrendIcon = trend?.isPositive === false ? TrendingDown : TrendingUp
+  const [displayValue, setDisplayValue] = useState<string | number>(value)
+  const countingRef = useRef(false)
 
   // Counter animation effect - only for numeric values
   useEffect(() => {
@@ -105,7 +104,6 @@ export const CardDashboard = ({
         'bg-gradient-to-br from-background via-background to-primary/5',
         'before:absolute before:inset-0 before:-translate-x-full',
         'before:bg-gradient-to-r before:from-transparent before:via-primary/10 before:to-transparent',
-
         onClick && ['cursor-pointer', 'active:scale-[0.98]'],
         className
       )}
@@ -114,14 +112,15 @@ export const CardDashboard = ({
         <div className="absolute top-2 left-2 z-10">{dragHandle}</div>
       )}
 
-      {editDelete && (editDelete.onEdit || editDelete.onDelete) && (
-        <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-100">
+      {editDelete && (
+        <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
           {editDelete.onEdit && (
             <Button
               size="sm"
               variant="ghost"
               className="h-8 w-8 p-1"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 editDelete.onEdit?.()
               }}>
               <Edit2 className="w-3 h-3" />
@@ -131,8 +130,9 @@ export const CardDashboard = ({
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 w-8 p-1 text-destructive hover:text-destructive opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-100"
-              onClick={() => {
+              className="h-8 w-8 p-1 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation()
                 editDelete.onDelete?.()
               }}>
               <Trash2 className="w-3 h-3" />
@@ -154,9 +154,7 @@ export const CardDashboard = ({
           <Skeleton className="h-5 w-32" />
         ) : (
           <div className="flex items-center gap-2">
-            {Icon && (
-              <Icon className="h-5 w-5 text-primary" />
-            )}
+            {Icon && <Icon className="h-5 w-5 text-primary" />}
             <CardTitle
               className={cn(
                 'text-md uppercase tracking-wider',
@@ -205,9 +203,7 @@ export const CardDashboard = ({
               <span
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2 py-1 rounded-full font-medium text-xs',
-                  trend.isPositive
-                    ? 'text-emerald-600 '
-                    : 'text-red-600 '
+                  trend.isPositive ? 'text-emerald-600 ' : 'text-red-600 '
                 )}>
                 <TrendIcon className="h-3.5 w-3.5" />
                 {trend.value}
@@ -222,9 +218,7 @@ export const CardDashboard = ({
           {loading ? (
             <Skeleton className="h-4 w-full" />
           ) : (
-            <p className="text-xs text-muted-foreground/70">
-              {footer}
-            </p>
+            <p className="text-xs text-muted-foreground/70">{footer}</p>
           )}
         </CardFooter>
       )}
