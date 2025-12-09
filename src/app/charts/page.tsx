@@ -196,7 +196,6 @@ export default function AdvancedChartExamples() {
                 yAxisKeys={['value1', 'value2', 'value3']}
                 footer={<DynamicFooter />}
                 sortable
-                onSortableChange={(key) => handleChartSort(key, index)}
                 xAxis={{
                   label: 'Time Period',
                   fontSize: 12,

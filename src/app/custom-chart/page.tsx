@@ -1,5 +1,6 @@
 'use client'
 
+import { DataTableToolbarFilter } from '@/components/data-table/data-table-toolbar'
 import { Button } from '@/components/ui/button'
 import {
   Sortable,
@@ -9,10 +10,17 @@ import {
   SortableOverlay,
 } from '@/components/ui/sortable'
 import { TitleDescription } from '@/components/ui/title-description'
-import { GripVertical, Plus } from 'lucide-react'
-import { useState } from 'react'
-import type { ChartConfiguration } from './ChartBuilder'
-import { ChartBuilderSheet } from './ChartBuilderSheet'
+import { getFiltersStateParser } from '@/lib/parsers'
+import {
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+  type ColumnDef,
+} from '@tanstack/react-table'
+import { GripVertical, Plus, X } from 'lucide-react'
+import { useQueryState } from 'nuqs'
+import { useEffect, useMemo, useState } from 'react'
+import { CardBuilder } from '../custom-table/card-builder'
 import {
   bulkUpdateCards,
   bulkUpdateCharts,
@@ -23,15 +31,20 @@ import {
   getAllCharts,
   postCard,
 } from './api'
+import type { ChartConfiguration } from './ChartBuilder'
+import { ChartBuilderSheet } from './ChartBuilderSheet'
 import { ChartItem } from './ChartItem'
-import { CardBuilder } from '../custom-table/card-builder'
+import { FilterConfigSheet, type FilterConfig } from './FilterConfigSheet'
+const THROTTLE_MS = 50
 
 export default function ChartPage() {
   const [editingChart, setEditingChart] = useState<ChartConfiguration | null>(
     null
   )
+  const [params, setParams] = useState<Object>({})
   const [open, setOpen] = useState(false)
-  const { data: charts } = getAllCharts()
+  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([])
+  const { data: charts } = getAllCharts(params)
   const { data: cards } = getAllCards()
   const { mutate: bulkUpdateCardsMutation } = bulkUpdateCards()
   const { mutate: createCardMutation } = postCard()
@@ -82,6 +95,91 @@ export default function ChartPage() {
     bulkUpdateMutation({ data: reindexed })
   }
 
+  // Load filter configs from localStorage or initialize
+  useEffect(() => {
+    const savedConfigs = localStorage.getItem('chartFilterConfigs')
+    if (savedConfigs) {
+      try {
+        const parsed = JSON.parse(savedConfigs) as FilterConfig[]
+        setFilterConfigs(parsed)
+      } catch (e) {
+        // Initialize with empty if parse fails
+        setFilterConfigs([])
+      }
+    }
+  }, [])
+
+  // Save filter configs to localStorage whenever they change
+  const handleSaveFilterConfigs = (configs: FilterConfig[]) => {
+    setFilterConfigs(configs)
+    localStorage.setItem('chartFilterConfigs', JSON.stringify(configs))
+  }
+
+  // Create column definitions for filtering based on enabled configs
+  const columns = useMemo<ColumnDef<any>[]>(() => {
+    if (filterConfigs.length === 0) return []
+
+    // Only create columns for enabled filter configs
+    const enabledConfigs = filterConfigs.filter((c) => c.enabled)
+
+    return enabledConfigs.map((config) => {
+      return {
+        accessorKey: config.columnKey,
+        header: config.columnKey,
+        enableColumnFilter: true,
+        meta: {
+          label: config.label,
+          variant: config.variant,
+          options: [], // Options will be fetched from SP or provided by server
+          placeholder: config.placeholder,
+          spName: config.spName,
+        },
+      } as any
+    })
+  }, [filterConfigs])
+
+  // Use URL query params for filters
+  const enabledFilterKeys = useMemo(
+    () => filterConfigs.filter((c) => c.enabled).map((c) => c.columnKey),
+    [filterConfigs]
+  )
+
+  const [urlFilters, setUrlFilters] = useQueryState(
+    'filters',
+    getFiltersStateParser<any>(enabledFilterKeys).withDefault([]).withOptions({
+      clearOnDefault: true,
+      shallow: false,
+      throttleMs: THROTTLE_MS,
+    })
+  )
+
+  // Convert URL filters to object format for API params
+  useEffect(() => {
+    const filterParams: Record<string, any> = {}
+    urlFilters.forEach((filter) => {
+      filterParams[filter.id] = filter.value
+    })
+    setParams(filterParams)
+  }, [urlFilters])
+
+  // Create a table instance for filtering UI only (no actual data filtering)
+  const table = useReactTable({
+    data: [], // Empty data - filters are for server-side only
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      columnFilters: urlFilters.map((f) => ({
+        id: f.id,
+        value: f.value,
+      })),
+    },
+  })
+
+  const handleClearFilters = () => {
+    setUrlFilters([])
+  }
+
   return (
     <>
       <div className="flex items-center p-2 justify-between">
@@ -118,6 +216,60 @@ export default function ChartPage() {
         showActions
         sp
       />
+
+      {/* Global Filter Toolbar */}
+      {charts?.data && charts.data.length > 0 && (
+        <div className="mx-2 mb-4 p-4 border rounded-lg bg-card shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm">Filters</h3>
+              {urlFilters.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  ({urlFilters.length} active)
+                </span>
+              )}
+            </div>
+            <FilterConfigSheet
+              filterConfigs={filterConfigs}
+              onSave={handleSaveFilterConfigs}
+            />
+          </div>
+          {columns.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                No filters configured
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Click "Configure Filters" above to add filters
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              {columns.map((col) => {
+                const columnDef = col as any
+                const column = table.getColumn(columnDef.accessorKey)
+                return column ? (
+                  <DataTableToolbarFilter
+                    key={columnDef.accessorKey}
+                    column={column}
+                    table={table}
+                  />
+                ) : null
+              })}
+              {urlFilters.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="h-8 px-2 border-dashed border">
+                  <X className="h-4 w-4 mr-1" />
+                  Reset All
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {charts?.data?.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-96 space-y-4 border-2 border-dashed rounded-lg">

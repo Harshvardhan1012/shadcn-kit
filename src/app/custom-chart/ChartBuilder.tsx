@@ -4,31 +4,22 @@ import {
   useTableContext,
   type CardOperation,
 } from '@/app/custom-table/card-builder'
-import { FormFieldType } from '@/components/form/DynamicForm'
-import { SelectInput } from '@/components/form/SelectInput'
-import { TextInput } from '@/components/form/TextInput'
+import DynamicForm, {
+  FormFieldType,
+  type FormFieldConfig,
+} from '@/components/form/DynamicForm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ConfigCard } from '@/components/ui/card/ConfigCard'
 import type { ChartConfig } from '@/components/ui/chart'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from '@/components/ui/multi-select'
 import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as z from 'zod'
 import { editCustomChart, postChartConfig } from './api'
-
-export interface YAxisFieldConfig {
-  field: string
-  operation: CardOperation
-}
 
 export interface SeriesConfig {
   id: string
@@ -77,9 +68,12 @@ export function ChartBuilder({
     title: initialConfig?.title || '',
     data: initialConfig?.data || data || [],
     yAxisKeys: initialConfig?.yAxisKeys || [],
+    config: initialConfig?.config || {},
     xAxisKey: initialConfig?.xAxisKey || '',
     index: initialConfig?.index || 0,
   }))
+
+  console.log('ChartBuilder rendered with columns:', columns)
 
   const { table } = useTableContext()
 
@@ -91,6 +85,22 @@ export function ChartBuilder({
   // Update helper function
   const updateChartConfig = (updates: Partial<ChartConfiguration>) => {
     setChartConfig((prev) => ({ ...prev, ...updates }))
+  }
+
+  // Update y-axis label in config
+  const updateYAxisLabel = (field: string, label: string) => {
+    setChartConfig((prev) => {
+      const newConfig = {
+        ...prev.config,
+        [field]: { label },
+      }
+      return { ...prev, config: newConfig }
+    })
+  }
+
+  // Get label for a field from config
+  const getYAxisLabel = (field: string): string => {
+    return chartConfig.config?.[field]?.label?.toString() || field
   }
 
   // Generate chart config
@@ -133,6 +143,7 @@ export function ChartBuilder({
       chartKey: generateId({ length: 12 }),
       title: '',
       yAxisKeys: [],
+      config: {},
       xAxisKey: '',
       index: 1,
     })
@@ -179,68 +190,110 @@ export function ChartBuilder({
     )
   }
 
+  // Create form configuration for basic chart settings
+  const basicFormConfig: FormFieldConfig[] = [
+    {
+      fieldName: 'title',
+      fieldLabel: 'Chart Title',
+      fieldType: FormFieldType.TEXT,
+      placeholder: 'Enter chart title',
+      validation: z.string().min(1, 'Title is required'),
+    },
+    {
+      fieldName: 'xAxisKey',
+      fieldLabel: 'X-Axis Field',
+      fieldType: FormFieldType.SELECT,
+      placeholder: 'Select X-axis field',
+      options: availableFields.map((field) => ({
+        label: field,
+        value: field,
+      })),
+      validation: z.string().min(1, 'X-Axis field is required'),
+    },
+    {
+      fieldName: 'yAxisKeys',
+      fieldLabel: 'Y-Axis Fields',
+      fieldType: FormFieldType.MULTISELECT,
+      placeholder: 'Select Y-axis fields',
+      options: availableFields.map((field) => ({
+        label: field,
+        value: field,
+      })),
+      validation: z
+        .array(z.string())
+        .min(1, 'At least one Y-Axis field is required'),
+      overflowBehavior: 'wrap',
+    },
+  ]
+
+  const basicFormSchema = z.object({
+    title: z.string().min(1, 'Title is required'),
+    xAxisKey: z.string().min(1, 'X-Axis field is required'),
+    yAxisKeys: z
+      .array(z.string())
+      .min(1, 'At least one Y-Axis field is required'),
+  })
+
   return (
     <div className="space-y-6">
       {/* Chart Title & Basic Config */}
       <ConfigCard title="Chart Configuration">
-        <div className="space-y-4">
-          <TextInput
-            label="Chart Title"
-            placeholder="Enter chart title"
-            value={chartConfig.title}
-            onChange={(value) => updateChartConfig({ title: String(value) })}
-          />
+        <DynamicForm
+          formConfig={basicFormConfig}
+          schema={basicFormSchema}
+          defaultValues={{
+            title: chartConfig.title,
+            xAxisKey: chartConfig.xAxisKey,
+            yAxisKeys: chartConfig.yAxisKeys,
+          }}
+          onSubmit={(values) => {
+            updateChartConfig({
+              title: values.title,
+              xAxisKey: values.xAxisKey,
+              yAxisKeys: values.yAxisKeys,
+            })
 
-          <SelectInput
-            fieldName="xAxis"
-            fieldLabel="X-Axis Field"
-            fieldType={FormFieldType.SELECT}
-            label="X-Axis Field"
-            placeholder="Select X-axis field"
-            value={chartConfig.xAxisKey}
-            onChange={(value) => updateChartConfig({ xAxisKey: value })}
-            options={availableFields.map((field) => ({
-              label: field,
-              value: field,
-            }))}
-          />
-        </div>
+            // Initialize config for new fields
+            const newConfig: ChartConfig = { ...chartConfig.config }
+            values.yAxisKeys.forEach((field: string) => {
+              if (!newConfig[field]) {
+                newConfig[field] = { label: field }
+              }
+            })
+            updateChartConfig({ config: newConfig })
+          }}
+          customSubmitButton={<></>}
+        />
       </ConfigCard>
 
       {/* Split Mode Selection */}
       <Card>
         <CardContent className="space-y-4">
           <div className="space-y-4">
-            <div>
-              <Label>Y-Axis Fields</Label>
-              <MultiSelect
-                values={chartConfig.yAxisKeys}
-                onValuesChange={(values) =>
-                  updateChartConfig({ yAxisKeys: values })
-                }>
-                <MultiSelectTrigger className="w-full mt-1">
-                  <MultiSelectValue placeholder="Select Y-axis fields" />
-                </MultiSelectTrigger>
-                <MultiSelectContent>
-                  {availableFields.map((field) => (
-                    <MultiSelectItem
-                      key={field}
-                      value={field}>
-                      {field}
-                    </MultiSelectItem>
-                  ))}
-                </MultiSelectContent>
-              </MultiSelect>
-            </div>
-
-            {chartConfig.yAxisKeys.map((fieldConfig) => {
+            {chartConfig.yAxisKeys.map((field) => {
               return (
                 <div
-                  key={fieldConfig}
-                  className="flex items-center gap-2 p-3 border rounded-md bg-muted/20">
-                  <Label className="flex-1 text-sm font-medium">
-                    {fieldConfig}
-                  </Label>
+                  key={field}
+                  className="space-y-2 p-3 border rounded-md bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium min-w-[100px]">
+                      {field}
+                    </Label>
+                  </div>
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor={`label-${field}`}
+                      className="text-xs text-muted-foreground">
+                      Display Label
+                    </Label>
+                    <Input
+                      id={`label-${field}`}
+                      placeholder={`Label for ${field}`}
+                      value={getYAxisLabel(field)}
+                      onChange={(e) => updateYAxisLabel(field, e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
                 </div>
               )
             })}
@@ -272,8 +325,14 @@ export function ChartBuilder({
               {chartConfig.yAxisKeys.map((key) => (
                 <Badge
                   key={key}
-                  variant="secondary">
+                  variant="secondary"
+                  className="flex items-center gap-1">
                   {key}
+                  {getYAxisLabel(key) !== key && (
+                    <span className="text-xs text-muted-foreground">
+                      ({getYAxisLabel(key)})
+                    </span>
+                  )}
                 </Badge>
               ))}
             </div>

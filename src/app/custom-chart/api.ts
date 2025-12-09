@@ -21,10 +21,11 @@ export const deleteChartConfig = () => {
   return useApiPost<any>("http://localhost:3000/delete", queryKeys.charts.all)
 }
 
-export const getAllCharts = () => {
+export const getAllCharts = (params: Object) => {
+  const encoded = encodeURIComponent(JSON.stringify(params))
   return useApiGet<ChartConfiguration[]>(
     queryKeys.charts.all,
-    "http://localhost:3000/get"
+    `http://localhost:3000/get?params=${encoded}`
   )
 }
 
@@ -36,10 +37,9 @@ export const bulkUpdateCharts = () => {
 }
 
 export const postCard = () => {
-  return useApiPost<any>(
-    "http://localhost:3000/cards/create",
-    [queryKeys.cards.all]
-  )
+  return useApiPost<any>("http://localhost:3000/cards/create", [
+    queryKeys.cards.all,
+  ])
 }
 
 export const bulkUpdateCards = () => {
@@ -64,8 +64,5 @@ export const deleteCard = () => {
 }
 
 export const getAllCards = () => {
-  return useApiGet<any>(
-    queryKeys.cards.all,
-    "http://localhost:3000/cards/get"
-  )
+  return useApiGet<any>(queryKeys.cards.all, "http://localhost:3000/cards/get")
 }
