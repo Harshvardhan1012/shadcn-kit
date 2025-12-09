@@ -20,18 +20,25 @@ export const queryKeys = {
     preferences: (userId: string | number) =>
       [...queryKeys.users.detail(userId), "preferences"] as const,
   },
-  custom_table:{
-    all: ["custom_table"] 
+  custom_table: {
+    all: ["custom_table"],
   },
-  sp:{
-    all: ["sp"]
+  sp: {
+    all: ["sp"],
   },
-  charts:{
-    all: ["charts"]
+  charts: {
+    all: ["charts"],
   },
-  cards:{
-    all: ["cards"]
-  }
+  cards: {
+    all: ["cards"],
+  },
+  filters: {
+    all: ["filters"] as const,
+    lists: () => [...queryKeys.filters.all, "list"] as const,
+    list: (filters: Record<string, any>) =>
+      [...queryKeys.filters.lists(), { filters }] as const,
+    sp: (spName: string) => [...queryKeys.filters.all, "sp", spName] as const,
+  },
 } as const
 
 /**

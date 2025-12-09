@@ -33,7 +33,7 @@ interface ApiCallOptions {
 
 let baseUrl = window.location.origin
 if (baseUrl.includes("localhost")) {
-  baseUrl = ""
+  baseUrl = "http://localhost:3000"
 }
 
 const apiClient: AxiosInstance = axios.create({

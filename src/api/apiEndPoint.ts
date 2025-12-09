@@ -21,6 +21,41 @@ export const apiPaths = {
     roles: (id: string | number) => `/users/${id}/roles`,
   },
 
+  // Chart management endpoints
+  charts: {
+    base: "/charts",
+    create: "/create",
+    update: "/update",
+    delete: "/delete",
+    get: "/get",
+    bulkUpdate: "/bulk-update",
+  },
+
+  // Card management endpoints
+  cards: {
+    base: "/cards",
+    create: "/cards/create",
+    update: "/cards/update",
+    delete: "/cards/delete",
+    get: "/cards/get",
+    bulkUpdate: "/cards/bulk-update",
+  },
+
+  // Filter management endpoints
+  filters: {
+    base: "/filters",
+    create: "/filters/create",
+    update: "/filters/update",
+    delete: "/filters/delete",
+    get: "/filters/get",
+    bulkUpdate: "/filters/bulk-update",
+    execSp: (spName: string) => `/filters/exec/${spName}`,
+  },
+
+  // Stored procedure execution
+  sp: {
+    exec: (spName: string) => `/exec/${spName}`,
+  },
 } as const
 
 // Query parameter configurations for common endpoints
@@ -76,7 +111,22 @@ export const queryParams = {
     folder: "folder",
   },
 
-  ///add more params if needed 
+  // Filter-specific parameters
+  filters: {
+    spName: "spName",
+    columnKey: "columnKey",
+    variant: "variant",
+    enabled: "enabled",
+  },
+
+  // Chart-specific parameters
+  charts: {
+    chartKey: "chartKey",
+    title: "title",
+    spName: "spName",
+  },
+
+  ///add more params if needed
 } as const
 
 // Type-safe endpoint parameter validation
@@ -217,9 +267,10 @@ export const getEnvironmentEndpoints = () => {
 
 // Export commonly used endpoint groups
 export const userEndpoints = apiPaths.users
-//export more  here 
-
-
+export const chartEndpoints = apiPaths.charts
+export const cardEndpoints = apiPaths.cards
+export const filterEndpoints = apiPaths.filters
+export const spEndpoints = apiPaths.sp
 
 /**
  * Usage Examples:

@@ -24,11 +24,13 @@ import { CardBuilder } from '../custom-table/card-builder'
 import {
   bulkUpdateCards,
   bulkUpdateCharts,
+  bulkUpdateFilters,
   deleteCard,
   deleteChartConfig,
   editCard,
   getAllCards,
   getAllCharts,
+  getAllFilters,
   postCard,
 } from './api'
 import type { ChartConfiguration } from './ChartBuilder'
@@ -43,13 +45,17 @@ export default function ChartPage() {
   )
   const [params, setParams] = useState<Object>({})
   const [open, setOpen] = useState(false)
-  const [filterConfigs, setFilterConfigs] = useState<FilterConfig[]>([])
   const { data: charts } = getAllCharts(params)
   const { data: cards } = getAllCards()
+  const { data: filtersData } = getAllFilters()
+  const { mutate: bulkUpdateFiltersMutation } = bulkUpdateFilters()
   const { mutate: bulkUpdateCardsMutation } = bulkUpdateCards()
   const { mutate: createCardMutation } = postCard()
   const { mutate: editCardMutation } = editCard()
   const { mutate: deleteCardMutation } = deleteCard()
+
+  // Use filterConfigs from API data
+  const filterConfigs = filtersData?.data || []
   const handleDeleteCard = (id: number) => {
     if (!id) return
     const confirmed = confirm('Are you sure you want to delete this card?')
@@ -95,46 +101,27 @@ export default function ChartPage() {
     bulkUpdateMutation({ data: reindexed })
   }
 
-  // Load filter configs from localStorage or initialize
-  useEffect(() => {
-    const savedConfigs = localStorage.getItem('chartFilterConfigs')
-    if (savedConfigs) {
-      try {
-        const parsed = JSON.parse(savedConfigs) as FilterConfig[]
-        setFilterConfigs(parsed)
-      } catch (e) {
-        // Initialize with empty if parse fails
-        setFilterConfigs([])
-      }
-    }
-  }, [])
-
-  // Save filter configs to localStorage whenever they change
+  // Save filter configs using API
   const handleSaveFilterConfigs = (configs: FilterConfig[]) => {
-    setFilterConfigs(configs)
-    localStorage.setItem('chartFilterConfigs', JSON.stringify(configs))
+    bulkUpdateFiltersMutation({ data: configs })
   }
 
   // Create column definitions for filtering based on enabled configs
   const columns = useMemo<ColumnDef<any>[]>(() => {
     if (filterConfigs.length === 0) return []
 
-    // Only create columns for enabled filter configs
-    const enabledConfigs = filterConfigs.filter((c) => c.enabled)
-
-    return enabledConfigs.map((config) => {
+    return filterConfigs.map((config) => {
       return {
         accessorKey: config.columnKey,
         header: config.columnKey,
         enableColumnFilter: true,
         meta: {
-          label: config.label,
           variant: config.variant,
-          options: [], // Options will be fetched from SP or provided by server
+          options: config.options ?? [],
           placeholder: config.placeholder,
           spName: config.spName,
         },
-      } as any
+      }
     })
   }, [filterConfigs])
 
@@ -170,7 +157,7 @@ export default function ChartPage() {
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       columnFilters: urlFilters.map((f) => ({
-        id: f.id,
+        id: f.filterId,
         value: f.value,
       })),
     },
@@ -218,7 +205,7 @@ export default function ChartPage() {
       />
 
       {/* Global Filter Toolbar */}
-      {charts?.data && charts.data.length > 0 && (
+      {(
         <div className="mx-2 mb-4 p-4 border rounded-lg bg-card shadow-sm">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
