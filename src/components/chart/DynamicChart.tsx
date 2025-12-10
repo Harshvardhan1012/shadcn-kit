@@ -151,7 +151,7 @@ export interface DynamicChartProps {
   footer?: React.ReactNode
   chartType?: ChartType
   data?: ChartDataPoint[]
-  config?: ChartConfig
+  config?: ChartConfig | null
   xAxisKey?: string
   yAxisKeys?: string[]
   showGrid?: boolean
@@ -236,11 +236,11 @@ function getColorForKey(
 ): string {
   const cssVar = `var(--color-${key})`
   // Check if the config has a themeable color defined
-  if (config[key]?.theme) {
+  if (config?.[key]?.theme) {
     return cssVar
   }
   // Fallback to the non-theme color in the config
-  if (typeof config[key]?.color === 'string') {
+  if (typeof config?.[key]?.color === 'string') {
     return config[key]!.color!
   }
   // Final fallback to theme-aware chart CSS variables (--chart-1, --chart-2, etc.)
@@ -291,7 +291,7 @@ function prepareDownloadData(
   data: ChartDataPoint[],
   chartType: ChartType,
   yAxisKeys: string[],
-  config: ChartConfig
+  config?: ChartConfig
 ): ChartDataPoint[] {
   if ((chartType === 'pie' || chartType === 'donut') && yAxisKeys.length > 1) {
     return yAxisKeys.map((key) => {
@@ -302,7 +302,7 @@ function prepareDownloadData(
       )
       return {
         name:
-          typeof config[key]?.label === 'string'
+          typeof config?.[key]?.label === 'string'
             ? config[key]?.label
             : String(key),
         value: total,
@@ -344,6 +344,9 @@ export function DynamicChart({
   if (!data) {
     return <div>No data available</div>
   }
+
+  // Ensure config is always defined
+  const chartConfig = config ?? defaultConfig
 
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = React.useState(500)
@@ -393,7 +396,7 @@ export function DynamicChart({
       data,
       currentChartType,
       validYAxisKeys,
-      config
+      chartConfig
     )
     const csvContent = convertToCSV(downloadData)
     downloadFile(
@@ -580,8 +583,8 @@ export function DynamicChart({
               <Area
                 key={key}
                 dataKey={key}
-                fill={getColorForKey(key, i, config)}
-                stroke={getColorForKey(key, i, config)}
+                fill={getColorForKey(key, i, chartConfig)}
+                stroke={getColorForKey(key, i, chartConfig)}
               />
             ))}
           </AreaChart>
@@ -601,7 +604,7 @@ export function DynamicChart({
               <Line
                 key={key}
                 dataKey={key}
-                stroke={getColorForKey(key, i, config)}
+                stroke={getColorForKey(key, i, chartConfig)}
                 dot={false}
                 type="monotone"
               />
@@ -623,7 +626,7 @@ export function DynamicChart({
               <Bar
                 key={key}
                 dataKey={key}
-                fill={getColorForKey(key, i, config)}
+                fill={getColorForKey(key, i, chartConfig)}
               />
             ))}
           </BarChart>
@@ -644,7 +647,7 @@ export function DynamicChart({
         const pieData = isMultiSeries
           ? validYAxisKeys.map((key) => ({
               dataKey: key, // Keep track of the original key
-              name: config[key]?.label || key,
+              name: chartConfig?.[key]?.label || key,
               value: data.reduce(
                 (sum, item) => sum + (Number(item[key]) || 0),
                 0
@@ -669,7 +672,7 @@ export function DynamicChart({
                 if (isMultiSeries) {
                   // Use the config color for multi-series pie charts
                   const key = (entry as any).dataKey
-                  fillColor = getColorForKey(key, index, config)
+                  fillColor = getColorForKey(key, index, chartConfig)
                 } else {
                   // For single-series, prioritize 'fill' in data, then fallback to pieColors
                   fillColor =
@@ -866,7 +869,7 @@ export function DynamicChart({
                   justifyContent: 'center',
                 }}>
                 <ChartContainer
-                  config={config}
+                  config={chartConfig}
                   className={cn('w-full', classNames?.chart)}
                   style={{
                     height: chartDimensions.height,
@@ -896,7 +899,7 @@ export function DynamicChart({
         size="2xl">
         <div className="space-y-6">
           <ChartContainer
-            config={config}
+            config={chartConfig}
             className="w-full"
             style={{
               height: 420,

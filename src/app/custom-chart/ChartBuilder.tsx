@@ -10,7 +10,6 @@ import DynamicForm, {
 } from '@/components/form/DynamicForm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { ConfigCard } from '@/components/ui/card/ConfigCard'
 import type { ChartConfig } from '@/components/ui/chart'
 import { Input } from '@/components/ui/input'
@@ -266,40 +265,35 @@ export function ChartBuilder({
         />
       </ConfigCard>
 
-      {/* Split Mode Selection */}
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            {chartConfig.yAxisKeys.map((field) => {
-              return (
-                <div
-                  key={field}
-                  className="space-y-2 p-3 border rounded-md bg-muted/20">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium min-w-[100px]">
-                      {field}
-                    </Label>
-                  </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={`label-${field}`}
-                      className="text-xs text-muted-foreground">
-                      Display Label
-                    </Label>
-                    <Input
-                      id={`label-${field}`}
-                      placeholder={`Label for ${field}`}
-                      value={getYAxisLabel(field)}
-                      onChange={(e) => updateYAxisLabel(field, e.target.value)}
-                      className="h-8"
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {chartConfig.yAxisKeys.map((field) => {
+          return (
+            <div
+              key={field}
+              className="space-y-2 p-3 border rounded-md bg-muted/20">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium min-w-[100px]">
+                  {field}
+                </Label>
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor={`label-${field}`}
+                  className="text-xs text-muted-foreground">
+                  Display Label
+                </Label>
+                <Input
+                  id={`label-${field}`}
+                  placeholder={`Label for ${field}`}
+                  value={getYAxisLabel(field)}
+                  onChange={(e) => updateYAxisLabel(field, e.target.value)}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       {/* Summary */}
       <ConfigCard title="Configuration Summary">
