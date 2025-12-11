@@ -39,6 +39,21 @@ import { ChartItem } from './ChartItem'
 import { FilterConfigSheet, type FilterConfig } from './FilterConfigSheet'
 const THROTTLE_MS = 50
 
+const width ={
+  full: {
+    name: 'Full Width',
+    className: 'lg:col-span-6',
+  },
+  half: {
+    name: 'Half Width',
+    className: 'lg:col-span-3',
+  },
+  third: {
+    name: 'Third Width',
+    className: 'lg:col-span-2',
+  }
+}
+
 export default function ChartPage() {
   const [editingChart, setEditingChart] = useState<ChartConfiguration | null>(
     null
@@ -205,7 +220,7 @@ export default function ChartPage() {
       />
 
       {/* Global Filter Toolbar */}
-      {(
+      {
         <div className="mx-2 mb-4 p-4 border rounded-lg bg-card shadow-sm">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
@@ -256,7 +271,7 @@ export default function ChartPage() {
             </div>
           )}
         </div>
-      )}
+      }
 
       {charts?.data?.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-96 space-y-4 border-2 border-dashed rounded-lg">
@@ -290,14 +305,12 @@ export default function ChartPage() {
             onValueChange={handleChartsReorder}
             getItemValue={(chart) => chart.chartKey}
             orientation="mixed">
-            <SortableContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SortableContent className="grid grid-cols-1 lg:grid-cols-6 gap-6">
               {charts?.data?.map((chart, index) => (
                 <SortableItem
                   key={chart.chartKey}
                   value={chart.chartKey}
-                  className={`group relative ${
-                    index === 0 ? 'lg:col-span-2' : ''
-                  }`}>
+                  className={`group relative ${width[chart.width].className}`}>
                   <ChartItem
                     chart={chart}
                     onDelete={handleDeleteChart}

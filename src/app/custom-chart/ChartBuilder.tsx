@@ -8,12 +8,9 @@ import DynamicForm, {
   FormFieldType,
   type FormFieldConfig,
 } from '@/components/form/DynamicForm'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfigCard } from '@/components/ui/card/ConfigCard'
 import type { ChartConfig } from '@/components/ui/chart'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -32,6 +29,8 @@ export interface SeriesConfig {
 export interface ChartConfiguration {
   chartKey: string
   title: string
+  description?: string
+  width: 'full' | 'half' | 'third'
   xAxisKey: string
   yAxisKeys: string[]
   spName?: string
@@ -65,6 +64,8 @@ export function ChartBuilder({
   const [chartConfig, setChartConfig] = useState<ChartConfiguration>(() => ({
     chartKey: initialConfig?.chartKey || generateId({ length: 12 }),
     title: initialConfig?.title || '',
+    description: initialConfig?.description || '',
+    width: initialConfig?.width || 'full',
     data: initialConfig?.data || data || [],
     yAxisKeys: initialConfig?.yAxisKeys || [],
     config: initialConfig?.config || {},
@@ -114,6 +115,7 @@ export function ChartBuilder({
         availableFields.includes(key)
       ),
     }
+    debugger
 
     if (initialConfig) {
       // Editing existing chart
@@ -141,6 +143,8 @@ export function ChartBuilder({
     setChartConfig({
       chartKey: generateId({ length: 12 }),
       title: '',
+      description: '',
+      width: 'full',
       yAxisKeys: [],
       config: {},
       xAxisKey: '',
@@ -189,14 +193,33 @@ export function ChartBuilder({
     )
   }
 
-  // Create form configuration for basic chart settings
-  const basicFormConfig: FormFieldConfig[] = [
+  // Create form configuration for all chart settings including y-axis labels
+  const formConfig: FormFieldConfig[] = [
     {
       fieldName: 'title',
       fieldLabel: 'Chart Title',
       fieldType: FormFieldType.TEXT,
       placeholder: 'Enter chart title',
       validation: z.string().min(1, 'Title is required'),
+    },
+    {
+      fieldName: 'description',
+      fieldLabel: 'Description',
+      fieldType: FormFieldType.TEXT,
+      placeholder: 'Enter chart description (optional)',
+      validation: z.string().optional(),
+    },
+    {
+      fieldName: 'width',
+      fieldLabel: 'Chart Width',
+      fieldType: FormFieldType.SELECT,
+      placeholder: 'Select chart width',
+      options: [
+        { label: 'Full Width', value: 'full' },
+        { label: 'Half Width (1/2)', value: 'half' },
+        { label: 'Third Width (1/3)', value: 'third' },
+      ],
+      validation: z.enum(['full', 'half', 'third']),
     },
     {
       fieldName: 'xAxisKey',
@@ -223,141 +246,100 @@ export function ChartBuilder({
         .min(1, 'At least one Y-Axis field is required'),
       overflowBehavior: 'wrap',
     },
+    // Add dynamic fields for y-axis labels based on selected yAxisKeys
+    ...(chartConfig.yAxisKeys.map((field) => ({
+      fieldName: `label_${field}`,
+      fieldLabel: `Display Label for ${field}`,
+      fieldType: FormFieldType.TEXT,
+      placeholder: `Label for ${field}`,
+      validation: z.string().optional(),
+    })) as FormFieldConfig[]),
   ]
 
-  const basicFormSchema = z.object({
+  const formSchema = z.object({
     title: z.string().min(1, 'Title is required'),
+    description: z.string().optional(),
+    width: z.enum(['full', 'half', 'third']),
     xAxisKey: z.string().min(1, 'X-Axis field is required'),
     yAxisKeys: z
       .array(z.string())
       .min(1, 'At least one Y-Axis field is required'),
+    // Add dynamic validation for y-axis labels
+    ...chartConfig.yAxisKeys.reduce((acc, field) => {
+      acc[`label_${field}`] = z.string().optional()
+      return acc
+    }, {} as Record<string, z.ZodOptional<z.ZodString>>),
   })
+
+  // Prepare default values including y-axis labels
+  const defaultValues = useMemo(() => {
+    const values: Record<string, any> = {
+      title: chartConfig.title,
+      description: chartConfig.description,
+      width: chartConfig.width,
+      xAxisKey: chartConfig.xAxisKey,
+      yAxisKeys: chartConfig.yAxisKeys,
+    }
+
+    // Add y-axis label values
+    chartConfig.yAxisKeys.forEach((field) => {
+      values[`label_${field}`] = getYAxisLabel(field)
+    })
+
+    return values
+  }, [chartConfig])
 
   return (
     <div className="space-y-6">
-      {/* Chart Title & Basic Config */}
       <ConfigCard title="Chart Configuration">
         <DynamicForm
-          formConfig={basicFormConfig}
-          schema={basicFormSchema}
-          defaultValues={{
-            title: chartConfig.title,
-            xAxisKey: chartConfig.xAxisKey,
-            yAxisKeys: chartConfig.yAxisKeys,
-          }}
+          formConfig={formConfig}
+          schema={formSchema}
+          defaultValues={defaultValues}
           onSubmit={(values) => {
+            // Update basic chart config
             updateChartConfig({
               title: values.title,
+              description: values.description,
+              width: values.width as 'full' | 'half' | 'third',
               xAxisKey: values.xAxisKey,
               yAxisKeys: values.yAxisKeys,
             })
 
-            // Initialize config for new fields
-            const newConfig: ChartConfig = { ...chartConfig.config }
+            // Initialize config with y-axis labels
+            const newConfig: ChartConfig = {}
             values.yAxisKeys.forEach((field: string) => {
-              if (!newConfig[field]) {
-                newConfig[field] = { label: field }
+              newConfig[field] = {
+                label: values[`label_${field}`] || field,
               }
             })
             updateChartConfig({ config: newConfig })
           }}
-          customSubmitButton={<></>}
+          customSubmitButton={
+            <div className="flex justify-end gap-2 pt-4">
+              {onCancel && (
+                <Button
+                  variant="ghost"
+                  onClick={onCancel}
+                  type="button">
+                  Cancel
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                type="button">
+                Reset
+              </Button>
+              <Button
+                type="submit"
+                disabled={!isValid}>
+                {compact ? 'Create Chart' : 'Save Chart Configuration'}
+              </Button>
+            </div>
+          }
         />
       </ConfigCard>
-
-      <div className="space-y-4">
-        {chartConfig.yAxisKeys.map((field) => {
-          return (
-            <div
-              key={field}
-              className="space-y-2 p-3 border rounded-md bg-muted/20">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium min-w-[100px]">
-                  {field}
-                </Label>
-              </div>
-              <div className="space-y-1">
-                <Label
-                  htmlFor={`label-${field}`}
-                  className="text-xs text-muted-foreground">
-                  Display Label
-                </Label>
-                <Input
-                  id={`label-${field}`}
-                  placeholder={`Label for ${field}`}
-                  value={getYAxisLabel(field)}
-                  onChange={(e) => updateYAxisLabel(field, e.target.value)}
-                  className="h-8"
-                />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Summary */}
-      <ConfigCard title="Configuration Summary">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Title:</span>
-            <Badge variant="secondary">{chartConfig.title || 'Not set'}</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Global Filters:
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">X-Axis:</span>
-            <Badge variant="secondary">
-              {chartConfig.xAxisKey || 'Not set'}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Y-Axis:</span>
-            <div className="flex flex-wrap gap-1">
-              {chartConfig.yAxisKeys.map((key) => (
-                <Badge
-                  key={key}
-                  variant="secondary"
-                  className="flex items-center gap-1">
-                  {key}
-                  {getYAxisLabel(key) !== key && (
-                    <span className="text-xs text-muted-foreground">
-                      ({getYAxisLabel(key)})
-                    </span>
-                  )}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Data Points:</span>
-            <Badge variant="secondary">{data.length}</Badge>
-          </div>
-        </div>
-      </ConfigCard>
-
-      {/* Actions */}
-      <div className="flex justify-end gap-2">
-        {onCancel && (
-          <Button
-            variant="ghost"
-            onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <Button
-          variant="outline"
-          onClick={handleReset}>
-          Reset
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={!isValid}>
-          {compact ? 'Create Chart' : 'Save Chart Configuration'}
-        </Button>
-      </div>
     </div>
   )
 }

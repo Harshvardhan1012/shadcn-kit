@@ -37,6 +37,7 @@ export function CardForm({
   const [title, setTitle] = useState(initialCard?.title || '')
   const [description, setDescription] = useState(initialCard?.description || '')
   const [field, setField] = useState(initialCard?.field || '')
+  const [urlField, setUrlField] = useState(initialCard?.urlField || '')
   const [operation, setOperation] = useState<CardOperation>(
     initialCard?.operation || (sp ? 'value' : 'count')
   )
@@ -149,6 +150,7 @@ export function CardForm({
       filters: cardFilters,
       sp,
       spName: sp ? spName : undefined,
+      urlField: urlField || undefined,
     })
 
     // Reset form for next card
@@ -255,6 +257,28 @@ export function CardForm({
         placeholder="e.g., Total number of orders this month"
         value={description}
         onChange={(value) => setDescription(value as string)}
+      />
+
+      <SelectInput
+        fieldName="urlField"
+        fieldLabel="URL Field"
+        fieldType={FormFieldType.SELECT}
+        label="URL Field (Optional)"
+        placeholder="Select field for URL parameter"
+        value={urlField}
+        onChange={(value) => setUrlField(value)}
+        options={
+          sp
+            ? spFields.map((f) => ({
+                label: f,
+                value: f,
+              }))
+            : availableFields?.map((f) => ({
+                label: f,
+                value: f,
+              }))
+        }
+        description="Select a field to use as URL parameter for navigation"
       />
       <div className="flex gap-2 pt-4">
         <Button

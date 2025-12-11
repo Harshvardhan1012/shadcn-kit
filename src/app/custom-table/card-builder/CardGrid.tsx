@@ -11,6 +11,7 @@ import { GripVertical } from 'lucide-react'
 import { calculateCardValue } from './cardUtils'
 import type { Card } from './types'
 import { CardDashboard } from '@/components/ui/card/index'
+import { useNavigate } from 'react-router-dom'
 
 interface CardGridProps {
   cards: Card[]
@@ -31,7 +32,7 @@ export function CardGrid({
   sp = false,
   showActions = true,
 }: CardGridProps) {
-  console.log(cards)
+  const navigate = useNavigate()
   if (cards.length === 0) {
     return (
       <div className="flex items-center justify-center py-12 text-center">
@@ -64,6 +65,11 @@ export function CardGrid({
                 <CardDashboard
                   title={card.title}
                   value={value}
+                  {...(card.url && {
+                    onClick: () => {
+                      if (card.url) navigate(card.url)
+                    },
+                  })}
                   description={card.description}
                   editDelete={
                     showActions

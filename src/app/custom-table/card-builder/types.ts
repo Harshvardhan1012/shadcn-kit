@@ -27,6 +27,8 @@ export interface Card {
   filters?: CardFilter[]
   sp?: boolean
   spName?: string
+  url?: string
+  urlField?: string
 }
 
 export interface CardData {
