@@ -1,6 +1,7 @@
 'use client'
 
 // Removed unused callApi import
+import { TableProvider, useTableContext } from '@/app/custom-table/card-builder'
 import { generateColumnConfig } from '@/app/custom-table/generateColumnConfig'
 import datatableConfig from '@/app/table/table_config'
 import type { ColumnConfig } from '@/components/master-table/get-columns'
@@ -11,8 +12,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TitleDescription } from '@/components/ui/title-description'
+import {
+  getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 import { BarChart3, Table } from 'lucide-react'
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { ChartBuilder, type ChartConfiguration } from './ChartBuilder'
 import { execSp } from './api'
 import { ChartPreview } from './preview'
@@ -142,14 +148,16 @@ export function ChartBuilderSheet({
                 className="overflow-hidden border-r">
                 <ScrollArea className="h-full">
                   <div className="p-6">
-                    <ChartBuilderWithPreview
-                      data={data}
-                      columns={columns}
-                      spName={initialConfig?.spName || ''}
-                      onSave={handleSave}
-                      onCancel={handleCancel}
-                      initialConfig={initialConfig}
-                    />
+                    <TableProvider>
+                      <ChartBuilderWithPreview
+                        data={data}
+                        columns={columns}
+                        spName={initialConfig?.spName || ''}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                        initialConfig={initialConfig}
+                      />
+                    </TableProvider>
                   </div>
                 </ScrollArea>
               </div>
@@ -218,6 +226,28 @@ function ChartBuilderWithPreview({
   const columnConfig: ColumnConfig[] = useMemo(() => {
     return generateColumnConfig(apiResponse?.data)
   }, [apiResponse])
+
+  // Create table instance instantly
+  const table = useReactTable({
+    data: activeData || [],
+    columns: columnConfig,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      columnFilters: [],
+    },
+  })
+
+  // Get context to set table
+  const { setTable, setColumns } = useTableContext()
+
+  // Set table and columns in context when ready
+  useEffect(() => {
+    if (table && columnConfig) {
+      setTable(table)
+      setColumns(columnConfig)
+    }
+  }, [table, columnConfig, setTable, setColumns])
 
   return (
     <div className="space-y-6">

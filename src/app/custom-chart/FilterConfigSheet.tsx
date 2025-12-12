@@ -142,34 +142,29 @@ export function FilterConfigSheet({
         onOpenChange={setOpen}
         size="xl"
         storageKey="filter-config-sheet">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold">Configure Filters</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Select which columns to show as filters and configure their
-              settings.
-            </p>
-          </div>
+        <h2 className="text-lg font-semibold">Configure Filters</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Select which columns to show as filters and configure their settings.
+        </p>
 
-          <SectionedDynamicForm
-            ref={formRef}
-            sectionConfig={{
-              title: '',
-              description: '',
-              fields: filterFieldsConfig,
-              defaultValues: defaultValues.length > 0 ? defaultValues : [{}],
-              minSections: 0,
-              allowCopy: true,
-              allowReset: true,
-              collapsible: false,
-            }}
-            schema={filterSchema}
-            onSubmit={handleSave}
-            submitButtonText="Save Configuration"
-            addButtonText="Add Filter"
-            sectionTitlePrefix="Filter"
-          />
-        </div>
+        <SectionedDynamicForm
+          ref={formRef}
+          sectionConfig={{
+            title: '',
+            description: '',
+            fields: filterFieldsConfig,
+            defaultValues: defaultValues.length > 0 ? defaultValues : [{}],
+            minSections: 0,
+            allowCopy: true,
+            allowReset: true,
+            collapsible: false,
+          }}
+          schema={filterSchema}
+          onSubmit={handleSave}
+          submitButtonText="Save Configuration"
+          addButtonText="Add Filter"
+          sectionTitlePrefix="Filter"
+        />
       </SheetDemo>
     </>
   )

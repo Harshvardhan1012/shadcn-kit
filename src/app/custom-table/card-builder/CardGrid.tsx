@@ -71,14 +71,11 @@ export function CardGrid({
                     },
                   })}
                   description={card.description}
-                  editDelete={
-                    showActions
-                      ? {
-                          onEdit: () => onEdit(card),
-                          onDelete: () => onDelete(card.cardId),
-                        }
-                      : undefined
-                  }
+                  showActions={showActions}
+                  editDelete={{
+                    onEdit: () => onEdit(card),
+                    onDelete: () => onDelete(card.cardId),
+                  }}
                   dragHandle={
                     <SortableItemHandle
                       className="p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"

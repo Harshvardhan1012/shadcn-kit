@@ -32,6 +32,7 @@ interface CardDashboardProps {
   loading?: boolean
   onClick?: () => void
   dragHandle?: React.ReactNode
+  showActions?: boolean
   editDelete?: {
     onEdit?: () => void
     onDelete?: () => void
@@ -49,6 +50,7 @@ export const CardDashboard = ({
   loading = false,
   onClick,
   dragHandle,
+  showActions = false,
   editDelete,
 }: CardDashboardProps) => {
   if (value === null || value === undefined) {
@@ -108,11 +110,11 @@ export const CardDashboard = ({
         className
       )}
       onClick={onClick}>
-      {dragHandle && (
+      {dragHandle  && showActions && (
         <div className="absolute top-2 left-2 z-10">{dragHandle}</div>
       )}
 
-      {editDelete && (
+      {showActions && editDelete && (
         <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
           {editDelete.onEdit && (
             <Button

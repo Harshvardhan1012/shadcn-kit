@@ -29,7 +29,7 @@ export function CardBuilder({
   availableFields,
   sp,
   columnConfig,
-  showActions = true,
+  showActions = false,
   cards: externalCards,
   onAddCard,
   onUpdateCard,
@@ -87,7 +87,7 @@ export function CardBuilder({
   }
 
   return (
-    <div className="space-y-4 px-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-end">
         <Button
           size="sm"

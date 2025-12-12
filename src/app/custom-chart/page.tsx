@@ -169,8 +169,8 @@ export default function ChartPage() {
   }
 
   return (
-    <>
-      <div className="flex items-center p-2 justify-between">
+    <div className='p-3'>
+      <div className="flex items-center justify-between">
         <TitleDescription
           title="Custom Charts"
           description="Create and manage custom charts based on your data."
@@ -201,13 +201,13 @@ export default function ChartPage() {
         onReorderCards={handleCardsReorder}
         onDeleteCard={handleDeleteCard}
         data={[]}
-        showActions
+        // showActions
         sp
       />
 
       {/* Global Filter Toolbar */}
       {
-        <div className="mx-2 mb-4 p-4 border rounded-lg bg-card shadow-sm">
+        <div className="mx-2 mb-4 ">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-sm">Filters</h3>
@@ -285,7 +285,7 @@ export default function ChartPage() {
           />
         </div>
       ) : (
-        <div className="p-6">
+        <div>
           <Sortable
             value={charts?.data || []}
             onValueChange={handleChartsReorder}
@@ -361,6 +361,6 @@ export default function ChartPage() {
           autoOpen={open}
         />
       )}
-    </>
+    </div>
   )
 }

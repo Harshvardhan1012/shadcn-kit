@@ -1,25 +1,20 @@
 'use client'
 
-import { queryKeys } from '@/api/queryKey'
 import {
   useTableContext,
   type CardOperation,
 } from '@/app/custom-table/card-builder'
 import type { FormContextType } from '@/components/form'
-import DynamicForm, {
-  FormFieldType,
-  type FormFieldConfig,
-} from '@/components/form/DynamicForm'
+import DynamicForm from '@/components/form/DynamicForm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfigCard } from '@/components/ui/card/ConfigCard'
 import type { ChartConfig } from '@/components/ui/chart'
 import { generateId } from '@/lib/id'
 import type { ExtendedColumnFilter, JoinOperator } from '@/types/data-table'
-import { QueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import * as z from 'zod'
 import { editCustomChart, postChartConfig } from './api'
+import { createChartFormConfig, createChartFormSchema } from './form-config'
 import { width as widthConfig } from './utils'
 
 export interface SeriesConfig {
@@ -215,7 +210,7 @@ export function ChartBuilder({
         chartKey: chartConfig.chartKey,
         title: values.title || '',
         description: values.description,
-        width: (values.width as keyof typeof widthConfig),
+        width: values.width as keyof typeof widthConfig,
         xAxisKey: values.xAxisKey || '',
         yAxisKeys: values.yAxisKeys || [],
         config: newConfig,
@@ -237,91 +232,15 @@ export function ChartBuilder({
   ])
 
   // Create form configuration for basic chart settings with dynamic Y-axis label fields
-  const basicFormConfig: FormFieldConfig[] = useMemo(() => {
-    const baseConfig: FormFieldConfig[] = [
-      {
-        fieldName: 'title',
-        fieldLabel: 'Chart Title',
-        fieldType: FormFieldType.TEXT,
-        placeholder: 'Enter chart title',
-        validation: z.string().min(1, 'Title is required'),
-      },
-      {
-        fieldName: 'description',
-        fieldLabel: 'Description',
-        fieldType: FormFieldType.TEXT,
-        placeholder: 'Enter chart description (optional)',
-        validation: z.string().optional(),
-      },
-      {
-        fieldName: 'width',
-        fieldLabel: 'Chart Width',
-        fieldType: FormFieldType.SELECT,
-        placeholder: 'Select chart width',
-        options: Object.entries(widthConfig).map(([key, value]) => ({
-          label: value.name,
-          value: key,
-        })),
-      },
-      {
-        fieldName: 'xAxisKey',
-        fieldLabel: 'X-Axis Field',
-        fieldType: FormFieldType.SELECT,
-        placeholder: 'Select X-axis field',
-        options: availableFields.map((field) => ({
-          label: field,
-          value: field,
-        })),
-        validation: z.string().min(1, 'X-Axis field is required'),
-      },
-      {
-        fieldName: 'yAxisKeys',
-        fieldLabel: 'Y-Axis Fields',
-        fieldType: FormFieldType.MULTISELECT,
-        placeholder: 'Select Y-axis fields',
-        options: availableFields.map((field) => ({
-          label: field,
-          value: field,
-        })),
-        validation: z
-          .array(z.string())
-          .min(1, 'At least one Y-Axis field is required'),
-        overflowBehavior: 'wrap',
-      },
-    ]
+  const basicFormConfig = useMemo(
+    () => createChartFormConfig(availableFields, chartConfig.yAxisKeys),
+    [availableFields, chartConfig.yAxisKeys]
+  )
 
-    // Add dynamic Y-axis label fields
-    const labelFields: FormFieldConfig[] = chartConfig.yAxisKeys.map(
-      (field) => ({
-        fieldName: `label_${field}`,
-        fieldLabel: `${field} - Display Label`,
-        fieldType: FormFieldType.TEXT,
-        placeholder: `Label for ${field}`,
-        validation: z.string().optional(),
-      })
-    )
-
-    return [...baseConfig, ...labelFields]
-  }, [availableFields, chartConfig.yAxisKeys])
-
-  const basicFormSchema = useMemo(() => {
-    const schemaObj: Record<string, z.ZodTypeAny> = {
-      title: z.string().min(1, 'Title is required'),
-      description: z.string().optional(),
-      width: z.enum(['full', 'half', 'third']),
-      xAxisKey: z.string().min(1, 'X-Axis field is required'),
-      yAxisKeys: z
-        .array(z.string())
-        .min(1, 'At least one Y-Axis field is required'),
-    }
-
-    // Add dynamic label field validations
-    chartConfig.yAxisKeys.forEach((field) => {
-      schemaObj[`label_${field}`] = z.string().optional()
-    })
-
-    return z.object(schemaObj)
-  }, [chartConfig.yAxisKeys])
+  const basicFormSchema = useMemo(
+    () => createChartFormSchema(chartConfig.yAxisKeys),
+    [chartConfig.yAxisKeys]
+  )
 
   if (!table) {
     return (

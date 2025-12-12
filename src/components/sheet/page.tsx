@@ -151,13 +151,10 @@ export default function SheetDemo({
           </Tooltip>
         </div>
 
-        {/* Resizer Handle - hidden when full width */}
-        {!isFullWidth && (
-          <div
-            onMouseDown={startResizing}
-            className="absolute top-0 left-0 h-full w-1 cursor-ew-resize bg-transparent hover:bg-border/40 transition-colors z-20"
-          />
-        )}
+        <div
+          onMouseDown={startResizing}
+          className="absolute top-0 left-0 h-full w-1 cursor-ew-resize bg-transparent hover:bg-border/40 transition-colors z-20"
+        />
 
         <div className="px-5 py-2">{children}</div>
 
