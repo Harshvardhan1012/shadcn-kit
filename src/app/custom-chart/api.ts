@@ -11,15 +11,15 @@ import type { FilterConfig } from "./FilterConfigSheet"
 
 // Chart APIs
 export const postChartConfig = () => {
-  return useApiPost<any>(chartEndpoints.create, queryKeys.charts.all)
+  return useApiPost<any>(chartEndpoints.create, [queryKeys.charts.all])
 }
 
 export const editCustomChart = () => {
-  return useApiPost<any>(chartEndpoints.update, queryKeys.charts.all)
+  return useApiPost<any>(chartEndpoints.update, [queryKeys.charts.all])
 }
 
 export const deleteChartConfig = () => {
-  return useApiPost<any>(chartEndpoints.delete, queryKeys.charts.all)
+  return useApiPost<any>(chartEndpoints.delete, [queryKeys.charts.all])
 }
 
 export const getAllCharts = (params: Object) => {
@@ -30,12 +30,13 @@ export const getAllCharts = (params: Object) => {
     {},
     {
       placeholderData: (previousData) => previousData,
+      refetchOnMount: "always",
     }
   )
 }
 
 export const bulkUpdateCharts = () => {
-  return useApiPost<any>(chartEndpoints.bulkUpdate, queryKeys.charts.all)
+  return useApiPost<any>(chartEndpoints.bulkUpdate, [queryKeys.charts.all])
 }
 
 // Card APIs

@@ -34,25 +34,11 @@ import {
   postCard,
 } from './api'
 import type { ChartConfiguration } from './ChartBuilder'
+import { width } from './utils'
 import { ChartBuilderSheet } from './ChartBuilderSheet'
 import { ChartItem } from './ChartItem'
 import { FilterConfigSheet, type FilterConfig } from './FilterConfigSheet'
 const THROTTLE_MS = 50
-
-const width ={
-  full: {
-    name: 'Full Width',
-    className: 'lg:col-span-6',
-  },
-  half: {
-    name: 'Half Width',
-    className: 'lg:col-span-3',
-  },
-  third: {
-    name: 'Third Width',
-    className: 'lg:col-span-2',
-  }
-}
 
 export default function ChartPage() {
   const [editingChart, setEditingChart] = useState<ChartConfiguration | null>(
