@@ -169,7 +169,7 @@ export default function ChartPage() {
   }
 
   return (
-    <div className='p-3'>
+    <div className="p-3">
       <div className="flex items-center justify-between">
         <TitleDescription
           title="Custom Charts"
@@ -201,7 +201,7 @@ export default function ChartPage() {
         onReorderCards={handleCardsReorder}
         onDeleteCard={handleDeleteCard}
         data={[]}
-        // showActions
+        showActions
         sp
       />
 

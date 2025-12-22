@@ -55,6 +55,7 @@ export default function ColumnConfigPage() {
               data={apiResponse?.data}
               availableFields={availableFields}
               columnConfig={columns}
+              sp={false}
             />
             <ChartBuilderSheet
               data={apiResponse?.data}
