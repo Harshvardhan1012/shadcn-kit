@@ -12,6 +12,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { formatDate } from '@/lib/format'
 
@@ -56,18 +63,36 @@ function getDateRangePreset(preset: string): DateRange {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
   switch (preset) {
-    case 'last-week': {
-      const lastWeekEnd = new Date(today)
-      lastWeekEnd.setDate(today.getDate() - 1)
-      const lastWeekStart = new Date(lastWeekEnd)
-      lastWeekStart.setDate(lastWeekEnd.getDate() - 6)
-      return { from: lastWeekStart, to: lastWeekEnd }
+    case 'today': {
+      return { from: today, to: today }
     }
-    case 'current-week': {
+    case 'yesterday': {
+      const yesterday = new Date(today)
+      yesterday.setDate(today.getDate() - 1)
+      return { from: yesterday, to: yesterday }
+    }
+    case 'last-7-days': {
+      const lastWeek = new Date(today)
+      lastWeek.setDate(today.getDate() - 6)
+      return { from: lastWeek, to: today }
+    }
+    case 'last-30-days': {
+      const last30Days = new Date(today)
+      last30Days.setDate(today.getDate() - 29)
+      return { from: last30Days, to: today }
+    }
+    case 'this-week': {
       const currentWeekStart = new Date(today)
       const dayOfWeek = today.getDay()
       currentWeekStart.setDate(today.getDate() - dayOfWeek)
       return { from: currentWeekStart, to: today }
+    }
+    case 'last-week': {
+      const lastWeekEnd = new Date(today)
+      lastWeekEnd.setDate(today.getDate() - today.getDay() - 1)
+      const lastWeekStart = new Date(lastWeekEnd)
+      lastWeekStart.setDate(lastWeekEnd.getDate() - 6)
+      return { from: lastWeekStart, to: lastWeekEnd }
     }
     case 'this-month': {
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -85,6 +110,11 @@ function getDateRangePreset(preset: string): DateRange {
     case 'this-year': {
       const yearStart = new Date(today.getFullYear(), 0, 1)
       return { from: yearStart, to: today }
+    }
+    case 'last-year': {
+      const lastYearStart = new Date(today.getFullYear() - 1, 0, 1)
+      const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31)
+      return { from: lastYearStart, to: lastYearEnd }
     }
     default:
       return { from: undefined, to: undefined }
@@ -104,6 +134,7 @@ export function DataTableDateFilter<TData>({
   multiple = true,
   onValueChange,
 }: DataTableDateFilterProps<TData>) {
+  const [isOpen, setIsOpen] = React.useState(false)
   const columnFilterValue = column.getFilterValue()
 
   const selectedDates = React.useMemo<DateSelection>(() => {
@@ -143,13 +174,20 @@ export function DataTableDateFilter<TData>({
           column.setFilterValue(undefined)
           return
         }
+        console.log(date)
 
-        if (multiple && !('getTime' in date)) {
-          const from = date.from?.getTime()
-          const to = date.to?.getTime()
+        if (multiple) {
+          // Always pass a valid DateRange object to Calendar
+          const range =
+            date && typeof date === 'object' && 'from' in date && 'to' in date
+              ? (date as DateRange)
+              : { from: undefined, to: undefined }
+          const from = range.from?.getTime()
+          const to = range.to?.getTime()
+          // Only set filter if at least one date is selected
           column.setFilterValue(from || to ? [from, to] : undefined)
-        } else if (!multiple && 'getTime' in date) {
-          column.setFilterValue(date.getTime())
+        } else if (date && 'getTime' in date) {
+          column.setFilterValue((date as Date).getTime())
         }
       }
     },
@@ -160,6 +198,7 @@ export function DataTableDateFilter<TData>({
     (preset: string) => {
       const dateRange = getDateRangePreset(preset)
       onSelect(dateRange)
+      setIsOpen(false)
     },
     [onSelect]
   )
@@ -242,7 +281,9 @@ export function DataTableDateFilter<TData>({
   }, [selectedDates, multiple, formatDateRange, title])
 
   return (
-    <Popover>
+    <Popover
+      open={isOpen}
+      onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -265,73 +306,75 @@ export function DataTableDateFilter<TData>({
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-0"
-        align="start">
+        align="start"
+        side="bottom">
         <div className="flex flex-col">
           {/* Date Presets */}
           {multiple && (
-            <div className="flex flex-col gap-1 p-3 border-b">
-              <p className="text-sm font-medium mb-2">Quick Select</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePresetSelect('last-week')}
-                  className="justify-start">
-                  Last Week
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePresetSelect('current-week')}
-                  className="justify-start">
-                  This Week
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePresetSelect('last-month')}
-                  className="justify-start">
-                  Last Month
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePresetSelect('this-month')}
-                  className="justify-start">
-                  This Month
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePresetSelect('this-year')}
-                  className="col-span-2 justify-start">
-                  This Year
-                </Button>
+            <div className="flex flex-col gap-3 p-4 border-b">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Quick Select</p>
+                <Select onValueChange={handlePresetSelect}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a preset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="last-7-days">Last 7 days</SelectItem>
+                    <SelectItem value="last-30-days">Last 30 days</SelectItem>
+                    <SelectItem value="this-week">This Week</SelectItem>
+                    <SelectItem value="last-week">Last Week</SelectItem>
+                    <SelectItem value="this-month">This Month</SelectItem>
+                    <SelectItem value="last-month">Last Month</SelectItem>
+                    <SelectItem value="this-year">This Year</SelectItem>
+                    <SelectItem value="last-year">Last Year</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
 
           {/* Calendar */}
-          <div className="p-3">
+          <div className="p-4">
             {multiple ? (
               <Calendar
-                initialFocus
                 mode="range"
+                defaultMonth={
+                  getIsDateRange(selectedDates) && selectedDates.from
+                    ? selectedDates.from
+                    : undefined
+                }
                 selected={
                   getIsDateRange(selectedDates)
                     ? selectedDates
                     : { from: undefined, to: undefined }
                 }
-                onSelect={onSelect}
+                onSelect={(range) => {
+                  // Always pass a valid DateRange object
+                  const validRange =
+                    range &&
+                    typeof range === 'object' &&
+                    'from' in range &&
+                    'to' in range
+                      ? (range as DateRange)
+                      : { from: undefined, to: undefined }
+                  onSelect(validRange)
+                }}
+                numberOfMonths={2}
+                disabled={(date) => date > new Date()}
               />
             ) : (
               <Calendar
-                initialFocus
                 mode="single"
                 selected={
                   !getIsDateRange(selectedDates) ? selectedDates[0] : undefined
                 }
-                onSelect={onSelect}
+                onSelect={(date) => {
+                  onSelect(date as Date)
+                  setIsOpen(false)
+                }}
+                disabled={(date) => date > new Date()}
               />
             )}
           </div>

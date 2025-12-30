@@ -339,6 +339,7 @@ export function DataTableToolbarFilter<TData>({
         const filter = { id: columnId, value, operator, variant: 'dateRange' }
         return applyFilter(row.original, filter)
       }
+      console.log(columnMeta)
       return (
         <DataTableDateFilter
           column={column}

@@ -107,6 +107,7 @@ export function ChartBuilder({
       yAxisKeys: chartConfig.yAxisKeys.filter((key) =>
         availableFields.includes(key)
       ),
+      data: undefined, // Do not save data
     }
 
     if (initialConfig) {
