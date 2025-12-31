@@ -346,6 +346,7 @@ export function DataTableToolbarFilter<TData>({
           title={columnMeta.label ?? column.id}
           multiple={columnMeta.variant === 'dateRange'}
           onValueChange={handleDateChange}
+          value={existingFilter?.value as any}
         />
       )
 

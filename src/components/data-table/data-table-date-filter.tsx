@@ -126,6 +126,7 @@ interface DataTableDateFilterProps<TData> {
   title?: string
   multiple?: boolean
   onValueChange?: (value: Date | DateRange | undefined) => void
+  value?: Date | DateRange | undefined
 }
 
 export function DataTableDateFilter<TData>({
@@ -133,16 +134,18 @@ export function DataTableDateFilter<TData>({
   title,
   multiple = true,
   onValueChange,
+  value,
 }: DataTableDateFilterProps<TData>) {
+  console.log(value)
   const [isOpen, setIsOpen] = React.useState(false)
-  const columnFilterValue = column.getFilterValue()
+  const [range, setRange] = React.useState<DateRange>({ from: undefined, to: undefined })
 
-  const selectedDates = React.useMemo<DateSelection>(() => {
-    if (!columnFilterValue) {
-      return multiple ? { from: undefined, to: undefined } : []
-    }
+  // Use value prop if provided, otherwise fall back to column filter value
+  const columnFilterValue = value !== undefined ? value : column.getFilterValue()
+  console.log('columnFilterValue', columnFilterValue)
 
-    // If it's the new format { value, operator }
+  React.useEffect(() => {
+    if (!multiple) return
     let filterValue = columnFilterValue
     if (
       typeof columnFilterValue === 'object' &&
@@ -151,41 +154,57 @@ export function DataTableDateFilter<TData>({
     ) {
       filterValue = (columnFilterValue as any).value
     }
+    const timestamps = parseColumnFilterValue(filterValue)
+    const from = parseAsDate(timestamps[0])
+    const to = parseAsDate(timestamps[1])
+    setRange({ from, to })
+  }, [columnFilterValue, multiple])
 
-    if (multiple) {
-      const timestamps = parseColumnFilterValue(filterValue)
-      return {
-        from: parseAsDate(timestamps[0]),
-        to: parseAsDate(timestamps[1]),
-      }
+  const selectedDates: DateSelection = multiple ? range : (() => {
+    let filterValue = columnFilterValue
+    if (
+      typeof columnFilterValue === 'object' &&
+      columnFilterValue &&
+      'value' in columnFilterValue
+    ) {
+      filterValue = (columnFilterValue as any).value
     }
-
     const timestamps = parseColumnFilterValue(filterValue)
     const date = parseAsDate(timestamps[0])
     return date ? [date] : []
-  }, [columnFilterValue, multiple])
+  })()
 
   const onSelect = React.useCallback(
     (date: Date | DateRange | undefined) => {
       if (onValueChange) {
-        onValueChange(date)
-      } else {
-        if (!date) {
-          column.setFilterValue(undefined)
-          return
-        }
-        console.log(date)
-
+        // Only call onValueChange when both from and to are set
         if (multiple) {
-          // Always pass a valid DateRange object to Calendar
-          const range =
+          const nextRange =
             date && typeof date === 'object' && 'from' in date && 'to' in date
               ? (date as DateRange)
               : { from: undefined, to: undefined }
-          const from = range.from?.getTime()
-          const to = range.to?.getTime()
-          // Only set filter if at least one date is selected
-          column.setFilterValue(from || to ? [from, to] : undefined)
+          setRange(nextRange)
+          if (nextRange.from && nextRange.to) {
+            onValueChange(nextRange)
+          }
+        } else {
+          onValueChange(date)
+        }
+      } else {
+        if (!date) {
+          column.setFilterValue(undefined)
+          if (multiple) setRange({ from: undefined, to: undefined })
+          return
+        }
+        if (multiple) {
+          const nextRange =
+            date && typeof date === 'object' && 'from' in date && 'to' in date
+              ? (date as DateRange)
+              : { from: undefined, to: undefined }
+          setRange(nextRange)
+          if (nextRange.from && nextRange.to) {
+            column.setFilterValue([nextRange.from.getTime(), nextRange.to.getTime()])
+          }
         } else if (date && 'getTime' in date) {
           column.setFilterValue((date as Date).getTime())
         }

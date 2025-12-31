@@ -52,10 +52,17 @@ export const getSortingStateParser = <TData>(
 const singleValue = z.union([z.string(), z.number(), z.boolean()])
 const multiValue = z.array(singleValue)
 
+const dateFilterValue = z.object({
+  value: z.union([z.number(), z.array(z.number())]),
+  operator: z.string(),
+})
+
 const filterItemSchema = z.object({
   id: z.string(),
   // allow single string/number or array of strings/numbers
-  value: z.union([singleValue, multiValue]),
+  // value: z.union([singleValue, multiValue]),
+    value: z.union([singleValue, multiValue, dateFilterValue]),
+
   variant: z.enum(dataTableConfig.filterVariants),
   operator: z.enum(dataTableConfig.operators),
   filterId: z.string(),
@@ -77,6 +84,7 @@ export const getFiltersStateParser = <TData>(
       try {
         const parsed = JSON.parse(value)
         const result = z.array(filterItemSchema).safeParse(parsed)
+        console.log('Parsed filters:', result)
 
         if (!result.success) return null
 
