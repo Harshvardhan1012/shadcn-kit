@@ -28,6 +28,9 @@ export function ChartItem({
         height={300}
         legendPosition="top"
         chartIndex={index}
+        zoom={{
+          enabled: true,
+        }}
         onAction={(action) => {
           if (action === 'edit') {
             onEdit(chart)

@@ -26,6 +26,9 @@ export function ChartPreview() {
       config={previewConfig.config}
       xAxisKey={previewConfig.xAxisKey}
       yAxisKeys={previewConfig.yAxisKeys}
+      zoom={{
+        enabled: true,
+      }}
     />
   )
 }
