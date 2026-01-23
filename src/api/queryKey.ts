@@ -39,6 +39,13 @@ export const queryKeys = {
       [...queryKeys.filters.lists(), { filters }] as const,
     sp: (spName: string) => [...queryKeys.filters.all, "sp", spName] as const,
   },
+  auth: {
+    login: ["login"] as const,
+  },
+  application: {
+    all: ["application"] as const,
+    byAppKey: (appKey: string , encodedParams: string) => [appKey, encodedParams],
+  },
 } as const
 
 /**

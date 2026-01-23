@@ -1,4 +1,4 @@
-import {
+import apiPaths, {
   cardEndpoints,
   chartEndpoints,
   filterEndpoints,
@@ -6,7 +6,6 @@ import {
 } from "@/api/apiEndPoint"
 import { queryKeys } from "@/api/queryKey"
 import { useApiGet, useApiPost } from "@/api/tanstackHooks"
-import type { ChartConfiguration } from "./ChartBuilder"
 import type { FilterConfig } from "./FilterConfigSheet"
 
 // Chart APIs
@@ -22,18 +21,18 @@ export const deleteChartConfig = () => {
   return useApiPost<any>(chartEndpoints.delete, [queryKeys.charts.all])
 }
 
-export const getAllCharts = (params: Object) => {
-  const encoded = encodeURIComponent(JSON.stringify(params))
-  return useApiGet<ChartConfiguration[]>(
-    [queryKeys.charts.all, encoded],
-    `${chartEndpoints.get}?params=${encoded}`,
-    {},
-    {
-      placeholderData: (previousData) => previousData,
-      refetchOnMount: "always",
-    }
-  )
-}
+// export const getAllCharts = (params: Object) => {
+//   const encoded = encodeURIComponent(JSON.stringify(params))
+//   return useApiGet<ChartConfiguration[]>(
+//     [queryKeys.charts.all, encoded],
+//     `${chartEndpoints.get}?params=${encoded}`,
+//     {},
+//     {
+//       placeholderData: (previousData) => previousData,
+//       refetchOnMount: "always",
+//     },
+//   )
+// }
 
 export const bulkUpdateCharts = () => {
   return useApiPost<any>(chartEndpoints.bulkUpdate, [queryKeys.charts.all])
@@ -61,8 +60,11 @@ export const getAllCards = () => {
 }
 
 // Stored Procedure APIs
-export const execSp = (spName: string) => {
-  return useApiGet<any>([queryKeys.sp.all], spEndpoints.exec(spName))
+export const execSp = (spName: string, applicationId: number) => {
+  return useApiGet<any>(
+    [queryKeys.sp.all, applicationId],
+    spEndpoints.exec(spName, applicationId),
+  )
 }
 
 // Filter APIs
@@ -86,4 +88,25 @@ export const getAllFilters = () => {
 
 export const bulkUpdateFilters = () => {
   return useApiPost<any>(filterEndpoints.bulkUpdate, queryKeys.filters.all)
+}
+
+export const login = () => {
+  return useApiPost<any>(apiPaths.auth.login)
+}
+
+export const getSideBarItems = () => {
+  return useApiGet<any>(queryKeys.application.all, apiPaths.application.all)
+}
+
+export const getAppConfig = (appKey: string, params: Object) => {
+  const encoded = encodeURIComponent(JSON.stringify(params))
+  return useApiGet<any>(
+    queryKeys.application.byAppKey(appKey, encoded),
+    apiPaths.application.appKey(appKey, encoded),
+    {},
+    {
+      placeholderData: (previousData) => previousData,
+      refetchOnMount: "always",
+    },
+  )
 }

@@ -11,24 +11,20 @@ import { AppRoutes } from "../routes/routeUtils"
 const Form = lazy(() =>
   import("../app/sectionedForm/page").then((module) => ({
     default: module.default,
-  }))
+  })),
 )
 const Chart = lazy(() =>
-  import("../app/charts/page").then((module) => ({ default: module.default }))
+  import("../app/charts/page").then((module) => ({ default: module.default })),
 )
 const Table = lazy(() =>
   import("../app/table/page").then((module) => ({
     default: module.default,
-  }))
+  })),
 )
 
-const CustomChart = lazy(() =>
-  import("../app/custom-chart/page")
-)
-
-const CustomTable = lazy(() =>
-  import("../app/custom-table/page")
-)
+const CustomChart = lazy(() => import("../app/custom-chart/landing"))
+const CustomTable = lazy(() => import("../app/custom-table/page"))
+const CustomChartAppKey = lazy(() => import("../app/custom-chart/page"))
 
 export const sidebarConfig: SidebarConfig = {
   groups: [
@@ -73,7 +69,21 @@ export const sidebarConfig: SidebarConfig = {
               url: AppRoutes.CUSTOM_TABLE,
               component: CustomChart,
               icon: Table2,
-            }
+            },
+            {
+              id: "custom_chart",
+              title: "Custom Chart",
+              url: "/custom-chart",
+              component: CustomTable,
+              icon: ChartScatter,
+            },
+            {
+              id: "custom_chart_appkey",
+              title: "Custom Chart by AppKey",
+              url: "/custom-chart/:appKey",
+              component: CustomChartAppKey,
+              icon: ChartScatter,
+            },
           ],
         },
         {

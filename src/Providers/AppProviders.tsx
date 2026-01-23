@@ -15,6 +15,8 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import './../index.css'
 import { QueryClientWrapper } from './QueryClientProvider'
 import { TableProvider } from '@/app/custom-table/card-builder'
+import { Suspense } from 'react'
+import LoginPage from '@/app/custom-chart/login'
 
 function AppProvider() {
   const routes = generateRoutesFromSidebar(sidebarConfig)
@@ -33,14 +35,14 @@ function AppProvider() {
                     <QueryClientWrapper>
                       <ClientSidebarProvider>
                         <Routes>
-                          {/* <Route
-                          path="/login"
-                          element={
-                            <Suspense fallback={<div>Loading...</div>}>
-                              <Login />
-                            </Suspense>
-                          }
-                        /> */}
+                          <Route
+                            path="/login"
+                            element={
+                              <Suspense fallback={<div>Loading...</div>}>
+                                <LoginPage />
+                              </Suspense>
+                            }
+                          />
                           {/* Add any additional routes here if needed */}
                           {/* Routes with sidebar */}
                           <Route

@@ -1,3 +1,4 @@
+import API from '@/api/apiClient'
 import { AppRoutes } from '@/routes/routeUtils'
 import axios from 'axios'
 import React, {
@@ -62,9 +63,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (credentials: any) => {
     try {
       // Your login API call
-      const response = await axios.post(
-        process.env.SSO_URL as string,
-        credentials
+      const response = await API.post(
+        '/auth/login',
+        credentials,
       )
 
       if (response.status === 200) {
@@ -86,15 +87,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const verifyToken = async (token: string): Promise<User> => {
     // Your token verification logic
-    const response = await fetch('/api/verify', {
-      headers: { Authorization: `Bearer ${token}` },
+    const response = await API.get<any>('/auth/verify-token', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
 
-    if (!response.ok) {
+    if (!response) {
       throw new Error('Token verification failed')
     }
 
-    return response.json()
+    return response.data
   }
 
   return (

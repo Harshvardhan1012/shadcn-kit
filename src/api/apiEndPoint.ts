@@ -20,15 +20,17 @@ export const apiPaths = {
     permissions: (id: string | number) => `/users/${id}/permissions`,
     roles: (id: string | number) => `/users/${id}/roles`,
   },
+  auth: {
+    login: "/auth/login",
+  },
 
   // Chart management endpoints
   charts: {
     base: "/charts",
-    create: "/create",
-    update: "/update",
-    delete: "/delete",
-    get: "/get",
-    bulkUpdate: "/bulk-update",
+    create: "/charts/create",
+    update: "/charts/update",
+    delete: "/charts/delete",
+    bulkUpdate: "/charts/bulk-update",
   },
 
   // Card management endpoints
@@ -54,7 +56,11 @@ export const apiPaths = {
 
   // Stored procedure execution
   sp: {
-    exec: (spName: string) => `/exec/${spName}`,
+    exec: (spName: string, applicationId: number) => `/exec?spName=${spName}&applicationId=${applicationId}`,
+  },
+  application: {
+    all: "/applications",
+    appKey: (appKey: string, encodedParams: string) => `/applications/${appKey}?params=${encodedParams}`,
   },
 } as const
 
@@ -209,7 +215,7 @@ export const endpointUtils = {
       /:([a-zA-Z_$][a-zA-Z0-9_$]*)/g,
       (match, paramName) => {
         return params[paramName] || match
-      }
+      },
     )
   },
 
@@ -228,7 +234,7 @@ export const endpointUtils = {
     return flatEndpoints.some((ep) =>
       typeof ep === "string"
         ? ep === endpoint
-        : Object.values(ep as object).includes(endpoint)
+        : Object.values(ep as object).includes(endpoint),
     )
   },
 

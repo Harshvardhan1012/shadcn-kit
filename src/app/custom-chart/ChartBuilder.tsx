@@ -27,6 +27,7 @@ export interface SeriesConfig {
 }
 
 export interface ChartConfiguration {
+  applicationId?: number
   chartKey: string
   title: string
   description?: string
@@ -43,6 +44,7 @@ export interface ChartConfiguration {
 interface ChartBuilderProps {
   data: Record<string, any>[]
   columns: any[]
+  applicationId?: number
   onSave?: (chartConfig: ChartConfiguration) => void
   onCancel?: () => void
   spName: string
@@ -54,6 +56,7 @@ interface ChartBuilderProps {
 export function ChartBuilder({
   data,
   columns,
+  applicationId,
   onSave,
   onCancel,
   onPreviewUpdate,
@@ -61,6 +64,7 @@ export function ChartBuilder({
   compact = false,
   initialConfig,
 }: ChartBuilderProps) {
+  console.log('ChartBuilder initialConfig:', initialConfig,applicationId)
   const [chartConfig, setChartConfig] = useState<ChartConfiguration>(() => ({
     chartKey: initialConfig?.chartKey || generateId({ length: 12 }),
     title: initialConfig?.title || '',
@@ -71,6 +75,7 @@ export function ChartBuilder({
     config: initialConfig?.config || {},
     xAxisKey: initialConfig?.xAxisKey || '',
     index: initialConfig?.index || 0,
+    applicationId: applicationId ?? initialConfig?.applicationId,
   }))
 
   const formRef = useRef<FormContextType<any>>(null)
@@ -93,7 +98,7 @@ export function ChartBuilder({
       (field: string): string => {
         return chartConfig.config?.[field]?.label?.toString() || field
       },
-    [chartConfig.config]
+    [chartConfig.config],
   )
 
   // Generate chart config
@@ -105,10 +110,12 @@ export function ChartBuilder({
     const configuration: ChartConfiguration = {
       ...chartConfig,
       yAxisKeys: chartConfig.yAxisKeys.filter((key) =>
-        availableFields.includes(key)
+        availableFields.includes(key),
       ),
       data: undefined, // Do not save data
+      applicationId: applicationId,
     }
+    debugger
 
     if (initialConfig) {
       // Editing existing chart
@@ -118,7 +125,7 @@ export function ChartBuilder({
           onSuccess: () => {
             onSave?.(configuration)
           },
-        }
+        },
       )
     } else {
       saveChartConfig.mutate(
@@ -127,7 +134,7 @@ export function ChartBuilder({
           onSuccess: () => {
             onSave?.(configuration)
           },
-        }
+        },
       )
     }
   }
@@ -235,12 +242,12 @@ export function ChartBuilder({
   // Create form configuration for basic chart settings with dynamic Y-axis label fields
   const basicFormConfig = useMemo(
     () => createChartFormConfig(availableFields, chartConfig.yAxisKeys),
-    [availableFields, chartConfig.yAxisKeys]
+    [availableFields, chartConfig.yAxisKeys],
   )
 
   const basicFormSchema = useMemo(
     () => createChartFormSchema(chartConfig.yAxisKeys),
-    [chartConfig.yAxisKeys]
+    [chartConfig.yAxisKeys],
   )
 
   if (!table) {
@@ -268,10 +275,13 @@ export function ChartBuilder({
             width: chartConfig.width,
             xAxisKey: chartConfig.xAxisKey,
             yAxisKeys: chartConfig.yAxisKeys,
-            ...chartConfig.yAxisKeys.reduce((acc, field) => {
-              acc[`label_${field}`] = getYAxisLabel(field)
-              return acc
-            }, {} as Record<string, string>),
+            ...chartConfig.yAxisKeys.reduce(
+              (acc, field) => {
+                acc[`label_${field}`] = getYAxisLabel(field)
+                return acc
+              },
+              {} as Record<string, string>,
+            ),
           }}
           onSubmit={(values: any) => {
             // Build config with labels from form
