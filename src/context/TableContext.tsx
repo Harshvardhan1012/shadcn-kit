@@ -10,6 +10,8 @@ interface TableContextValue {
   setColumns: (columns: any[]) => void
   sheetOpen: boolean
   setSheetOpen: (open: boolean) => void
+  filteredData: any[]
+  setFilteredData: (data: any[]) => void
 }
 
 const TableContext = createContext<TableContextValue | undefined>(undefined)
@@ -18,10 +20,11 @@ export function TableProvider({ children }: { children: ReactNode }) {
   const [table, setTable] = useState<Table<any> | null>(null)
   const [columns, setColumns] = useState<any[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [filteredData, setFilteredData] = useState<any[]>([])
 
   return (
     <TableContext.Provider
-      value={{ table, columns, setTable, setColumns, sheetOpen, setSheetOpen }}>
+      value={{ table, columns, setTable, setColumns, sheetOpen, setSheetOpen, filteredData, setFilteredData }}>
       {children}
     </TableContext.Provider>
   )

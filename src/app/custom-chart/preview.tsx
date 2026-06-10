@@ -27,9 +27,6 @@ export function ChartPreview({ showActions = false }: { showActions?: boolean })
       xAxisKey={previewConfig.xAxisKey}
       yAxisKeys={previewConfig.yAxisKeys}
       showActions={showActions}
-      zoom={{
-        enabled: true,
-      }}
     />
   )
 }

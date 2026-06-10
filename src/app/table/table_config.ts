@@ -62,6 +62,9 @@ const addItemData = {
 export const tableConfig = {
   selectAll: true,
   actionColumn: false,
+  // Show a search box that matches across every column (client-side).
+  enableGlobalFilter: true,
+  globalFilterPlaceholder: "Search...",
 }
 
 const datatableConfig = {

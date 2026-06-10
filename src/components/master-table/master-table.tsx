@@ -1,4 +1,3 @@
-import type { RowData } from '@tanstack/react-table'
 import * as React from 'react'
 import { z } from 'zod'
 import { DataTableSkeleton } from './../data-table/data-table-skeleton'
@@ -70,7 +69,7 @@ export interface BulkUploadResult {
   errorCount: number
 }
 
-interface DatatableConfig<TData extends RowData = RowData> {
+interface DatatableConfig {
   columnsConfig: ColumnConfig[]
   columnActions: any[]
   tableConfig: any
@@ -86,9 +85,9 @@ export interface BulkUploadConfig {
   emptyRowCount?: number // Number of empty rows to add (default: 10)
 }
 
-interface DynamicMasterProps<TData extends RowData = RowData> {
-  datatableConfig: DatatableConfig<TData>
-  data?: any[]
+interface DynamicMasterProps<TData = unknown> {
+  datatableConfig: DatatableConfig
+  data?: TData[]
   serverSideFiltering?: boolean
   sheetOpen?: boolean
   onSheetOpenChange?: (open: boolean) => void
@@ -102,7 +101,9 @@ interface DynamicMasterProps<TData extends RowData = RowData> {
   //   columns: ColumnDef<TData, unknown>[]
 }
 
-export default function DynamicMaster<TData extends RowData = RowData>({
+// Generic param is accepted (and defaulted) so callers can write
+// `DynamicMaster<SomeRow>` for readability even though the props are untyped.
+export default function DynamicMaster<TData = unknown>({
   datatableConfig,
   data,
   serverSideFiltering = false,
@@ -114,14 +115,13 @@ export default function DynamicMaster<TData extends RowData = RowData>({
   children,
   bulkUploadConfig,
 }: DynamicMasterProps<TData>) {
-  console.log(datatableConfig.columnsConfig)
   const [bulkUploadSheetOpen, setBulkUploadSheetOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (onSheetOpenChange) {
       onSheetOpenChange(sheetOpen)
     }
-  }, [sheetOpen])
+  }, [sheetOpen, onSheetOpenChange])
 
   const handleSheetOpenChange = (value: boolean) => {
     if (onSheetOpenChange) {
@@ -143,9 +143,55 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     addItemData,
   } = datatableConfig
 
+  // `getColumns` is itself a hook (it calls React.useMemo internally), so it
+  // must be called directly at the top level — never wrapped in another
+  // useMemo, or its inner hook runs only on some renders and the hook count
+  // varies between renders ("Rendered fewer hooks than expected").
   const columns = getColumns(columnsConfig, tableConfig, columnActions)
 
-  console.log('Columns for table:', columns)
+  const columnsKey = React.useMemo(() => {
+    // Create a hash of the entire columns configuration
+    const configString = JSON.stringify(
+      columns.map((col: any) => ({
+        accessorKey: col.accessorKey,
+        meta: col.meta,
+        header: col.header,
+        options: col.options,
+      }))
+    )
+
+    // Simple hash function to create a shorter key
+    let hash = 0
+    for (let i = 0; i < configString.length; i++) {
+      const char = configString.charCodeAt(i)
+      hash = (hash << 5) - hash + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+
+    return `columns-${Math.abs(hash).toString(36)}`
+  }, [columns])
+
+  const itemData: ActionConfig = React.useMemo(
+    () => ({
+      title: addItemData?.title,
+      onClick: () => {
+        handleSheetOpenChange(true)
+        onClickAddItem()
+      },
+    }),
+    [addItemData?.title, onClickAddItem]
+  )
+
+  const bulkUploadItemData: ActionConfig | undefined = React.useMemo(
+    () =>
+      bulkUploadConfig
+        ? {
+            title: bulkUploadConfig.buttonTitle || 'Bulk Upload',
+            onClick: handleBulkUploadClick,
+          }
+        : undefined,
+    [bulkUploadConfig]
+  )
 
   // Show skeleton when loading
   if (isLoading) {
@@ -191,44 +237,6 @@ export default function DynamicMaster<TData extends RowData = RowData>({
     )
   }
 
-  const itemData: ActionConfig = {
-    title: addItemData?.title,
-    onClick: () => {
-      handleSheetOpenChange(true)
-      onClickAddItem()
-    },
-  }
-
-  const columnsKey = React.useMemo(() => {
-    // Create a hash of the entire columns configuration
-    // This includes options, values, icons, and any other metadata
-    const configString = JSON.stringify(
-      columns.map((col: any) => ({
-        accessorKey: col.accessorKey,
-        meta: col.meta,
-        header: col.header,
-        options: col.options,
-      }))
-    )
-
-    // Simple hash function to create a shorter key
-    let hash = 0
-    for (let i = 0; i < configString.length; i++) {
-      const char = configString.charCodeAt(i)
-      hash = (hash << 5) - hash + char
-      hash = hash & hash // Convert to 32bit integer
-    }
-
-    return `columns-${Math.abs(hash).toString(36)}`
-  }, [columns])
-
-  const bulkUploadItemData: ActionConfig | undefined = bulkUploadConfig
-    ? {
-        title: bulkUploadConfig.buttonTitle || 'Bulk Upload',
-        onClick: handleBulkUploadClick,
-      }
-    : undefined
-
   return (
     <div className="relative flex flex-col w-full">
       <Shell
@@ -237,33 +245,36 @@ export default function DynamicMaster<TData extends RowData = RowData>({
           sheetOpen || bulkUploadSheetOpen ? 'md:w-[calc(100%-24rem)]' : ''
         }`}>
         <FeatureFlagsProvider>
-            <Table
-              key={columnsKey}
-              data={data}
-              columns={columns}
-              actionConfig={actionConfig}
-              addItem={addItemData ? itemData : undefined}
-              bulkUploadItem={bulkUploadItemData}
-              ref={tableRef}
-              serverSideFiltering={serverSideFiltering}
-              onFiltersChange={(filters, joinOperator) => {
-                console.log('Filters changed:', filters, joinOperator)
-              }}
-              onPaginationChange={(page, perPage) => {
-                // Make API call with pagination
-                console.log('Pagination changed:', page, perPage)
-              }}>
-            </Table>
+          <Table
+            key={columnsKey}
+            data={data}
+            columns={columns}
+            actionConfig={actionConfig}
+            addItem={addItemData ? itemData : undefined}
+            bulkUploadItem={bulkUploadItemData}
+            ref={tableRef}
+            serverSideFiltering={serverSideFiltering}
+            enableGlobalFilter={
+              tableConfig?.enableGlobalFilter ?? tableConfig?.globalFilter
+            }
+            globalFilterPlaceholder={tableConfig?.globalFilterPlaceholder}
+            onFiltersChange={(filters, joinOperator) => {
+              console.log('Filters changed:', filters, joinOperator)
+            }}
+            onPaginationChange={(page, perPage) => {
+              // Make API call with pagination
+              console.log('Pagination changed:', page, perPage)
+            }}></Table>
 
-            {sheetOpen && (
-              <SheetDemo
+          {sheetOpen && (
+            <SheetDemo
               open={sheetOpen}
               onOpenChange={() => {
                 handleSheetOpenChange(false)
               }}>
-                {children}
-              </SheetDemo>
-            )}
+              {children}
+            </SheetDemo>
+          )}
         </FeatureFlagsProvider>
       </Shell>
 

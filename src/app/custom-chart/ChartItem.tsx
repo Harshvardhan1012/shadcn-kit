@@ -28,11 +28,7 @@ export function ChartItem({
         downloadFilename={`${chart.title}-data`}
         chartKey={chart.chartKey}
         height={300}
-        legendPosition="top"
         chartIndex={index}
-        zoom={{
-          enabled: true,
-        }}
         showActions={showActions}
         onAction={(action) => {
           if (action === 'edit') {

@@ -44,6 +44,7 @@ import { useParams } from 'react-router-dom'
 export default function ChartPage() {
   const { appKey } = useParams()
   const { user } = useContext(AuthContext)
+  console.log(user)
   const [params, setParams] = useState<Object>({})
   const { data: getApplication } = getAppConfig(appKey || '', params)
   const applicationId = getApplication?.data?.id

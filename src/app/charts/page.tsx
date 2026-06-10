@@ -114,7 +114,9 @@ export default function AdvancedChartExamples() {
       const newOrder = [...prev]
       const [movedChart] = newOrder.splice(activeIndex, 1)
       newOrder.splice(overIndex, 0, movedChart)
-      console.log(`Chart reordered from position ${activeIndex} to ${overIndex}`)
+      console.log(
+        `Chart reordered from position ${activeIndex} to ${overIndex}`,
+      )
       return newOrder
     })
   }
@@ -128,14 +130,14 @@ export default function AdvancedChartExamples() {
         dark: 'oklch(0.55 0.25 150)',
       },
     },
-    value2: {
-      label: 'Expenses',
-      theme: {
-        light: 'oklch(0.65 0.22 240)',
-        dark: 'oklch(0.55 0.25 245)',
-      },
-    },
-    value3: {
+    // value2: {
+    //   label: 'Expenses',
+    //   theme: {
+    //     light: 'oklch(0.65 0.22 240)',
+    //     dark: 'oklch(0.55 0.25 245)',
+    //   },
+    // },
+    formattedDate: {
       label: 'Profit',
       theme: {
         light: 'oklch(0.65 0.25 25)',
@@ -193,12 +195,21 @@ export default function AdvancedChartExamples() {
                 data={timeSeriesData}
                 config={advancedConfig}
                 xAxisKey="formattedDate"
-                yAxisKeys={['value1', 'value2', 'value3']}
+                yAxisKeys={['value1']}
                 footer={<DynamicFooter />}
                 sortable
-                xAxis={{
-                  label: 'Time Period',
-                  fontSize: 12,
+                // Drill-down: clicking a point opens a sheet with a backend-driven
+                // table. Just set `apiPath` here — the clicked point's values
+                // (date, value1, value2, value3, formattedDate) auto-attach as
+                // query params, e.g.
+                //   /api/financials/detail?formattedDate=Jan&value1=400&date=2025-01&...
+                // `extraParams` adds constant filters; the fetcher defaults to
+                // static data (components/chart/data/drilldown-mock.ts) — pass
+                // `fetcher` to call a real API.
+                drillDown={{
+                  enabled: true,
+                  apiPath: '/api/financials/detail',
+                  extraParams: { source: 'dashboard' },
                 }}
               />
             )
@@ -217,6 +228,12 @@ export default function AdvancedChartExamples() {
                 height={300}
                 sortable
                 onSortableChange={(key) => handleChartSort(key, index)}
+                // Range slider + legend toggle + data labels; syncId links its
+                // tooltip/crosshair with any chart sharing the same id.
+                brush
+                enableLegendToggle
+                showDataLabels
+                // syncId="financials"
                 chartProps={{
                   value1: {
                     strokeWidth: 2,
@@ -247,10 +264,12 @@ export default function AdvancedChartExamples() {
                 height={300}
                 sortable
                 onSortableChange={(key) => handleChartSort(key, index)}
-                xAxis={{
-                  angle: -45,
-                  fontSize: 10,
-                }}
+                // Toggle grouped/stacked from the header; thresholds + labels on.
+                showStackToggle
+                showDataLabels
+                referenceLines={[
+                  { y: 400, label: 'Target', color: 'var(--chart-3)' },
+                ]}
                 chartProps={{
                   value1: { radius: [8, 8, 0, 0] },
                   value3: { radius: [8, 8, 0, 0] },
@@ -288,17 +307,6 @@ export default function AdvancedChartExamples() {
                     activeDot: { r: 8, strokeWidth: 0 },
                   },
                 }}
-                footer={
-                  <div className="flex justify-between w-full">
-                    <span>First 6 months of 2025</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6">
-                      <DownloadIcon className="h-3 w-3" />
-                    </Button>
-                  </div>
-                }
               />
             )
           case 'revenue':
@@ -325,13 +333,18 @@ export default function AdvancedChartExamples() {
                       dark: 'oklch(0.55 0.25 245)',
                     },
                   },
+                  value3: {
+                    label: 'sdfdf',
+                  },
                 }}
                 sortable
                 onSortableChange={(key) => handleChartSort(key, index)}
                 xAxisKey="formattedDate"
                 yAxisKeys={['value1', 'value2']}
                 height={300}
-                legendPosition="top"
+                // Click a legend entry to hide/show that series.
+                enableLegendToggle
+                stacked
                 chartProps={{
                   barGap: 4,
                   value1: { radius: [4, 4, 0, 0] },

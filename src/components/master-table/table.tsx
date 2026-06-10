@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +12,7 @@ import { useDataTable } from '@/hooks/use-data-table'
 import { getValidFilters } from '@/lib/data-table'
 import { applyFilter, getFilterFields } from '@/lib/filter'
 import { getFiltersStateParser } from '@/lib/parsers'
-import { Expand, Shrink } from 'lucide-react'
+import { Expand, Search, Shrink, X } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import * as React from 'react'
 import { useMemo } from 'react'
@@ -33,6 +34,9 @@ type TableProps = {
   serverSideFiltering?: boolean // New flag for server-side filtering
   onFiltersChange?: (filters: any[], joinOperator: string) => void // Callback for server-side filtering
   onPaginationChange?: (page: number, perPage: number) => void // Callback for server-side pagination
+  enableGlobalFilter?: boolean // Show a search box that matches across all columns
+  globalFilterPlaceholder?: string // Placeholder for the global search box
+  onGlobalFilterChange?: (search: string) => void // Callback for server-side global search
   children?: React.ReactNode // Additional children that need table context (like CardBuilder)
 }
 
@@ -48,14 +52,15 @@ export const Table = React.forwardRef(
       serverSideFiltering = false, // Default to client-side filtering
       onFiltersChange,
       onPaginationChange,
-      children,
+      enableGlobalFilter = false,
+      globalFilterPlaceholder = 'Search all columns...',
+      onGlobalFilterChange,
     }: TableProps,
-    ref
+    ref,
   ) => {
-    console.log(columns)
     const { enableAdvancedFilter } = useFeatureFlags()
     const [fullscreen, setFullscreen] = React.useState(false)
-    const { setTable, setColumns } = useTableContext()
+    const { setTable, setColumns, setFilteredData } = useTableContext()
 
     const addvanceTableFilterRef = React.useRef<any>(null)
     const onExpandChange = () => {
@@ -73,18 +78,30 @@ export const Table = React.forwardRef(
     const filterColumns = getFilterFields(columns)
     const [filters] = useQueryState(
       'filters',
-      getFiltersStateParser(filterColumns).withDefault([])
+      getFiltersStateParser(filterColumns).withDefault([]),
     )
 
     const [joinOperator] = useQueryState('joinOperator', {
       defaultValue: 'and',
     })
 
+    // Global search term, stored in the URL so it is shareable/restorable.
+    const [globalSearch, setGlobalSearch] = useQueryState('search', {
+      defaultValue: '',
+    })
+
+    // Notify parent when global search changes (for server-side filtering).
+    React.useEffect(() => {
+      if (serverSideFiltering && onGlobalFilterChange) {
+        onGlobalFilterChange(globalSearch)
+      }
+    }, [globalSearch, serverSideFiltering, onGlobalFilterChange])
+
     // Notify parent component when filters change (for server-side filtering)
     React.useEffect(() => {
       if (serverSideFiltering && onFiltersChange) {
         const validFilters = getValidFilters(
-          Array.isArray(filters) ? filters : []
+          Array.isArray(filters) ? filters : [],
         )
         onFiltersChange(validFilters, joinOperator)
       }
@@ -98,17 +115,38 @@ export const Table = React.forwardRef(
       }
 
       const validFilters = getValidFilters(
-        Array.isArray(filters) ? filters : []
+        Array.isArray(filters) ? filters : [],
       )
-      if (validFilters.length === 0) return data
-      return data.filter((row) => {
-        if (joinOperator === 'or') {
-          return validFilters.some((filter) => applyFilter(row, filter))
-        } else {
-          return validFilters.every((filter) => applyFilter(row, filter))
-        }
-      })
-    }, [filters, data, joinOperator, serverSideFiltering])
+
+      // Column-level filters (advanced filter list).
+      const columnFiltered =
+        validFilters.length === 0
+          ? data
+          : data.filter((row) => {
+              if (joinOperator === 'or') {
+                return validFilters.some((filter) => applyFilter(row, filter))
+              }
+              return validFilters.every((filter) => applyFilter(row, filter))
+            })
+
+      // Global search: case-insensitive substring match across every field.
+      const search = globalSearch.trim().toLowerCase()
+      if (!enableGlobalFilter || !search) return columnFiltered
+
+      return columnFiltered.filter((row) =>
+        Object.values(row as Record<string, unknown>).some((value) => {
+          if (value == null) return false
+          return String(value).toLowerCase().includes(search)
+        }),
+      )
+    }, [
+      filters,
+      data,
+      joinOperator,
+      serverSideFiltering,
+      globalSearch,
+      enableGlobalFilter,
+    ])
 
     const [page, setPage] = useQueryState('page', {
       defaultValue: 1,
@@ -136,7 +174,8 @@ export const Table = React.forwardRef(
         // For server-side pagination, return data as-is since pagination is handled on the server
         return filteredData
       }
-
+      console.log(filteredData)
+      setFilteredData(filteredData)
       const start = pageIndex * pageSize
       const end = start + pageSize
       return filteredData.slice(start, end)
@@ -148,6 +187,17 @@ export const Table = React.forwardRef(
         onPaginationChange(page, perPage)
       }
     }, [page, perPage, serverSideFiltering, onPaginationChange])
+    // Get initial column visibility from columns metadata
+    const initialColumnVisibility = useMemo(() => {
+      const visibility: Record<string, boolean> = {}
+      columns.forEach((col: any) => {
+        if (col.meta?.isHidden) {
+          visibility[col.accessorKey] = false
+        }
+      })
+      return visibility
+    }, [columns])
+
     const { table } = useDataTable({
       data: paginatedData,
       columns,
@@ -156,6 +206,7 @@ export const Table = React.forwardRef(
       initialState: {
         sorting: [],
         columnPinning: { right: ['actions'] },
+        columnVisibility: initialColumnVisibility,
       },
       getRowId: (row) => row.id,
       shallow: true,
@@ -185,7 +236,7 @@ export const Table = React.forwardRef(
         columns.map((col: any) => ({
           accessorKey: col.accessorKey,
           meta: col.meta,
-        }))
+        })),
       )
     }, [columns])
 
@@ -194,6 +245,35 @@ export const Table = React.forwardRef(
         table.resetColumnFilters()
       }
     }, [columnsChecksum, table])
+
+    // Global search box, shown in the toolbar when enabled. Resets to the first
+    // page on every keystroke so results aren't hidden on a stale page.
+    const globalSearchInput = enableGlobalFilter ? (
+      <div className="relative w-56">
+        <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={globalSearch}
+          onChange={(e) => {
+            setGlobalSearch(e.target.value || null)
+            setPage(1)
+          }}
+          placeholder={globalFilterPlaceholder}
+          className="h-8 pl-8 pr-8"
+        />
+        {globalSearch && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0.5 top-1/2 size-7 -translate-y-1/2"
+            onClick={() => {
+              setGlobalSearch(null)
+              setPage(1)
+            }}>
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
+    ) : null
 
     return (
       <>
@@ -218,6 +298,7 @@ export const Table = React.forwardRef(
                     <p>Collapse</p>
                   </TooltipContent>
                 </Tooltip>
+                {globalSearchInput}
                 <DataTableFilterList table={table} />
                 <DataTableSortList
                   table={table}
@@ -268,6 +349,7 @@ export const Table = React.forwardRef(
                 </TooltipTrigger>
                 <TooltipContent>Expand</TooltipContent>
               </Tooltip>
+              {globalSearchInput}
               <DataTableFilterList table={table} />
               <DataTableSortList
                 table={table}
@@ -279,5 +361,5 @@ export const Table = React.forwardRef(
         )}
       </>
     )
-  }
+  },
 )
