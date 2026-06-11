@@ -37,6 +37,8 @@ interface CardDashboardProps {
     onEdit?: () => void
     onDelete?: () => void
   }
+  /** Optional slot rendered under the value (e.g. a sparkline). */
+  chart?: React.ReactNode
 }
 
 export const CardDashboard = ({
@@ -52,6 +54,7 @@ export const CardDashboard = ({
   dragHandle,
   showActions = false,
   editDelete,
+  chart,
 }: CardDashboardProps) => {
   if (value === null || value === undefined) {
     return <div>no data found</div>
@@ -196,6 +199,8 @@ export const CardDashboard = ({
             </span>
           )}
         </div>
+
+        {chart && !loading && <div className="mt-2">{chart}</div>}
 
         {trend && (
           <div className="mt-3">

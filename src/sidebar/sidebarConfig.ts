@@ -2,6 +2,7 @@ import type { SidebarConfig } from "@/components/NavSideBar/DynamicSidebar"
 import {
   ChartScatter,
   FormInput,
+  LayoutDashboard,
   Settings,
   ShowerHeadIcon,
   Table2,
@@ -25,6 +26,7 @@ const Table = lazy(() =>
 const CustomChart = lazy(() => import("../app/custom-chart/landing"))
 const CustomTable = lazy(() => import("../app/custom-table/page"))
 const CustomChartAppKey = lazy(() => import("../app/custom-chart/page"))
+const DashboardPage = lazy(() => import("../app/dashboard/page"))
 
 export const sidebarConfig: SidebarConfig = {
   groups: [
@@ -55,6 +57,20 @@ export const sidebarConfig: SidebarConfig = {
               icon: ChartScatter,
               component: Chart,
               url: AppRoutes.CHARTS,
+            },
+            {
+              id: "dashboard",
+              title: "Dashboard",
+              icon: LayoutDashboard,
+              component: DashboardPage,
+              url: "/dashboard",
+            },
+            {
+              id: "dashboard_key",
+              title: "Dashboard by Key",
+              icon: LayoutDashboard,
+              component: DashboardPage,
+              url: "/dashboard/:dashboardKey",
             },
             {
               id: "table",

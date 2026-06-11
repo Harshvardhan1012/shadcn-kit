@@ -1,13 +1,7 @@
 'use client'
 
 import { DynamicChart } from '@/components/chart/DynamicChart'
-import { Button } from '@/components/ui/button'
-import {
-  DownloadIcon,
-  InfoIcon,
-  TrendingDownIcon,
-  TrendingUpIcon,
-} from 'lucide-react'
+import { InfoIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react'
 import { useState } from 'react'
 
 // Advanced usage example with more customization options
@@ -105,22 +99,6 @@ export default function AdvancedChartExamples() {
     },
   ]
 
-  // State for chart order
-  const [chartOrder, setChartOrder] = useState<ChartConfig[]>(chartDefinitions)
-
-  // Handle chart reordering
-  const handleChartSort = (activeIndex: number, overIndex: number) => {
-    setChartOrder((prev) => {
-      const newOrder = [...prev]
-      const [movedChart] = newOrder.splice(activeIndex, 1)
-      newOrder.splice(overIndex, 0, movedChart)
-      console.log(
-        `Chart reordered from position ${activeIndex} to ${overIndex}`,
-      )
-      return newOrder
-    })
-  }
-
   // Advanced chart configuration
   const advancedConfig = {
     value1: {
@@ -184,7 +162,7 @@ export default function AdvancedChartExamples() {
 
   return (
     <div className="p-10 space-y-6">
-      {chartOrder.map((chartDef, index) => {
+      {chartDefinitions.map((chartDef, index) => {
         switch (chartDef.key) {
           case 'main':
             return (
@@ -227,7 +205,6 @@ export default function AdvancedChartExamples() {
                 yAxisKeys={['value1', 'value3']}
                 height={300}
                 sortable
-                onSortableChange={(key) => handleChartSort(key, index)}
                 // Range slider + legend toggle + data labels; syncId links its
                 // tooltip/crosshair with any chart sharing the same id.
                 brush
@@ -263,7 +240,6 @@ export default function AdvancedChartExamples() {
                 yAxisKeys={['value1', 'value3']}
                 height={300}
                 sortable
-                onSortableChange={(key) => handleChartSort(key, index)}
                 // Toggle grouped/stacked from the header; thresholds + labels on.
                 showStackToggle
                 showDataLabels
@@ -298,7 +274,6 @@ export default function AdvancedChartExamples() {
                 yAxisKeys={['value1']}
                 height={300}
                 sortable
-                onSortableChange={(key) => handleChartSort(key, index)}
                 showLegend={false}
                 chartProps={{
                   value1: {
@@ -338,7 +313,6 @@ export default function AdvancedChartExamples() {
                   },
                 }}
                 sortable
-                onSortableChange={(key) => handleChartSort(key, index)}
                 xAxisKey="formattedDate"
                 yAxisKeys={['value1', 'value2']}
                 height={300}
